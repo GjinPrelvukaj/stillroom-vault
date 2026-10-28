@@ -1,0 +1,154 @@
+---
+import AppWindow from '../app/AppWindow.astro';
+import VaultUI from '../app/VaultUI.astro';
+import LockUI from '../app/LockUI.astro';
+import SecretUI from '../app/SecretUI.astro';
+import SettingsUI from '../app/SettingsUI.astro';
+import Icon from '../ui/Icon.astro';
+import type { IconName } from '../../lib/icons';
+import { vaultRows } from '../../lib/sample';
+
+const tabs: { id: string; icon: IconName; label: string; caption: string }[] = [
+  { id: 'vault', icon: 'folder', label: 'Vault', caption: 'Everything in one list: files, notes and secrets, with folders, tags and versions.' },
+  { id: 'lock', icon: 'lock', label: 'Lock screen', caption: 'The ring lights a few random dots per key, so it never shows how long your password is.' },
+  { id: 'twofactor', icon: 'clock', label: 'Two-factor', caption: 'Two-factor codes, live beside the login. This one is real, from a public demo key.' },
+  { id: 'settings', icon: 'gear', label: 'Settings', caption: 'Every way in on one page, in plain words, the same in both vaults.' },
+];
+---
+
+<section class="section showcase" aria-labelledby="showcase-title">
+  <div class="container">
+    <div class="section-head reveal">
+      <p class="eyebrow lit">Inside the app</p>
+      <h2 id="showcase-title" class="section-title rise">One window for everything you keep private.</h2>
+      <p class="lead">A native Mac app in a single colour: your files, notes and secrets in one quiet list, and nothing moves until you ask it to.</p>
+    </div>
+
+    <div class="tabs-wrap reveal">
+      {/* Expanding tabs (after Skiper UI's 96 Expandable tabs): an icon each, the chosen one opens to show its name.
+          Not .segments: scripts/xtabs.ts runs these, and slides the screens in the direction you move. */}
+      <div class="xtabs" role="tablist" aria-label="App screens" data-xtabs>
+        {
+          tabs.map((t, i) => (
+            <button
+              type="button"
+              role="tab"
+              id={`tab-${t.id}`}
+              aria-controls={`panel-${t.id}`}
+              aria-selected={i === 0 ? 'true' : 'false'}
+              tabindex={i === 0 ? 0 : -1}
+            >
+              <Icon name={t.icon} size={18} />
+              <span class="xl"><span>{t.label}</span></span>
+            </button>
+          ))
+        }
+      </div>
+    </div>
+
+    <div class="screens reveal" data-xtabs-stage>
+      {
+        tabs.map((t, i) => (
+          <div class="screen" role="tabpanel" id={`panel-${t.id}`} aria-labelledby={`tab-${t.id}`} hidden={i !== 0} data-tabpanel>
+            <AppWindow class="shot" label={`Illustration of Stillroom Vault’s ${t.label.toLowerCase()} screen`}>
+              {t.id === 'vault' && <VaultUI rows={vaultRows} count={248} />}
+              {t.id === 'lock' && <LockUI />}
+              {t.id === 'twofactor' && <SecretUI />}
+              {t.id === 'settings' && <SettingsUI />}
+            </AppWindow>
+            <p class="caption">{t.caption}</p>
+          </div>
+        ))
+      }
+    </div>
+  </div>
+</section>
+
+<script>
+  import '../../scripts/app-demos';
+  import '../../scripts/xtabs';
+</script>
+
+<style>
+  .tabs-wrap {
+    display: flex;
+    margin-bottom: 32px;
+  }
+
+  .xtabs {
+    display: inline-flex;
+    gap: var(--space-1);
+    padding: var(--space-1);
+    border: 1px solid var(--hairline);
+    border-radius: var(--r-pill);
+    background: var(--field);
+  }
+  .xtabs button {
+    display: inline-flex;
+    align-items: center;
+    min-height: 36px;
+    padding: 0 var(--space-3);
+    border: 0;
+    border-radius: var(--r-pill);
+    background: transparent;
+    color: var(--fg-quiet);
+    font: 500 var(--text-base) / 1 var(--font);
+    cursor: pointer;
+    transition:
+      background-color var(--change),
+      color var(--hover),
+      padding var(--change);
+  }
+  .xtabs button:hover {
+    background: var(--glass-strong);
+    color: var(--fg);
+  }
+  .xtabs button[aria-selected='true'] {
+    padding: 0 var(--space-4) 0 14px;
+    background: var(--primary-fill);
+    color: var(--on-primary);
+  }
+  /* The name opens from nothing to its own width (a 0fr to 1fr column), and stays in the accessibility tree. */
+  .xl {
+    display: grid;
+    grid-template-columns: 0fr;
+    opacity: 0;
+    transition:
+      grid-template-columns var(--change),
+      opacity var(--change);
+  }
+  .xl > span {
+    min-width: 0;
+    overflow: hidden;
+    padding-left: var(--space-2);
+    white-space: nowrap;
+  }
+  [aria-selected='true'] .xl {
+    grid-template-columns: 1fr;
+    opacity: 1;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .xtabs button,
+    .xl {
+      transition: none;
+    }
+  }
+  /* While one screen hands over to the next (scripts/xtabs.ts): the old one lifts out of the flow and the box's height
+     follows the new one. */
+  .screens {
+    position: relative;
+  }
+  .screens:global(.moving) {
+    overflow: clip;
+    overflow-clip-margin: var(--space-8);
+  }
+  .screen:global(.leaving) {
+    position: absolute;
+    inset: 0 0 auto;
+    pointer-events: none;
+  }
+  .caption {
+    margin-top: 16px;
+    color: var(--fg-2);
+  }
+</style>

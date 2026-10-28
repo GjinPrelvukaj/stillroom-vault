@@ -1,0 +1,10 @@
+/* Loaded only when scripts are off: show every tab's panel, hide the controls that need a script. */
+[data-tabpanel][hidden] {
+  display: block !important;
+  margin-bottom: 24px;
+}
+[role='tablist'],
+[data-pick],
+[data-seal-form] .buttons {
+  display: none !important;
+}

@@ -1,0 +1,97 @@
+---
+// Every article in src/content/pages: /compare/cryptomator/, /guides/…, /features/decoy-password/, and so on.
+import { getCollection, getEntry } from 'astro:content';
+import DocLayout from '../../layouts/DocLayout.astro';
+import DownloadCta from '../../components/DownloadCta.astro';
+import Decoy from '../../components/home/Decoy.astro';
+import { sections, type Section } from '../../lib/sections';
+import { faqJsonLd } from '../../lib/faq';
+import { hasArt, ownArt } from '../../lib/art';
+
+export async function getStaticPaths() {
+  const pages = await getCollection('pages');
+  return pages.map((page) => {
+    const [section, slug] = page.id.split('/') as [Section, string];
+    return { params: { section, slug }, props: { page, section } };
+  });
+}
+
+const { page, section } = Astro.props;
+// The article's own print when it has one (then it opens as a banner), else its section's, shown smaller.
+const own = `article-${page.id.replace('/', '-')}`;
+const s = sections[section];
+const hub: [string, string] = section === 'features' ? ['Features', '/features/'] : [s.name, `/${section}/`];
+// Related pages, by their own names, in the order the article lists them.
+const related = (
+  await Promise.all(
+    page.data.related.map(async (path) => {
+      const id = path.replace(/^\/|\/$/g, '');
+      const entry = await getEntry('pages', id);
+      if (!entry) throw new Error(`${page.id}: related page ${path} doesn't exist`);
+      return { path, name: entry.data.name, description: entry.data.description };
+    }),
+  )
+);
+---
+
+<DocLayout
+  page={page}
+  picture={ownArt(own, `page-${section}`)}
+  banner={hasArt(own)}
+  title={page.data.title}
+  h1={page.data.h1}
+  eyebrow={s.eyebrow}
+  description={page.data.description}
+  lead={page.data.lead}
+  trail={[hub]}
+  jsonLd={page.data.faq.length ? [faqJsonLd(page.data.faq.map((f, i) => ({ id: `q${i}`, q: f.q, a: f.a })))] : []}
+>
+  <Fragment slot="end">
+    {
+      page.data.faq.length > 0 && (
+        <>
+          <h2 id="questions">Questions</h2>
+          {page.data.faq.map((f) => (
+            <>
+              <h3>{f.q}</h3>
+              <p>{f.a}</p>
+            </>
+          ))}
+        </>
+      )
+    }
+    {
+      page.data.sources.length > 0 && (
+        <>
+          <h2 id="sources">Sources</h2>
+          <p>What this page says about other products comes from their own pages, as they read on {page.data.updated}:</p>
+          <ul>
+            {page.data.sources.map((src) => (
+              <li>
+                <a href={src.url} target="_blank" rel="noopener noreferrer">{src.label}</a>
+              </li>
+            ))}
+          </ul>
+        </>
+      )
+    }
+    {
+      related.length > 0 && (
+        <>
+          <h2 id="related">Read next</h2>
+          <ul class="related">
+            {related.map((r) => (
+              <li>
+                <a href={r.path}>{r.name}</a>
+              </li>
+            ))}
+          </ul>
+        </>
+      )
+    }
+  </Fragment>
+  <Fragment slot="after">
+    {page.id === 'features/decoy-password' && <Decoy />}
+    <DownloadCta />
+  </Fragment>
+</DocLayout>

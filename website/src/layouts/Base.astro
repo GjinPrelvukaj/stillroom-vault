@@ -1,0 +1,98 @@
+---
+import '../styles/global.css';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
+import { site } from '../config';
+
+interface Props {
+  title: string;
+  description?: string;
+  /** Use the title exactly as given (the home page), instead of "Title · Stillroom Vault". */
+  exactTitle?: boolean;
+  jsonLd?: Record<string, unknown>[];
+  ogType?: 'website' | 'article';
+}
+
+const { title, description = site.description, exactTitle = false, jsonLd = [], ogType = 'website' } = Astro.props;
+const fullTitle = exactTitle ? title : `${title} · Stillroom Vault`;
+const canonical = new URL(Astro.url.pathname, site.url).href;
+// The page's own link preview from scripts/make-og.mjs (public/og/<path>.jpg), or the site's.
+const ogName = `og/${Astro.url.pathname.replace(/^\/|\/$/g, '').replaceAll('/', '-')}.jpg`;
+const ownOg = existsSync(join(process.cwd(), 'public', ogName));
+const ogImage = new URL(ownOg ? `/${ogName}` : '/og.png', site.url).href;
+const ogAlt = ownOg ? fullTitle : 'Stillroom Vault: the encrypted vault for your Mac that never goes online.';
+
+const organization = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  '@id': `${site.url}/#maker`,
+  name: 'Stillroom Vault',
+  url: site.url,
+  logo: `${site.url}/icon-512.png`,
+  founder: site.owners.map((name) => ({ '@type': 'Person', name })),
+  email: 'hello@stillroomvault.com',
+};
+const website = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  '@id': `${site.url}/#website`,
+  name: 'Stillroom Vault',
+  url: site.url,
+  publisher: { '@id': `${site.url}/#maker` },
+  inLanguage: 'en',
+};
+const graph = [organization, website, ...jsonLd];
+---
+
+<!doctype html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#030304" />
+    <meta name="referrer" content="no-referrer" />
+    <meta name="format-detection" content="telephone=no" />
+
+    <link rel="icon" href="/favicon.ico" sizes="48x48" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="sitemap" href="/sitemap-index.xml" />
+    <link rel="alternate" type="application/rss+xml" title="Stillroom Vault releases" href="/changelog.xml" />
+
+    <meta property="og:type" content={ogType} />
+    <meta property="og:site_name" content="Stillroom Vault" />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content={ogAlt} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={fullTitle} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage} />
+
+    {graph.map((g) => <script type="application/ld+json" set:html={JSON.stringify(g)} />)}
+    <noscript><link rel="stylesheet" href="/noscript.css" /></noscript>
+    <slot name="head" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <Header />
+    <main id="main" tabindex="-1">
+      <slot />
+    </main>
+    <Footer />
+    <script>
+      import '../scripts/site';
+    </script>
+  </body>
+</html>

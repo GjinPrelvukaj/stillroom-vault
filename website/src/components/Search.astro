@@ -1,0 +1,175 @@
+---
+// Search every page (after Skiper UI's command search, 92): a button in the header bar, or "/" or ⌘K anywhere, opens
+// a native <dialog>; scripts/search.ts fetches /search.json from this site and filters it as you type, grouped by
+// section, with the list growing and shrinking on the change spring. It needs a script to do anything, so without one
+// the button stays hidden and the menu lists every page instead.
+import Icon from './ui/Icon.astro';
+---
+
+<button class="search-button" type="button" aria-label="Search the site" aria-keyshortcuts="/ Meta+K" data-search-open hidden>
+  <Icon name="search" size={16} />
+</button>
+
+<dialog class="search" aria-label="Search the site" data-search>
+  <div class="field-row">
+    <Icon name="search" size={18} />
+    <input
+      type="text"
+      enterkeyhint="go"
+      placeholder="Search pages, guides, questions"
+      autocomplete="off"
+      spellcheck="false"
+      role="combobox"
+      aria-expanded="true"
+      aria-autocomplete="list"
+      aria-controls="search-results"
+      aria-label="Search"
+      data-search-input
+    />
+    <kbd>Esc</kbd>
+  </div>
+  <div class="results-wrap" data-search-wrap>
+    <div class="results fade-y" id="search-results" role="listbox" aria-label="Results" data-search-results></div>
+  </div>
+  <p class="status visually-hidden" role="status" data-search-status></p>
+</dialog>
+
+<script>
+  import '../scripts/search';
+</script>
+
+<style>
+  .search-button {
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border: 1px solid var(--hairline);
+    border-radius: var(--r-field);
+    background: transparent;
+    color: var(--fg);
+    cursor: pointer;
+    transition: background-color var(--hover);
+  }
+  .search-button[hidden] {
+    display: none;
+  }
+  .search-button:hover {
+    background: var(--glass-strong);
+  }
+
+  /* The dialog: raised paper near the top of the screen, arriving with a small drop on the appear spring. */
+  .search {
+    width: min(100% - 2 * var(--gutter), 640px);
+    max-height: none;
+    margin: 12vh auto auto;
+    padding: 0;
+    border: 1px solid var(--hairline);
+    border-radius: var(--r-panel);
+    background: var(--bg);
+    color: var(--fg);
+    box-shadow: 0 30px 60px -30px rgb(22 21 26 / 0.45);
+    overflow: hidden;
+  }
+  .search::backdrop {
+    background: rgb(22 21 26 / 0.32);
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .search[open] {
+      animation: search-in var(--appear) both;
+    }
+    .search[open]::backdrop {
+      animation: backdrop-in var(--change) both;
+    }
+  }
+  @keyframes search-in {
+    from {
+      opacity: 0;
+      transform: translateY(calc(-1 * var(--space-2))) scale(0.98);
+    }
+  }
+  @keyframes backdrop-in {
+    from {
+      opacity: 0;
+    }
+  }
+
+  .field-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: 0 var(--space-4);
+    border-bottom: 1px solid var(--divider);
+    color: var(--fg-quiet);
+  }
+  .field-row :global(svg) {
+    flex: none;
+  }
+  input {
+    flex: 1;
+    min-width: 0;
+    min-height: 56px;
+    border: 0;
+    background: transparent;
+    color: var(--fg);
+    font: 400 var(--text-lg) / 1.4 var(--font);
+  }
+  input::placeholder {
+    color: var(--fg-quiet);
+  }
+  input:focus {
+    outline: none;
+  }
+  kbd {
+    flex: none;
+    color: var(--fg-quiet);
+  }
+
+  /* The list's height follows its content on the change spring (scripts/search.ts sets it); reduced motion jumps. */
+  .results-wrap {
+    overflow: hidden;
+    transition: height var(--change);
+  }
+  .results {
+    max-height: min(60vh, 480px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: var(--space-2);
+  }
+  .results :global(.group-title) {
+    margin: 0;
+    padding: var(--space-3) var(--space-3) var(--space-1);
+    color: var(--fg-eyebrow);
+    font-size: var(--text-xs);
+    font-weight: 500;
+  }
+  .results :global(a) {
+    display: grid;
+    gap: 2px;
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--r-field);
+    color: var(--fg);
+    text-decoration: none;
+  }
+  .results :global(a[aria-selected='true']) {
+    background: var(--glass-strong);
+  }
+  .results :global(.t) {
+    font-size: var(--text-base);
+  }
+  .results :global(.t small) {
+    color: var(--fg-quiet);
+    font-size: var(--text-sm);
+  }
+  .results :global(mark) {
+    background: none;
+    color: var(--vault);
+  }
+  .results :global(.empty) {
+    margin: 0;
+    padding: var(--space-6) var(--space-3);
+    color: var(--fg-quiet);
+    text-align: center;
+  }
+</style>

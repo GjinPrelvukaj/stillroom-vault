@@ -1,0 +1,82 @@
+---
+// The two-column threat model, straight from docs/SECURITY.md.
+import Icon from './ui/Icon.astro';
+import { alsoTrue, doesNot, inline, protects } from '../lib/threat-model';
+interface Props {
+  heading?: 'h2' | 'h3';
+}
+const { heading = 'h3' } = Astro.props;
+const H = heading;
+---
+
+<div class="threat glass panel">
+  <div class="col">
+    <H class="col-title card-title"><Icon name="shield" size={20} /> Stillroom protects against</H>
+    <ul class="tick-list">
+      {protects.map((p) => <li set:html={inline(p)} />)}
+    </ul>
+  </div>
+  <div class="col not">
+    <H class="col-title card-title"><Icon name="eye-off" size={20} /> It does not protect against</H>
+    <ul class="tick-list cross-list">
+      {doesNot.map((p) => <li set:html={inline(p)} />)}
+    </ul>
+    <p class="quiet">
+      The password is still the boundary. Argon2id makes each guess slow; it doesn’t make a weak password safe.
+    </p>
+    <div class="also">
+      <p class="eyebrow">Also in the rules</p>
+      {alsoTrue.map((t) => <p class="also-item" set:html={inline(t)} />)}
+    </div>
+  </div>
+</div>
+
+<style>
+  .threat {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    overflow: hidden;
+  }
+  .col {
+    display: grid;
+    align-content: start;
+    gap: 16px;
+    padding: var(--card-pad);
+  }
+  .col.not {
+    border-left: 1px solid var(--glass-border);
+  }
+  .col-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .col-title :global(svg) {
+    color: var(--vault);
+  }
+  .not .col-title :global(svg) {
+    color: var(--orange);
+  }
+  .also {
+    display: grid;
+    gap: var(--space-3);
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--divider);
+  }
+  .also-item {
+    color: var(--fg-2);
+    font-size: var(--text-sm);
+  }
+  @media (max-width: 760px) {
+    .threat {
+      grid-template-columns: 1fr;
+    }
+    .col.not {
+      border-left: 0;
+      border-top: 1px solid var(--glass-border);
+    }
+    .col {
+      padding: 24px;
+    }
+  }
+</style>

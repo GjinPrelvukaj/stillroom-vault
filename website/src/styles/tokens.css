@@ -1,0 +1,176 @@
+/*
+  Stillroom's design kit (macos/Sources/Stillroom/Design/Kit.swift and Living.swift) as web tokens.
+  Change a look here, never inline in a page: the same rule the app follows.
+*/
+/* Paper and ink: the site's ground is warm paper, its type near-black ink, with one accent (violet) for what is
+   sealed, lit or chosen. Dark "ink" surfaces (.ink, below) hold the app's own screens and the live instruments. */
+:root {
+  color-scheme: light;
+
+  --vault: #6043ca; /* violet, deep enough for text and links on paper (about 6.5:1) */
+  --vault-rgb: 96 67 202;
+  --bg: #f7f6f2;
+  --bg-raised: #efede6;
+  --ink: #16151a;
+  --paper: #f7f6f2;
+  --orange: #b4561a;
+  --red: #b73a32;
+  --green: #1d7a52;
+
+  --fg: rgb(22 21 26 / 0.94);
+  --fg-2: rgb(22 21 26 / 0.74);
+  --fg-quiet: rgb(22 21 26 / 0.62);
+  --fg-eyebrow: rgb(22 21 26 / 0.6);
+
+  --glass: rgb(22 21 26 / 0.035);
+  --glass-border: rgb(22 21 26 / 0.08);
+  --glass-strong: rgb(22 21 26 / 0.07);
+  --hairline: rgb(22 21 26 / 0.12);
+  --divider: rgb(22 21 26 / 0.09);
+  --field: rgb(255 255 255 / 0.7);
+  --field-focus: #fff;
+  --field-border: rgb(22 21 26 / 0.14);
+  --field-border-focus: rgb(22 21 26 / 0.32);
+  --primary-fill: #16151a;
+  --on-primary: #f7f6f2;
+  --secondary-fill: rgb(22 21 26 / 0.06);
+
+  /* Shape. */
+  --r-field: 10px;
+  --r-card: 12px;
+  --r-panel: 22px;
+  --r-pill: 999px;
+
+  /* Type: the system's own font, nothing downloaded. */
+  --font: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro', system-ui, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+  --font-display: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro', system-ui, 'Segoe UI', Roboto, sans-serif;
+  /* The serif is the system's own (New York on Apple devices), never downloaded. */
+  --font-serif: ui-serif, 'New York', 'Iowan Old Style', Charter, Georgia, serif;
+  --font-mono: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
+  /* Type: one scale (12 14 16 18 20 24 30 36 48 60 72), each step used for one job everywhere. */
+  --text-xs: 0.75rem; /* 12: eyebrows, fine print */
+  --text-sm: 0.875rem; /* 14: quiet lines, captions, buttons in the header */
+  --text-base: 1rem; /* 16: body, buttons */
+  --text-lg: 1.125rem; /* 18: leads on phones */
+  --text-xl: 1.25rem; /* 20: card titles, leads on desktop */
+  --text-2xl: 1.5rem; /* 24 */
+  --text-3xl: 1.875rem; /* 30 */
+  --text-4xl: 2.25rem; /* 36: section titles on phones */
+  --text-5xl: 3rem; /* 48: section titles, hero on phones */
+  --text-7xl: 4.5rem; /* 72: the hero */
+  --text-quiet: var(--text-sm);
+  --text-lead: var(--text-lg);
+  --text-card: var(--text-xl);
+  --text-title: var(--text-4xl);
+  --text-page: var(--text-5xl);
+  --text-hero: var(--text-5xl);
+  --eyebrow-size: var(--text-xs);
+  --eyebrow-tracking: 0.08em;
+
+  /* Space: one scale (4 8 12 16 24 32 40 48 64 80 96). Nothing in between, nothing one-off. */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
+  --space-24: 96px;
+  /* The page rhythm, built from that scale (desktop values below 768px wide are overridden further down). */
+  --section-y: var(--space-12); /* above and below every section's content */
+  --page-top: var(--space-16); /* from the header to the first thing on every page, home included */
+  --head-gap: var(--space-8); /* a section's heading block to its content */
+  --card-pad: var(--space-6); /* inside every card and panel */
+  --stack: var(--space-3); /* between lines inside a card */
+  --grid-gap: var(--space-4); /* between cards */
+  --gutter: var(--space-4);
+  --readable: 820px;
+  --wide: 1760px; /* content runs wide: at 1440 that's 1280 between the 80px margins */
+  --control: 36px;
+  --header-h: 68px; /* the site header's bar */
+
+  /* Motion: the app's springs (SwiftUI response / damping), sampled into linear(). Never a fixed-time ease. */
+  --spring-hover: linear(0, 0.0176, 0.0635, 0.1287, 0.2058, 0.289, 0.374, 0.4575, 0.537, 0.6109, 0.6782, 0.7385, 0.7915, 0.8375, 0.8767, 0.9096, 0.9368, 0.959, 0.9766, 0.9903, 1.0007, 1.0083, 1.0137, 1.0171, 1.0191, 1.0199, 1.0198, 1.0191, 1.0179, 1.0164, 1.0148, 1.0131, 1.0114, 1.0098, 1.0083, 1.0069, 1.0057, 1.0045, 1.0036, 1.0027, 1);
+  --spring-hover-dur: 277ms; /* response 0.22, damping 0.78 */
+  --spring-change: linear(0, 0.0178, 0.0635, 0.1274, 0.2021, 0.282, 0.3628, 0.4415, 0.5162, 0.5854, 0.6485, 0.705, 0.7551, 0.7988, 0.8366, 0.8689, 0.8962, 0.9191, 0.938, 0.9536, 0.9661, 0.9762, 0.9841, 0.9903, 0.995, 0.9985, 1.001, 1.0028, 1.0039, 1.0046, 1.0049, 1.005, 1.0049, 1.0046, 1.0043, 1.0039, 1.0035, 1.0031, 1.0027, 1.0024, 1);
+  --spring-change-dur: 407ms; /* response 0.32, damping 0.86 */
+  --spring-appear: linear(0, 0.0178, 0.0635, 0.1275, 0.2023, 0.2822, 0.363, 0.4418, 0.5165, 0.5857, 0.6488, 0.7053, 0.7554, 0.7991, 0.8368, 0.8691, 0.8964, 0.9193, 0.9382, 0.9537, 0.9662, 0.9763, 0.9842, 0.9903, 0.995, 0.9985, 1.001, 1.0028, 1.0039, 1.0046, 1.0049, 1.005, 1.0049, 1.0046, 1.0043, 1.0039, 1.0035, 1.0031, 1.0027, 1.0024, 1);
+  --spring-appear-dur: 509ms; /* response 0.4, damping 0.86 */
+  --hover: var(--spring-hover-dur) var(--spring-hover);
+  --change: var(--spring-change-dur) var(--spring-change);
+  --appear: var(--spring-appear-dur) var(--spring-appear);
+  /* A bouncier one, for the questions' rows parting and closing (stiffness 300, damping 20: damping fraction 0.58). */
+  --spring-bounce: linear(0, 0.0271, 0.0978, 0.1978, 0.3147, 0.4384, 0.5607, 0.6756, 0.7791, 0.8686, 0.9429, 1.0019, 1.0463, 1.0774, 1.0968, 1.1065, 1.1083, 1.104, 1.0954, 1.084, 1.0711, 1.0576, 1.0445, 1.0323, 1.0214, 1.0121, 1.0045, 0.9985, 0.994, 0.991, 0.9892, 0.9883, 0.9883, 0.9889, 0.9899, 0.9912, 0.9926, 0.9941, 0.9955, 0.9968, 1);
+  --spring-bounce-dur: 564ms;
+  --bounce: var(--spring-bounce-dur) var(--spring-bounce);
+
+}
+
+ /* The dark surface: the app's own colours, for its screens, the live instruments, the menu, the footer and the
+   one dark band. Everything inside reads the same tokens and gets these values. */
+.ink {
+  color-scheme: dark;
+  --ink: #16151a;
+  --paper: #f7f6f2;
+  --on-primary: rgb(255 255 255 / 0.94);
+
+  /* Colour: one accent, and white at a few strengths over near-black. */
+  --vault: #b08cff;
+  --vault-rgb: 176 140 255;
+  --bg: #141318; /* ink, a touch warmer than the app's own black */
+  --bg-raised: #08080a;
+  --orange: #ff9f43;
+  --red: #ff6b6b;
+  --green: #5ee6a8;
+
+  /* Text. Quiet levels are a touch brighter than the app's so they pass WCAG AA on glass (≥4.5:1). */
+  --fg: rgb(255 255 255 / 0.94);
+  --fg-2: rgb(255 255 255 / 0.72);
+  --fg-quiet: rgb(255 255 255 / 0.6); /* app .quiet: 0.55 */
+  --fg-eyebrow: rgb(255 255 255 / 0.52); /* app eyebrow: 0.45 */
+
+  /* Glass. */
+  --glass: rgb(255 255 255 / 0.04);
+  --glass-border: rgb(255 255 255 / 0.06);
+  --glass-strong: rgb(255 255 255 / 0.1);
+  --hairline: rgb(255 255 255 / 0.08);
+  --divider: rgb(255 255 255 / 0.05);
+  --field: rgb(255 255 255 / 0.06);
+  --field-focus: rgb(255 255 255 / 0.12);
+  --field-border: rgb(255 255 255 / 0.06);
+  --field-border-focus: rgb(255 255 255 / 0.14);
+  --primary-fill: rgb(var(--vault-rgb) / 0.32);
+  --secondary-fill: rgb(255 255 255 / 0.1);
+  background-color: var(--bg);
+  color: var(--fg);
+}
+
+@media (min-width: 768px) {
+  :root {
+    --text-lead: var(--text-xl);
+    --text-title: var(--text-5xl);
+    --text-page: var(--text-5xl);
+    --text-hero: var(--text-5xl);
+    --section-y: var(--space-16);
+    --head-gap: var(--space-12);
+    --card-pad: var(--space-8);
+    --grid-gap: var(--space-4);
+    --gutter: var(--space-12);
+  }
+}
+@media (min-width: 1280px) {
+  :root {
+    --gutter: var(--space-20);
+  }
+}
+@media (min-width: 1100px) {
+  :root {
+    --text-hero: var(--text-7xl);
+    --text-page: 3.75rem; /* 60 */
+    --section-y: var(--space-20);
+    --page-top: var(--space-20);
+  }
+}

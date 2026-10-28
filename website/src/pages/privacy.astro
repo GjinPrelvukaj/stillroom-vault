@@ -1,0 +1,112 @@
+---
+import DocLayout from '../layouts/DocLayout.astro';
+import { email, site } from '../config';
+import { hasArt, ownArt } from '../lib/art';
+---
+
+<DocLayout picture={ownArt('page-legal-privacy', 'page-legal')}
+  banner={hasArt('page-legal-privacy')}
+  title="Privacy Policy"
+  h1="Stillroom Vault privacy policy"
+  eyebrow="Legal"
+  description="Stillroom Vault collects nothing: the app makes no network connections, and this website sets no cookies and runs no analytics. What Paddle collects when you buy."
+  lead="The app collects nothing. This website sets no cookies and runs no analytics. The only personal data we ever get is what you send us, and what Paddle passes on when you buy."
+  updated="26 October 2026"
+  draft
+  legal
+>
+    <h2 id="who">Who is responsible</h2>
+    <p>
+      {site.seller}, an individual based in {site.sellerCountry}, is responsible for this website and for the personal
+      data described here. Contact: <a href={`mailto:${email.legal}`}>{email.legal}</a>.
+    </p>
+
+    <h2 id="app">The app</h2>
+    <ul>
+      <li>
+        <strong>Stillroom makes no network connections.</strong> It has no server, no account, no sync, no analytics and
+        no crash reporting. Every build is checked and refused if networking code appears in it.
+      </li>
+      <li>Your vault, its keys and everything in it stay on your Mac. We can’t see or reach any of it.</li>
+      <li>
+        The activity log, if you turn it on (it’s off by default), stays on your Mac for 7 days and never records typing,
+        file names, sizes, passwords or contents. It only leaves your Mac if you choose to send it to us.
+      </li>
+      <li>
+        The intruder log’s photos, if you allow them, are sealed inside your vault, on your Mac.
+      </li>
+    </ul>
+
+    <h2 id="website">This website</h2>
+    <ul>
+      <li>
+        No cookies, no analytics, no trackers, no advertising, and nothing loaded from anyone else. The one exception is the
+        checkout page: it loads Paddle’s checkout script, which may set cookies of its own when you buy.
+      </li>
+      <li>
+        It’s hosted on Cloudflare Pages. To deliver pages and protect the site from attacks, Cloudflare processes each
+        request, including your IP address, under Cloudflare’s own privacy policy.
+        We don’t add analytics to that, and we don’t use it to build a picture of visitors.
+      </li>
+      <li>
+        The “Seal it yourself” demo runs in your browser. What you type there is never sent anywhere; the site’s
+        security policy lets pages talk only to stillroomvault.com, and the demo doesn’t make any request at all.
+      </li>
+    </ul>
+
+    <h2 id="buying">When you buy</h2>
+    <p>
+      Our order process is conducted by our online reseller Paddle.com. Paddle.com is the Merchant of Record for all our
+      orders. Paddle provides all customer service inquiries and handles returns.
+    </p>
+    <p>
+      At checkout, Paddle collects what it needs to take payment, charge the right tax and prevent fraud: typically your
+      name, email address, country and postcode, payment details, IP address, and a VAT number if you give one. Paddle is
+      responsible for that data under <a href="https://www.paddle.com/legal/privacy" target="_blank" rel="noopener noreferrer">its privacy policy</a>. We never see
+      your card details.
+    </p>
+    <p>Paddle passes us your name, email address, country and what you bought. We use them to:</p>
+    <ul>
+      <li>make and email your licence key, which carries your email address, your edition and the major version;</li>
+      <li>answer you about your order, or send your key again if you lose it;</li>
+      <li>tell you when a new version is out, since the app never checks for updates itself. You can ask us to stop.</li>
+    </ul>
+    <p>We keep order records for as long as tax law requires, and nothing else for longer than we need it.</p>
+
+    <h2 id="email">When you email us</h2>
+    <p>
+      We get your address and your message, and keep them as long as we need to help you. Please never send us your
+      password, recovery key or kit pieces. We’ll never ask for them.
+    </p>
+
+    <h2 id="who-else">Who else handles it</h2>
+    <ul>
+      <li><strong>Paddle</strong>: checkout, payment, tax, invoices and refunds, as described above.</li>
+      <li><strong>Cloudflare</strong>: hosts this website, and forwards email sent to our addresses to our mailbox.</li>
+      <li>
+        <strong>Our email provider</strong>, which holds the messages we send and receive, and the service that sends
+        licence keys once licensing is live. We’ll name both here before then.
+      </li>
+    </ul>
+    <p>
+      Some of these process data outside your country, including in the United States. We rely on their standard
+      contractual safeguards for that. We never sell personal data or share it for advertising.
+    </p>
+
+    <h2 id="bases">Why we may use it</h2>
+    <ul>
+      <li>Sending your licence key and helping with your order: to carry out our agreement with you.</li>
+      <li>Telling buyers about new versions: our legitimate interest in keeping you able to update, since the app can’t check. Every such email says how to stop them.</li>
+      <li>Keeping order records: what tax law requires.</li>
+    </ul>
+
+    <h2 id="rights">Your rights</h2>
+    <p>
+      You can ask us what we hold about you, and ask us to correct, export or delete it, or object to how we use it, at
+      <a href={`mailto:${email.legal}`}>{email.legal}</a>. If you’re in the EU or UK, you can also complain to your data
+      protection authority.
+    </p>
+
+    <h2 id="changes">Changes</h2>
+    <p>If this policy changes, the new version will be posted here with its date.</p>
+</DocLayout>

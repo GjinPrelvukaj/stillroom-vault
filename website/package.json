@@ -1,0 +1,27 @@
+{
+  "name": "stillroom-website",
+  "private": true,
+  "type": "module",
+  "version": "0.1.0",
+  "engines": {
+    "node": ">=22.23.4"
+  },
+  "scripts": {
+    "dev": "astro telemetry disable && astro dev",
+    "build": "node scripts/check-copy.mjs && astro telemetry disable && astro build && node scripts/check-offline.mjs",
+    "preview": "astro preview",
+    "check": "astro telemetry disable && astro check",
+    "test": "node --test 'server/*.test.ts'",
+    "serve": "node scripts/serve.mjs",
+    "screenshots": "node scripts/screenshots.mjs"
+  },
+  "dependencies": {
+    "astro": "^7.4.2",
+    "gsap": "^3.15.0"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.12",
+    "@astrojs/sitemap": "^3.7.4",
+    "typescript": "^6.0.3"
+  }
+}

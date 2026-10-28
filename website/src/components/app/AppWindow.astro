@@ -1,0 +1,18 @@
+---
+// The app's window: black glass, continuous corners and a hairline.
+import '../../styles/app.css';
+interface Props {
+  class?: string;
+  id?: string;
+  label: string;
+  locked?: boolean;
+}
+const { class: className, id, label, locked = false } = Astro.props;
+---
+
+<figure class:list={['app app-window ink', className]} id={id} aria-label={label} role="img">
+  <div class="traffic" aria-hidden="true"><i></i><i></i><i></i></div>
+  <div class:list={['app-content', { locked }]} aria-hidden="true">
+    <slot />
+  </div>
+</figure>

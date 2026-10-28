@@ -1,0 +1,211 @@
+---
+// The home page's opening: one statement in the serif (the claim in full ink, the rest quieter), the two buttons, then the plate: the home
+// picture, left whole, and under it the names of the files it holds. As you scroll down to it, the names seal into
+// violet ciphertext one after another (scripts/home-plate.ts). Without scripts or with reduced motion they stay plain.
+// Without the picture's file (public/art/home-plate.webp), a few tinted paper slips stand in.
+import { hasArt } from '../../lib/art';
+import Icon from '../ui/Icon.astro';
+import { pricing } from '../../config';
+import { vaultRows } from '../../lib/sample';
+
+const plateImage = hasArt('home-plate');
+// Made-up files, nobody's real ones: the same ones the app's window shows further down (lib/sample.ts).
+const row = (name: string) => vaultRows.find((r) => r.name === name)!;
+const tiles = [
+  { file: row('Passport photo page.heic') },
+  { file: row('Bank login') },
+  { file: row('Lease agreement, signed.pdf') },
+  { file: row('Grandma’s 90th.mov') },
+].map(({ file }) => ({ name: file.name }));
+---
+
+<section class="home-hero" aria-labelledby="hero-title">
+  <div class="container">
+    <h1 id="hero-title" class="statement enter enter-1">An encrypted vault for your Mac that never goes online.</h1>
+    <p class="hero-lead enter enter-2">
+      Files, notes, passwords and two-factor codes, sealed under keys only you hold. We run no server and keep no copy.
+    </p>
+    <div class="actions enter enter-3">
+      <div class="btn-row">
+        <a class="btn primary large" href="/download/"><Icon name="download" size={18} /> Download free</a>
+        <a class="btn large" href="/security/"><span class="long">Read the threat model</span><span class="short">Threat model</span></a>
+      </div>
+      <p class="proof">
+        Free for {pricing.freeItems} items · $39 once <span class="nowrap">· <Icon name="apple" size={13} class="inline-icon" /> Apple silicon,</span> macOS 26+
+      </p>
+    </div>
+  </div>
+
+  <figure class="container plate enter enter-4" aria-label="Illustration: your files, sealed into the vault">
+    <div class:list={['plate-art', { 'has-image': plateImage }]} data-plate>
+      {
+        plateImage && (
+          <img
+            class="plate-image"
+            src="/art/home-plate.webp"
+            srcset={hasArt('home-plate-800') ? '/art/home-plate-800.webp 800w, /art/home-plate.webp 1600w' : undefined}
+            sizes="(max-width: 1400px) 92vw, 1280px"
+            alt=""
+            fetchpriority="high"
+          />
+        )
+      }
+      {
+        !plateImage && (
+          <svg viewBox="0 0 1200 620" aria-hidden="true">
+            <g class="papers">
+              <rect class="olive" x="120" y="96" width="210" height="270" transform="rotate(-4 225 231)" />
+              <rect class="slate" x="860" y="70" width="240" height="190" transform="rotate(3 980 165)" />
+              <rect class="rose" x="900" y="360" width="180" height="210" transform="rotate(-2 990 465)" />
+              <rect class="sand" x="170" y="410" width="250" height="150" transform="rotate(2 295 485)" />
+            </g>
+          </svg>
+        )
+      }
+    </div>
+    <figcaption class="caption">
+      <span class="caption-label">The vault</span>
+      <span class="caption-title">Everything private, sealed in one folder on your Mac</span>
+      <span class="files" aria-hidden="true">
+        {tiles.map((t) => <span class="file" data-tile><span data-name={t.name}>{t.name}</span></span>)}
+      </span>
+    </figcaption>
+  </figure>
+</section>
+
+<script>
+  import '../../scripts/home-plate';
+</script>
+
+<style>
+  .home-hero {
+    padding: var(--page-top) 0 0;
+  }
+  /* The claim, then one line of what it holds. */
+  .statement {
+    max-width: 15em; /* two lines */
+    font-family: var(--font-serif);
+    font-size: var(--text-hero);
+    font-weight: 400;
+    line-height: 1.1;
+    letter-spacing: -0.012em;
+  }
+  .hero-lead {
+    max-width: 36em;
+    margin-top: var(--space-6);
+    color: var(--fg-2);
+    font-size: var(--text-xl);
+    line-height: 1.5;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-4) var(--space-6);
+    margin-top: var(--space-8);
+  }
+  .actions .btn-row {
+    justify-content: flex-start;
+  }
+  .proof {
+    color: var(--fg-quiet);
+    font-size: var(--text-sm);
+  }
+  .proof :global(.inline-icon) {
+    display: inline-block;
+    vertical-align: -1px;
+  }
+
+  .plate {
+    margin-top: var(--space-16);
+  }
+  .plate-art {
+    position: relative;
+    aspect-ratio: 1200 / 620;
+    border-radius: var(--r-card);
+    background: var(--bg-raised);
+    overflow: hidden;
+  }
+  @supports (corner-shape: squircle) {
+    .plate-art {
+      border-radius: calc(var(--r-card) * 2);
+      corner-shape: squircle;
+    }
+  }
+  .plate-image {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .plate-art svg {
+    position: relative;
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+  .papers rect {
+    opacity: 0.85;
+  }
+  .olive {
+    fill: #cdc8aa;
+  }
+  .slate {
+    fill: #c6ccd3;
+  }
+  .rose {
+    fill: #dcc8bf;
+  }
+  .sand {
+    fill: #e3d9c4;
+  }
+  /* The files the ring holds, named under the picture; sealed once it closes (scripts/home-plate.ts). */
+  .files {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1) 0;
+    margin-top: var(--space-2);
+    color: var(--fg-quiet);
+    font-size: var(--text-sm);
+  }
+  .file + .file::before {
+    content: '·';
+    padding-inline: var(--space-2);
+    color: var(--fg-quiet);
+    font-family: var(--font);
+  }
+  .file.sealed {
+    color: var(--vault);
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    line-height: 1.75;
+  }
+  .caption {
+    display: grid;
+    gap: var(--space-1);
+    padding-top: var(--space-4);
+  }
+  .caption-label {
+    color: var(--fg-quiet);
+    font-size: var(--text-sm);
+  }
+  .caption-title {
+    font-family: var(--font-serif);
+    font-size: var(--text-2xl);
+  }
+
+  @media (max-width: 1099px) {
+    .statement {
+      font-size: var(--text-4xl);
+    }
+  }
+  @media (max-width: 767px) {
+    .statement {
+      font-size: var(--text-3xl);
+    }
+    .plate {
+      margin-top: var(--space-12);
+    }
+  }
+</style>

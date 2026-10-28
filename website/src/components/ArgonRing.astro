@@ -1,0 +1,145 @@
+---
+// Argon2id, drawn as the DotRing filling while the password "stretches". Figures from docs/SECURITY.md and FORMAT.md.
+import DotRing from './ui/DotRing.astro';
+import Icon from './ui/Icon.astro';
+interface Props {
+  heading?: 'h2' | 'h3';
+}
+const { heading = 'h2' } = Astro.props;
+const H = heading;
+---
+
+<div class="argon" data-argon>
+  <div class="ring-side">
+    <div class="ring-wrap">
+      <DotRing size={260} dot={6} lit={1} class="argon-ring" />
+      <div class="ring-centre">
+        <Icon name="key" size={30} />
+        <span class="ring-pct mono" data-pct aria-hidden="true">512 MB</span>
+        <span class="ring-cap">per guess</span>
+      </div>
+    </div>
+  </div>
+  <div class="text-side">
+    <p class="eyebrow lit">The stretch</p>
+    <H class="section-title rise">Every guess at your password costs 512 MB of memory.</H>
+    <p class="lead">
+      Your password is stretched with Argon2id (RFC 9106), run by the unchanged reference C code: 512 MB of memory, 3
+      passes, 4 lanes, a random 16-byte salt. Graphics cards and custom chips run short of memory, so guessing stays slow.
+    </p>
+    <dl class="figures">
+      <div><dt>On an Apple silicon Mac</dt><dd>about <strong>280 ms</strong> per guess</dd></div>
+      <div><dt>On a high-end GPU</dt><dd>roughly <strong>10–30</strong> guesses a second</dd></div>
+    </dl>
+    <p class="honest">
+      That’s strong but ordinary. It slows guessing; it doesn’t make a weak password safe. Your password’s own strength is
+      the real boundary, which is why Stillroom refuses guessable ones.
+    </p>
+  </div>
+</div>
+
+<script>
+  import '../scripts/argon';
+</script>
+
+<style>
+  .argon {
+    display: grid;
+    grid-template-columns: 0.9fr 1.1fr;
+    gap: var(--space-16);
+    align-items: center;
+  }
+  .ring-side {
+    display: grid;
+    place-items: center;
+  }
+  .ring-wrap {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: min(100%, 300px);
+    aspect-ratio: 1;
+  }
+  .ring-wrap :global(.argon-ring) {
+    width: 100%;
+    height: 100%;
+  }
+  .ring-centre {
+    position: absolute;
+    display: grid;
+    justify-items: center;
+    gap: 4px;
+    color: var(--vault);
+  }
+  .ring-pct {
+    margin-top: 8px;
+    line-height: 1.15;
+    color: var(--fg);
+    font-size: var(--text-3xl);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+  /* The odometer argon.ts builds: one clipped column per digit (after Skiper UI's #37). */
+  .ring-pct :global(.odo) {
+    display: inline-block;
+    height: 1.15em;
+    overflow: hidden;
+    line-height: 1.15em;
+    vertical-align: top;
+    transition: opacity var(--change);
+  }
+  .ring-pct :global(.odo.lead) {
+    opacity: 0;
+  }
+  .ring-pct :global(.odo-strip) {
+    display: block;
+    width: 1ch;
+    overflow-wrap: anywhere;
+    text-align: center;
+  }
+  .ring-cap {
+    color: var(--fg-quiet);
+    font-size: var(--text-sm);
+  }
+  .text-side {
+    display: grid;
+    gap: 16px;
+  }
+  .figures {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin: 4px 0 0;
+  }
+  .figures > div {
+    padding: 16px 16px;
+    border: 1px solid var(--glass-border);
+    border-radius: var(--r-card);
+    background: var(--glass);
+  }
+  dt {
+    color: var(--fg-quiet);
+    font-size: var(--text-sm);
+  }
+  dd {
+    margin: 4px 0 0;
+    color: var(--fg-2);
+  }
+  dd strong {
+    color: var(--fg);
+    font-size: var(--text-xl);
+  }
+  .honest {
+    padding-left: 16px;
+    border-left: 2px solid var(--orange);
+    color: var(--fg-2);
+  }
+  @media (max-width: 860px) {
+    .argon {
+      grid-template-columns: 1fr;
+    }
+    .figures {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

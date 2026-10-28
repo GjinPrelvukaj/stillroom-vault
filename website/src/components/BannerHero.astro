@@ -1,0 +1,96 @@
+---
+// A page's opening as a banner: its own print runs edge to edge across most of the screen, and a fade in the page's
+// own paper comes in from the left and from below, so the heading sits on calm paper and the print dissolves into the
+// page. No dark overlay: it stays ink on one sheet. On phones the print shows above the words, fading at its foot.
+// Only for a print that belongs to this page alone (DocLayout and PageLayout decide), so no two pages open alike.
+interface Props {
+  /** The art slot (public/art/<name>.webp), 1536 × 1024. */
+  picture: string;
+  eyebrow: string;
+  h1: string;
+  lead?: string | undefined;
+  /** A quiet line under the lead (the legal pages' "Last updated"). */
+  note?: string | undefined;
+}
+const { picture, eyebrow, h1, lead, note } = Astro.props;
+import { hasArt } from '../lib/art';
+// The phone copy beside the picture: phones show the banner about 400px wide, so 800px is plenty there.
+const srcset = hasArt(`${picture}-800`) ? `/art/${picture}-800.webp 800w, /art/${picture}.webp 1600w` : undefined;
+---
+
+<header class="banner">
+  <img class="banner-art" src={`/art/${picture}.webp`} srcset={srcset} sizes="100vw" width="1536" height="1024" alt="" aria-hidden="true" />
+  <div class="container-wide banner-frame">
+    <div class="banner-text">
+      <p class="eyebrow lit enter enter-1">{eyebrow}</p>
+      <h1 class="page-title enter enter-2">{h1}</h1>
+      {lead && <p class="lead enter enter-3">{lead}</p>}
+      {note && <p class="quiet enter enter-4">{note}</p>}
+      <slot />
+    </div>
+  </div>
+</header>
+
+<style>
+  .container-wide {
+    width: min(100% - 2 * var(--gutter), var(--wide));
+    margin-inline: auto;
+  }
+  .banner {
+    position: relative;
+    display: grid;
+    /* The heading block's centre sits 63% of the way down (the top padding grows with the banner: centre =
+       (height + top - bottom) / 2), on the picture's calm left side, clear of the fade at its foot. */
+    align-items: center;
+    min-height: min(84svh, 960px);
+    padding: calc(min(84svh, 960px) * 0.26 + var(--space-12)) 0 var(--space-12);
+    overflow: clip;
+    isolation: isolate;
+  }
+  .banner-art {
+    position: absolute;
+    inset: 0;
+    z-index: -2;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: 60% 22%;
+  }
+  .banner::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background:
+      linear-gradient(90deg, rgb(247 246 242 / 0.88) 0%, rgb(247 246 242 / 0.62) 34%, rgb(247 246 242 / 0) 60%),
+      linear-gradient(0deg, var(--bg) 0%, rgb(247 246 242 / 0) 30%);
+  }
+  .banner-text {
+    display: grid;
+    gap: var(--space-4);
+    justify-items: start;
+    max-width: min(44%, 640px);
+  }
+  .page-title {
+    font-size: clamp(2.6rem, 5vw, 5rem);
+  }
+  @media (max-width: 900px) {
+    .banner {
+      min-height: 0;
+      padding-top: min(62vw, 420px);
+    }
+    .banner-art {
+      height: min(70vw, 480px);
+      /* The prints put their subject in the right two-thirds; a phone's narrow crop aims there. */
+      object-position: 78% 40%;
+    }
+    /* Fully paper by the time the words start (the top padding), so the small violet label above the title keeps its
+       contrast: it once sat on the last of the picture at under 4.5:1. */
+    .banner::after {
+      background: linear-gradient(rgb(247 246 242 / 0) calc(min(62vw, 420px) * 0.55), var(--bg) min(62vw, 420px));
+    }
+    .banner-text {
+      max-width: none;
+    }
+  }
+</style>

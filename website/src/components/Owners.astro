@@ -1,0 +1,62 @@
+---
+// Who makes Stillroom, said quietly: a word ("Stillroom" unless given another) that shows the owners' names when
+// pointed at or focused. Screen readers hear the names as its description. Legal text names them in full instead.
+import { site } from '../config';
+interface Props {
+  /** The word shown. */
+  text?: string;
+  /** Unique on its page, for the description link. */
+  id?: string;
+}
+const { text = 'Stillroom', id = 'owners' } = Astro.props;
+---
+
+<span class="owners" tabindex="0" aria-describedby={id}>{text}<span class="tip" role="tooltip" id={id}>{site.owners.join(' & ')}</span></span>
+
+<style>
+  .owners {
+    position: relative;
+    text-decoration: underline dotted;
+    text-decoration-color: color-mix(in srgb, currentColor, transparent 55%);
+    text-underline-offset: 0.2em;
+    cursor: default;
+  }
+  .owners:focus-visible {
+    outline: 2px solid var(--vault);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+  .tip {
+    position: absolute;
+    bottom: calc(100% + var(--space-2));
+    left: 50%;
+    z-index: 5;
+    padding: var(--space-1) var(--space-3);
+    border-radius: var(--r-field);
+    background: var(--fg);
+    color: var(--bg);
+    font-size: var(--text-xs);
+    font-weight: 500;
+    white-space: nowrap;
+    opacity: 0;
+    translate: -50% var(--space-1);
+    pointer-events: none;
+    transition:
+      opacity var(--hover),
+      translate var(--hover);
+  }
+  .tip::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    margin-left: -5px;
+    border: 5px solid transparent;
+    border-top-color: var(--fg);
+  }
+  .owners:hover .tip,
+  .owners:focus-visible .tip {
+    opacity: 1;
+    translate: -50% 0;
+  }
+</style>

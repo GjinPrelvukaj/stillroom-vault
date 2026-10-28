@@ -1,0 +1,205 @@
+---
+import PageLayout from '../layouts/PageLayout.astro';
+import PricingCards from '../components/PricingCards.astro';
+import Faq from '../components/Faq.astro';
+import Icon from '../components/ui/Icon.astro';
+import { email, paddle, pricing } from '../config';
+import { faqJsonLd, type QA } from '../lib/faq';
+import { softwareJsonLd } from '../lib/schema';
+
+const configured = Boolean(paddle.clientToken);
+const rows: [string, string, string, string, string][] = [
+  ['Items', `Up to ${pricing.freeItems}`, 'Unlimited', 'Unlimited', 'Unlimited'],
+  ['People', '1', '1, on all their Macs', 'Up to 5', 'Per seat'],
+  ['AES-256-GCM, a key per item', '✓', '✓', '✓', '✓'],
+  ['Password, recovery key, emergency kit', '✓', '✓', '✓', '✓'],
+  ['Touch ID and Lock to this Mac', '✓', '✓', '✓', '✓'],
+  ['Decoy password', '✓', '✓', '✓', '✓'],
+  ['Intruder log', '✓', '✓', '✓', '✓'],
+  ['Backups, restore and export', '✓', '✓', '✓', '✓'],
+  ['Opening and exporting, always', '✓', '✓', '✓', '✓'],
+  ['Updates', 'All 1.x', 'All 1.x', 'All 1.x', 'All 1.x'],
+];
+const faq: QA[] = [
+  {
+    id: 'one-time',
+    q: 'Is it one payment, with nothing to renew?',
+    a: 'Yes. $39 once covers every 1.x update, on all of your own Macs. If there’s a 2.0, upgrading will cost $39 for 1.x owners, and 1.x keeps working forever. There is no subscription and nothing renews.',
+  },
+  {
+    id: 'same-protection',
+    q: 'Why does Free have every protection?',
+    a: 'Selling safety as an upgrade looks wrong for a vault. And a decoy only in a paid tier would make the licence itself a tell. So tiers differ only in how much you keep and for how many people.',
+  },
+  {
+    id: 'limit',
+    q: 'What happens when I reach 25 items?',
+    a: 'Only adding stops. Opening, editing, exporting and backing up keep working, licensed or not. Stillroom never holds your files hostage.',
+  },
+  {
+    id: 'checkout',
+    q: 'Who handles the payment?',
+    a: 'Paddle.com, our reseller and Merchant of Record. Paddle runs the checkout, charges VAT or sales tax, sends your invoice and handles refunds. We never see your card. See the <a href="/privacy/">privacy policy</a> for what Paddle collects.',
+  },
+  {
+    id: 'refund',
+    q: 'Can I get my money back?',
+    a: 'Yes: within 14 days, for any reason. See the <a href="/refunds/">refund policy</a>.',
+  },
+  {
+    id: 'teams',
+    q: 'Teams: what do you offer?',
+    a: `The same app, priced per seat for small offices such as law, medical and journalism. There is no admin console and no way for anyone to open a colleague’s vault, because Stillroom has no master key. Write to <a href="mailto:${email.hello}">${email.hello}</a>.`,
+  },
+];
+---
+
+<PageLayout picture="page-pricing"
+  title="Pricing: Free, or $39 Once for Mac"
+  h1="Stillroom Vault pricing"
+  eyebrow="Pricing"
+  description="Stillroom Vault is free for 25 items with every feature, $39 one-time for one person on all their Macs, or $129 for a family of five. All 1.x updates included."
+  lead="Free for 25 items. $39 once for everything. Tiers differ only in how much you keep and for how many people, never in how safe it is."
+  jsonLd={[softwareJsonLd(), faqJsonLd(faq)]}
+>
+  <ul class="promises stagger" aria-label="What every purchase includes">
+    <li><Icon name="check" size={18} /> One-time payment</li>
+    <li><Icon name="check" size={18} /> Every 1.x update</li>
+    <li><Icon name="check" size={18} /> All of your own Macs</li>
+    <li><Icon name="check" size={18} /> Same protection in every tier</li>
+    <li><Icon name="check" size={18} /> 14-day refunds, no questions</li>
+  </ul>
+
+  <PricingCards checkout headingLevel="h2" />
+  {
+    !configured && (
+      <p id="checkout-soon" class="soon note">
+        Checkout opens with version 1.0. Until then the buy buttons read “Coming soon”, and the free version has every
+        feature.
+      </p>
+    )
+  }
+
+  <section class="compare" aria-labelledby="compare-title">
+    <h2 id="compare-title" class="section-title rise">Compare, row by row</h2>
+    <div class="table-wrap glass panel" tabindex="0" role="region" aria-label="Comparison table, scrolls sideways on small screens">
+      <table>
+        <thead>
+          <tr>
+            <th scope="col"><span class="visually-hidden">Feature</span></th>
+            <th scope="col">Free</th>
+            <th scope="col" class="lit">Stillroom Vault</th>
+            <th scope="col">Family</th>
+            <th scope="col">Teams</th>
+          </tr>
+        </thead>
+        <tbody>
+          {
+            rows.map(([label, ...cells]) => (
+              <tr>
+                <th scope="row">{label}</th>
+                {cells.map((c, i) =>
+                  c === '✓' ? (
+                    <td class:list={{ lit: i === 1 }}>
+                      <Icon name="check" size={18} label="Included" class="yes" />
+                    </td>
+                  ) : (
+                    <td class:list={{ lit: i === 1 }}>{c}</td>
+                  ),
+                )}
+              </tr>
+            ))
+          }
+          <tr class="price-row">
+            <th scope="row">Price</th>
+            <td>$0</td>
+            <td class="lit">$39 once</td>
+            <td>$129 once</td>
+            <td>Upon request</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="pfaq" aria-labelledby="pfaq-title">
+    <h2 id="pfaq-title" class="section-title rise">Buying questions</h2>
+    <Faq items={faq} />
+  </section>
+</PageLayout>
+
+<style>
+  .promises {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px 24px;
+    margin: 0 0 40px;
+    padding: 0;
+    list-style: none;
+  }
+  .promises li {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--fg-2);
+  }
+  .promises :global(svg) {
+    color: var(--vault);
+  }
+  .soon {
+    margin-top: 24px;
+  }
+  .compare,
+  .pfaq {
+    display: grid;
+    gap: 24px;
+    margin-top: calc(var(--section-y) * 2);
+  }
+  .table-wrap {
+    overflow-x: auto;
+  }
+  table {
+    width: 100%;
+    min-width: 640px;
+    border-collapse: collapse;
+    font-size: var(--text-base);
+  }
+  th,
+  td {
+    padding: 16px 16px;
+    border-bottom: 1px solid var(--divider);
+    text-align: center;
+  }
+  tbody th {
+    color: var(--fg-2);
+    font-weight: 400;
+    text-align: left;
+  }
+  thead th {
+    color: var(--fg);
+    font-weight: 600;
+  }
+  td {
+    color: var(--fg-2);
+  }
+  thead th,
+  td {
+    white-space: nowrap;
+  }
+  .lit {
+    background: rgb(var(--vault-rgb) / 0.06);
+  }
+  thead .lit {
+    color: var(--vault);
+  }
+  td :global(.yes) {
+    margin-inline: auto;
+    color: var(--vault);
+  }
+  .price-row th,
+  .price-row td {
+    border-bottom: 0;
+    color: var(--fg);
+    font-weight: 600;
+  }
+</style>

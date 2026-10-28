@@ -1,0 +1,15 @@
+{
+  "note": "TEST KEY PAIR ONLY, made for the tests. Never the production pair; nothing sold is signed with it.",
+  "publicKey": "TdhYo33vk65zhuZk7hWKIDw3K2xppNrvFSMu019MYZ8=",
+  "privateKey": "MC4CAQAwBQYDK2VwBCIEIKZbRjQiBIJdcGAdU0yeSb4Tcn4OHL9C6Uf/Lhx0tCNK",
+  "licence": {
+    "v": 1,
+    "id": "txn_01test0000000000000000000",
+    "edition": "family",
+    "seats": 5,
+    "name": "Zoë Ångström-Test",
+    "email": "zoe@example.com",
+    "issued": "2026-10-28"
+  },
+  "key": "SR1.eyJ2IjoxLCJpZCI6InR4bl8wMXRlc3QwMDAwMDAwMDAwMDAwMDAwMDAwIiwiZWRpdGlvbiI6ImZhbWlseSIsInNlYXRzIjo1LCJuYW1lIjoiWm_DqyDDhW5nc3Ryw7ZtLVRlc3QiLCJlbWFpbCI6InpvZUBleGFtcGxlLmNvbSIsImlzc3VlZCI6IjIwMjYtMTAtMjgifQ.cbvvteKjL4AaBU_ik9a5sc6zvk-CvJw7k9B6NzSnnDpEd7HuVUZX76VsVHvihFegtb5UJVwgFS5vv4bVLnHdDg"
+}

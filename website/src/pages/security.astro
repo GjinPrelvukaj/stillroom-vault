@@ -1,0 +1,66 @@
+---
+import DocLayout from '../layouts/DocLayout.astro';
+import ThreatModel from '../components/ThreatModel.astro';
+import ArgonRing from '../components/ArgonRing.astro';
+import Icon from '../components/ui/Icon.astro';
+import { email } from '../config';
+---
+
+<DocLayout picture="page-security"
+  banner
+  doc="security"
+  title="Security Model: What It Protects Against"
+  h1="How Stillroom Vault keeps your files safe"
+  eyebrow="Security"
+  description="Stillroom Vault's threat model and the eleven rules its security rests on: what it protects against, what it doesn't, and what still shows on disk."
+  lead="What it protects against, what it doesn’t, and the eleven rules the design rests on, each with its reason. Written so a later change can’t quietly undo one."
+>
+  <Fragment slot="before">
+    <section class="section tm" aria-labelledby="tm-title">
+      <div class="container">
+        <h2 id="tm-title" class="visually-hidden">The threat model</h2>
+        <div><ThreatModel /></div>
+        <div class="status glass reveal">
+          <Icon name="shield" size={20} />
+          <p>
+            <strong>Independent review: not yet.</strong> A named, independent review of the crypto, the key files, the
+            format and this threat model is planned, and its report will be published here in full, findings and fixes
+            included. Found something first? <a href="/security-policy/">Tell us at {email.security}</a>.
+          </p>
+        </div>
+      </div>
+    </section>
+    <section class="section argon-section" aria-label="Argon2id">
+      <div class="container"><ArgonRing heading="h2" /></div>
+    </section>
+    <div class="container">
+      <p class="eyebrow lit rules-eyebrow">The rules, in full</p>
+    </div>
+  </Fragment>
+</DocLayout>
+
+<style>
+  .tm {
+    padding-top: 0;
+  }
+  .status {
+    display: flex;
+    gap: 16px;
+    margin-top: 16px;
+    padding: 16px 24px;
+    border-radius: var(--r-panel);
+    color: var(--fg-2);
+  }
+  .status :global(svg) {
+    flex: none;
+    margin-top: 4px;
+    color: var(--vault);
+  }
+  .status strong {
+    color: var(--fg);
+  }
+  .rules-eyebrow {
+    padding-top: var(--section-y);
+    margin-bottom: var(--space-6);
+  }
+</style>

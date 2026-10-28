@@ -1,0 +1,679 @@
+---
+// A page rendered from markdown: one of the repository's documents (`doc`), or one of the site's own articles (`page`,
+// from src/content/pages). A centred heading, then three columns: the numbered contents, the text under its picture,
+// and a column about the page (when it was checked, its section, more like it). A bar under the header names the
+// chapter being read (scripts/toc.ts), a violet thread runs down the text's margin (scripts/thread.ts), and faint
+// paper washes lie behind it all, placed differently on every page (ART.md, "Paper washes").
+import Base from './Base.astro';
+import Art from '../components/Art.astro';
+import BannerHero from '../components/BannerHero.astro';
+import { hasArt } from '../lib/art';
+import { getCollection, getEntry, render, type CollectionEntry } from 'astro:content';
+import { sections, type Section } from '../lib/sections';
+import { breadcrumbJsonLd } from '../lib/schema';
+import { siteHtml } from '../lib/site-html';
+import { paddleWording, site } from '../config';
+
+interface Props {
+  /** The art slot pictured beside the heading, once its image exists (ART.md). */
+  picture?: string;
+  doc?: 'security' | 'format' | 'changelog' | 'security-policy' | 'license';
+  page?: CollectionEntry<'pages'>;
+  title: string;
+  h1: string;
+  eyebrow: string;
+  description: string;
+  lead?: string;
+  /** Show h3 headings in the contents list too. */
+  deep?: boolean;
+  /** The breadcrumb trail above this page, as [name, path] pairs. */
+  trail?: [string, string][];
+  /** More structured data for this page (an FAQ). */
+  jsonLd?: Record<string, unknown>[];
+  /** The thread down the text's margin (off where the page draws its own line, like the changelog's timeline). */
+  thread?: boolean;
+  /** Open with the picture as a banner behind the heading (BannerHero). Only for a picture that is this page's alone. */
+  banner?: boolean;
+  /** A legal page: the other legal pages listed beside it, and the seller's note at its end. */
+  legal?: boolean;
+  /** When the text was last changed (pages written here rather than in markdown). */
+  updated?: string;
+  /** Not yet reviewed: says so in the page's source. */
+  draft?: boolean;
+}
+const {
+  picture, doc, page, title, h1, eyebrow, description, lead, deep = false, trail = [], jsonLd = [], thread = true,
+  banner = false, legal = false, updated, draft = false,
+} = Astro.props;
+// The text: a markdown entry (an article, or one of the repository's documents), or, for pages written here (the
+// terms, privacy and refund pages), whatever is passed in, its headings read out of it for the contents.
+const entry = page ?? (doc ? await getEntry('docs', doc) : undefined);
+if (!entry && !Astro.slots.has('default')) throw new Error(`No document "${doc}"`);
+const written = entry ? '' : await Astro.slots.render('default');
+const headings = entry
+  ? (await render(entry)).headings
+  : [...written.matchAll(/<h([23])[^>]*\sid="([^"]+)"[^>]*>([\s\S]*?)<\/h\1>/g)].map((m) => ({
+      depth: Number(m[1]),
+      slug: m[2]!,
+      // The contents list numbers chapters itself, so a heading's own "1." is left off there.
+      text: m[3]!.replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').trim().replace(/^\d+\.\s+/, ''),
+    }));
+const html = entry ? siteHtml(entry.rendered?.html ?? '') : written;
+const source = entry?.collection === 'docs' ? entry.data.source : null;
+const legalPages: [string, string][] = [
+  ['/terms/', 'Terms and EULA'],
+  ['/privacy/', 'Privacy policy'],
+  ['/refunds/', 'Refund policy'],
+  ['/license/', 'Source licence'],
+  ['/security-policy/', 'Security policy'],
+];
+const toc = headings.filter((h) => h.depth === 2 || (deep && h.depth === 3));
+// The contents list numbers its chapters (the h2s): 01, 02…
+let chapter = 0;
+const numbered = toc.map((h) => ({ ...h, n: h.depth === 2 ? String(++chapter).padStart(2, '0') : '' }));
+const path = Astro.url.pathname;
+// The right-hand column on wide screens: more from the article's section, and the app.
+const section = page?.id.split('/')[0] as Section | undefined;
+const related = section
+  ? (await getCollection('pages', (p) => p.id.startsWith(`${section}/`) && p.id !== page?.id)).sort((a, b) => a.data.order - b.data.order).slice(0, 4)
+  : [];
+const pic = picture && hasArt(picture) ? picture : undefined;
+
+// The paper washes behind the page (ART.md, "Paper washes"): one large wash behind the opening text, and one or two
+// smaller pieces lower down, each coming in from the screen's edge on alternating sides. Which ones, how high, how
+// big, mirrored or not and how turned all come from a random seeded by the page's path: the same on every build,
+// different on every page, never a pattern. Placed as classes (the CSP allows no inline styles), so they show
+// without scripts too. Kept few and faint on purpose: they are paper, not pictures.
+let seed = 2166136261;
+for (const ch of path) seed = Math.imul(seed ^ ch.charCodeAt(0), 16777619) >>> 0;
+const rand = () => {
+  seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+  return seed / 2 ** 32;
+};
+const pick = <T,>(list: T[]): T => list[Math.floor(rand() * list.length)]!;
+const n = (k: number) => Math.floor(rand() * k);
+const washes = ['wash-ink', 'wash-marble', 'wash-contours', 'wash-folds'].filter(hasArt);
+const sidePieces = ['side-ink', 'side-marble', 'side-leaf'].filter(hasArt);
+const wash = washes.length && !banner ? { name: pick(washes), cls: `wash wy${n(3)} wx${n(3)} r${n(3)}${rand() < 0.5 ? ' flip' : ''}` } : null;
+const firstSide = rand() < 0.5 ? 'l' : 'r';
+const sideCount = Math.min(sidePieces.length, html.length > 20000 ? 2 : 1);
+const sides = sidePieces
+  .sort(() => rand() - 0.5)
+  .slice(0, sideCount)
+  .map((name, i) => {
+    const side = i === 0 ? firstSide : firstSide === 'l' ? 'r' : 'l';
+    // The first somewhere from 30% to 50% of the way down, the second from 60% to 80%.
+    const y = Math.round((30 + i * 30 + rand() * 20) / 5) * 5;
+    return { name, cls: `piece ${side} y${y} s${n(3)}` };
+  });
+const article = {
+  '@context': 'https://schema.org',
+  '@type': page ? 'Article' : 'TechArticle',
+  headline: h1,
+  description,
+  url: new URL(path, site.url).href,
+  author: site.owners.map((name) => ({ '@type': 'Person', name })),
+  publisher: { '@id': `${site.url}/#maker` },
+  about: { '@id': `${site.url}/#app` },
+  inLanguage: 'en',
+};
+---
+
+<Base title={title} description={description} ogType="article" jsonLd={[article, breadcrumbJsonLd([...trail, [page ? page.data.name : title, path]]), ...jsonLd]}>
+  {draft && <Fragment set:html="<!-- Draft, not yet reviewed. Not legal advice; have it checked before relying on it. -->" />}
+  <div class="progress" aria-hidden="true"></div>
+  <div class="paper-wrap">
+  {
+    (wash || sides.length > 0) && (
+      <div class="paper" aria-hidden="true">
+        {wash && <img class={wash.cls} src={`/art/${wash.name}.webp`} width="1400" height="788" alt="" decoding="async" />}
+        {sides.map((p) => (
+          <img class={p.cls} src={`/art/${p.name}.webp`} width="562" height="1000" alt="" loading="lazy" decoding="async" />
+        ))}
+      </div>
+    )
+  }
+  {
+    banner && pic ? (
+      <BannerHero picture={pic} eyebrow={eyebrow} h1={h1} lead={lead} />
+    ) : (
+      <header class="doc-hero">
+        <div class="container-wide hero-text">
+          <p class="eyebrow lit enter enter-1">{eyebrow}</p>
+          <h1 class="page-title enter enter-2">{h1}</h1>
+          {lead && <p class="lead enter enter-3">{lead}</p>}
+        </div>
+      </header>
+    )
+  }
+  {
+    toc.length > 2 && (
+      <div class="chapter" data-chapter hidden aria-hidden="true">
+        <div class="chapter-bar">
+          <div class="container-wide">
+            <span class="chapter-n" data-chapter-n /> <span data-chapter-text />
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  <slot name="before" />
+
+  <div class="container-wide doc-grid">
+    {
+      toc.length > 2 && (
+        <nav class="toc fade-y" aria-label="On this page" data-toc>
+          <ol>
+            {numbered.map((h) => (
+              <li class:list={[`d${h.depth}`]}>
+                <a href={`#${h.slug}`}>
+                  {h.n && <span class="n">{h.n}</span>}
+                  <span class="t">{h.text}</span>
+                </a>
+              </li>
+            ))}
+          </ol>
+        </nav>
+      )
+    }
+    <div class="main-col">
+      {pic && !banner && <Art name={pic} ratio="3 / 2" eager plate sizes="(max-width: 900px) 92vw, 820px" class="cover enter enter-3" />}
+      <article class="prose" data-thread={thread ? '' : undefined}>
+        <Fragment set:html={html} />
+        <slot name="end" />
+        {
+          legal && (
+            <aside class="paddle" aria-label="Merchant of Record">
+              <p>{paddleWording}</p>
+              <p>
+                Stillroom Vault is made and owned by {site.owners.join(' and ')}, and sold by {site.seller}. Questions about
+                this page: <a href="mailto:legal@stillroomvault.com">legal@stillroomvault.com</a>.
+              </p>
+            </aside>
+          )
+        }
+      </article>
+    </div>
+    <aside class="rail" aria-label="About this page">
+      <dl class="meta">
+        {
+          updated && (
+            <div>
+              <dt>Updated</dt>
+              <dd>{updated}</dd>
+            </div>
+          )
+        }
+        {
+          page && (
+            <div>
+              <dt>Checked</dt>
+              <dd>{page.data.updated}</dd>
+            </div>
+          )
+        }
+        {
+          section && (
+            <div>
+              <dt>Section</dt>
+              <dd>
+                <a href={`/${section}/`}>{sections[section].name}</a>
+              </dd>
+            </div>
+          )
+        }
+        {
+          source && (
+            <div>
+              <dt>Source</dt>
+              <dd>
+                <code>{source}</code>, rendered at build time so it always matches
+              </dd>
+            </div>
+          )
+        }
+      </dl>
+      {
+        section && related.length > 0 && (
+          <nav class="more" aria-labelledby="more-title">
+            <p id="more-title" class="eyebrow">More in {sections[section].name}</p>
+            <ul>
+              {related.map((p) => (
+                <li>
+                  <a href={`/${p.id}/`}>{p.data.name}</a>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        )
+      }
+      {
+        legal && (
+          <nav class="more" aria-labelledby="more-title">
+            <p id="more-title" class="eyebrow">More in Legal</p>
+            <ul>
+              {legalPages
+                .filter(([href]) => href !== path)
+                .map(([href, name]) => (
+                  <li>
+                    <a href={href}>{name}</a>
+                  </li>
+                ))}
+            </ul>
+          </nav>
+        )
+      }
+    </aside>
+  </div>
+  </div>
+
+  <slot name="after" />
+</Base>
+
+<script>
+  import '../scripts/toc';
+  import '../scripts/thread';
+</script>
+
+<style>
+  .container-wide {
+    width: min(100% - 2 * var(--gutter), var(--wide));
+    margin-inline: auto;
+  }
+  .progress {
+    position: fixed;
+    inset: 0 0 auto;
+    z-index: 60;
+    height: 2px;
+    background: linear-gradient(90deg, rgb(var(--vault-rgb) / 0.4), var(--vault));
+    transform-origin: 0 50%;
+    transform: scaleX(0);
+  }
+  @supports (animation-timeline: scroll()) {
+    .progress {
+      animation: read linear both;
+      animation-timeline: scroll(root);
+    }
+  }
+  @keyframes read {
+    to {
+      transform: scaleX(1);
+    }
+  }
+  /* The heading, centred over the three columns. */
+  .doc-hero {
+    padding: var(--page-top) 0 var(--space-12);
+  }
+  .doc-hero .hero-text {
+    justify-items: center;
+    text-align: center;
+  }
+  .doc-hero .hero-text > * {
+    max-width: 900px;
+  }
+
+  /* The chapter bar: under the header, naming the chapter being read; shown once the first one is reached. */
+  /* Sticky but zero tall: the bar floats over the page instead of taking room in it, so showing or hiding it never
+     moves the content (it once shifted everything 47px, and the page jittered as you scrolled slowly past the first
+     chapter). Only on narrow screens: wider, the contents list beside the text already marks the chapter. */
+  .chapter {
+    position: sticky;
+    top: var(--header-h);
+    z-index: 40;
+    height: 0;
+    font-size: var(--text-sm);
+  }
+  .chapter-bar {
+    border-bottom: 1px solid var(--hairline);
+    background: var(--bg);
+  }
+  @media (min-width: 961px) {
+    .chapter {
+      display: none;
+    }
+  }
+  .chapter .container-wide {
+    padding-block: var(--space-3);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .chapter-n {
+    color: var(--vault);
+    font-variant-numeric: tabular-nums;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .chapter:not([hidden]) {
+      animation: chapter-in var(--appear) both;
+    }
+  }
+  @keyframes chapter-in {
+    from {
+      opacity: 0;
+    }
+  }
+
+  .doc-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-12);
+    padding-block: 0 var(--section-y);
+  }
+  .main-col {
+    display: grid;
+    align-content: start;
+    gap: var(--space-12);
+    min-width: 0;
+  }
+  /* A wide table or code block scrolls inside the text, rather than widening the column. */
+  .main-col > .prose {
+    width: 100%;
+    min-width: 0;
+  }
+  .main-col > :global(.cover) {
+    max-width: var(--readable);
+  }
+  .rail {
+    display: grid;
+    align-content: start;
+    gap: var(--space-8);
+    max-width: var(--readable);
+  }
+  @media (min-width: 961px) {
+    .doc-grid {
+      grid-template-columns: 220px minmax(0, 1fr);
+    }
+    .main-col,
+    .rail {
+      grid-column: 2;
+    }
+  }
+  @media (min-width: 1280px) {
+    .doc-grid {
+      grid-template-columns: 220px minmax(0, 1fr) 260px;
+      gap: var(--space-16);
+    }
+    .main-col {
+      justify-items: center;
+    }
+    .rail {
+      position: sticky;
+      top: calc(var(--header-h) + var(--space-16));
+      align-self: start;
+      grid-column: 3;
+      grid-row: 1;
+    }
+  }
+
+  /* The contents: numbered chapters, the one being read in full ink with its number in violet. */
+  .toc {
+    position: sticky;
+    top: calc(var(--header-h) + var(--space-16));
+    align-self: start;
+    max-height: calc(100vh - var(--header-h) - var(--space-24));
+    overflow: auto;
+  }
+  .toc ol {
+    display: grid;
+    gap: var(--space-1);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .toc ol::before,
+  .toc a::before {
+    display: none;
+  }
+  .toc a {
+    display: grid;
+    grid-template-columns: 28px minmax(0, 1fr);
+    padding: var(--space-2) 0;
+    color: var(--fg-quiet);
+    font-size: var(--text-sm);
+    line-height: 1.35;
+    text-decoration: none;
+    transition: color var(--hover);
+  }
+  .toc .d3 a {
+    padding-left: 28px;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .toc .n {
+    font-variant-numeric: tabular-nums;
+  }
+  .toc a:hover {
+    color: var(--fg);
+  }
+  .toc a[aria-current='location'] .n {
+    color: var(--vault);
+  }
+
+  /* About this page. */
+  .meta {
+    display: grid;
+    margin: 0;
+    font-size: var(--text-sm);
+  }
+  .meta div {
+    display: grid;
+    grid-template-columns: 88px minmax(0, 1fr);
+    gap: var(--space-3);
+    padding: var(--space-3) 0;
+    border-bottom: 1px solid var(--hairline);
+  }
+  .meta dt {
+    color: var(--fg-quiet);
+  }
+  .meta dd {
+    margin: 0;
+  }
+  .meta a {
+    color: var(--fg);
+  }
+  .meta code {
+    font-size: var(--text-xs);
+  }
+  .more ul {
+    display: grid;
+    margin: var(--space-3) 0 0;
+    padding: 0;
+    list-style: none;
+    border-top: 1px solid var(--hairline);
+  }
+  .more li a {
+    display: block;
+    padding: var(--space-3) 0;
+    border-bottom: 1px solid var(--hairline);
+    color: var(--fg);
+    font-size: var(--text-sm);
+    text-decoration: none;
+    transition: color var(--hover);
+  }
+  .more li a:hover {
+    color: var(--vault);
+  }
+  @media (max-width: 960px) {
+    .toc {
+      position: static;
+      max-height: none;
+      padding: var(--space-4);
+      border: 1px solid var(--hairline);
+      border-radius: var(--r-card);
+    }
+  }
+
+  /* The thread, in the margin left of the text (scripts/thread.ts; after Skiper UI's #19), where there is one. */
+  .prose {
+    position: relative;
+  }
+  .prose :global(.thread) {
+    display: none;
+  }
+  @media (min-width: 961px) {
+    .prose :global(.thread) {
+      position: absolute;
+      left: -32px;
+      display: block;
+      margin: 0;
+      overflow: visible;
+      pointer-events: none;
+    }
+  }
+  .prose :global(:is(.thread-track, .thread-line)) {
+    fill: none;
+    stroke-width: 1.5;
+    stroke-linecap: round;
+  }
+  .prose :global(.thread-track) {
+    stroke: var(--hairline);
+  }
+  .prose :global(.thread-line) {
+    stroke: var(--vault);
+    stroke-dasharray: 1;
+  }
+  .prose :global(.thread-node) {
+    fill: var(--bg);
+    stroke: var(--hairline);
+    stroke-width: 1.5;
+    transition:
+      fill var(--change),
+      stroke var(--change);
+  }
+  .prose :global(.thread-node.on) {
+    fill: var(--vault);
+    stroke: var(--vault);
+  }
+
+  /* The paper washes (see the frontmatter): a layer behind the heading and the text, clipped to the page's width.
+     The images are already ink over clear (scripts/add-art.py --wash), so they lie on the paper with no box; these
+     opacities are the one knob for how much they show. Every edge fades out, so none can end in a line. */
+  .paper-wrap {
+    position: relative;
+    isolation: isolate;
+  }
+  .paper {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    overflow: hidden;
+    pointer-events: none;
+  }
+  .paper img {
+    position: absolute;
+    max-width: none;
+    height: auto;
+    user-select: none;
+  }
+  .wash {
+    width: min(1500px, 115vw);
+    opacity: 0.5;
+    mask-image: radial-gradient(closest-side, #000 55%, transparent);
+  }
+  .wy0 {
+    top: 0;
+  }
+  .wy1 {
+    top: var(--space-16);
+  }
+  .wy2 {
+    top: var(--space-32, 128px);
+  }
+  .wx0 {
+    left: -25%;
+  }
+  .wx1 {
+    left: 50%;
+    translate: -50% 0;
+  }
+  .wx2 {
+    right: -25%;
+  }
+  .r0 {
+    rotate: -4deg;
+  }
+  .r1 {
+    rotate: 2deg;
+  }
+  .r2 {
+    rotate: 6deg;
+  }
+  .flip {
+    scale: -1 1;
+  }
+  /* The side pieces are heavy on their left edge: on the right they're mirrored, so each comes in from the screen. */
+  .piece {
+    display: none;
+    opacity: 0.7;
+    mask-image: radial-gradient(ellipse 100% 50% at 0 50%, #000 45%, transparent);
+  }
+  @media (min-width: 1100px) {
+    .piece {
+      display: block;
+    }
+  }
+  .piece.l {
+    left: 0;
+  }
+  .piece.r {
+    right: 0;
+    scale: -1 1;
+  }
+  .s0 {
+    width: clamp(220px, 20vw, 320px);
+  }
+  .s1 {
+    width: clamp(260px, 24vw, 380px);
+  }
+  .s2 {
+    width: clamp(300px, 28vw, 440px);
+  }
+  .y30 {
+    top: 30%;
+  }
+  .y35 {
+    top: 35%;
+  }
+  .y40 {
+    top: 40%;
+  }
+  .y45 {
+    top: 45%;
+  }
+  .y50 {
+    top: 50%;
+  }
+  .y55 {
+    top: 55%;
+  }
+  .y60 {
+    top: 60%;
+  }
+  .y65 {
+    top: 65%;
+  }
+  .y70 {
+    top: 70%;
+  }
+  .y75 {
+    top: 75%;
+  }
+  .y80 {
+    top: 80%;
+  }
+  @media (max-width: 760px) {
+    .wash {
+      opacity: 0.35;
+    }
+  }
+  /* The seller's note closing a legal page. */
+  .paddle {
+    display: grid;
+    gap: var(--space-2);
+    margin-top: var(--space-12);
+    padding-top: var(--space-6);
+    border-top: 1px solid var(--hairline);
+    color: var(--fg-quiet);
+    font-size: var(--text-sm);
+  }
+</style>

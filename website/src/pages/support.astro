@@ -1,0 +1,199 @@
+---
+import PageLayout from '../layouts/PageLayout.astro';
+import Faq from '../components/Faq.astro';
+import Icon from '../components/ui/Icon.astro';
+import Owners from '../components/Owners.astro';
+import { email } from '../config';
+import { faqJsonLd, homeFaq, supportFaq } from '../lib/faq';
+
+const all = [...supportFaq.flatMap((g) => g.items), ...homeFaq.filter((q) => q.id !== 'forgot')];
+---
+
+<PageLayout picture="page-support"
+  title="Support: Forgot Password, Backups, FAQ"
+  h1="Stillroom Vault support"
+  eyebrow="Support"
+  description="Forgot your Stillroom Vault password? Use the recovery key or emergency kit. Plus backups, moving to a new Mac, licences and how to reach support."
+  lead="Answers to what people ask most, starting with the one that matters most. Still stuck? Write to us; a person reads every message."
+  jsonLd={[faqJsonLd(all)]}
+>
+  <div class="support-grid">
+    <nav class="side" aria-label="Topics" data-toc>
+      <p class="eyebrow">Topics</p>
+      <ul>
+        {supportFaq.map((g) => <li><a href={`#${g.id}`}>{g.title}</a></li>)}
+        <li><a href="#general">General questions</a></li>
+        <li><a href="#contact">Contact</a></li>
+      </ul>
+    </nav>
+
+    <div class="content">
+      {
+        supportFaq.map((g, i) => (
+          <section id={g.id} class:list={['topic', { first: i === 0 }]} aria-labelledby={`${g.id}-title`}>
+            <h2 id={`${g.id}-title`} class="topic-title">{g.title}</h2>
+            {g.id === 'forgot' && (
+              <p class="warn note">
+                <strong>Nobody can open your vault without your password, recovery key or kit, not even us.</strong> There’s no
+                reset email and no master key. That’s what keeps it safe from everyone else, too.
+              </p>
+            )}
+            <Faq items={g.items} />
+          </section>
+        ))
+      }
+      <section id="general" class="topic" aria-labelledby="general-title">
+        <h2 id="general-title" class="topic-title">General questions</h2>
+        <Faq items={homeFaq.filter((q) => q.id !== 'forgot')} />
+      </section>
+
+      <section id="contact" class="topic" aria-labelledby="contact-title">
+        <h2 id="contact-title" class="topic-title">Contact</h2>
+        <div class="contacts stagger">
+          <a class="contact glass" href={`mailto:${email.support}`}>
+            <Icon name="lifebuoy" size={22} />
+            <strong>Help with the app</strong>
+            <span>{email.support}</span>
+          </a>
+          <a class="contact glass" href={`mailto:${email.security}`}>
+            <Icon name="shield" size={22} />
+            <strong>A security problem</strong>
+            <span>{email.security}</span>
+          </a>
+          <a class="contact glass" href={`mailto:${email.hello}`}>
+            <Icon name="mail" size={22} />
+            <strong>Anything else</strong>
+            <span>{email.hello}</span>
+          </a>
+          <a class="contact glass" href={`mailto:${email.legal}`}>
+            <Icon name="scale" size={22} />
+            <strong>Legal and licences</strong>
+            <span>{email.legal}</span>
+          </a>
+        </div>
+        <p class="quiet small">
+          Stillroom Vault is made by <Owners text="two people" id="owners-support" />, so replies are honest rather than instant. Never send us your password,
+          recovery key or kit pieces: we’ll never ask for them, and we don’t have your vault, so there’s nothing for us to open. Questions about an order
+          can also go to Paddle, our reseller.
+        </p>
+      </section>
+    </div>
+  </div>
+</PageLayout>
+
+<script>
+  import '../scripts/toc';
+</script>
+
+<style>
+  .support-grid {
+    display: grid;
+    grid-template-columns: 220px minmax(0, 1fr);
+    gap: var(--space-16);
+  }
+  .side {
+    position: sticky;
+    top: 92px;
+    align-self: start;
+  }
+  .side ul {
+    display: grid;
+    gap: 2px;
+    margin: 12px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  .side a {
+    display: block;
+    padding: 8px 12px 8px var(--space-4);
+    border-radius: 8px;
+    color: var(--fg-quiet);
+    font-size: var(--text-base);
+    text-decoration: none;
+  }
+  .side a:hover {
+    background: var(--glass);
+    color: var(--fg);
+  }
+  .content {
+    display: grid;
+    gap: calc(var(--section-y) * 1.5);
+  }
+  .topic {
+    display: grid;
+    gap: 16px;
+    scroll-margin-top: 92px;
+  }
+  .topic-title {
+    font-size: var(--text-3xl);
+  }
+  .warn strong {
+    color: var(--fg);
+  }
+  .contacts {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+  }
+  .contact {
+    display: grid;
+    gap: 8px;
+    padding: 24px;
+    border-radius: var(--r-panel);
+    text-decoration: none;
+    transition: border-color var(--hover);
+  }
+  .contact:hover {
+    border-color: rgb(var(--vault-rgb) / 0.35);
+  }
+  .contact :global(svg) {
+    color: var(--vault);
+  }
+  .contact span {
+    color: var(--fg-2);
+    font-size: var(--text-base);
+    overflow-wrap: anywhere;
+  }
+  .small {
+    font-size: var(--text-sm);
+  }
+  @media (max-width: 860px) {
+    .support-grid {
+      grid-template-columns: 1fr;
+    }
+    .side {
+      position: static;
+    }
+    .side ul::before {
+      display: none;
+    }
+    .side ul {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .side a {
+      padding-inline: var(--space-4);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--r-pill);
+    }
+    /* On the pills the dot sits inside the chosen one, beside its text. */
+    .side a::before {
+      position: static;
+      display: inline-block;
+      margin: -3px var(--space-2) 0 0;
+      vertical-align: middle;
+    }
+    .side a:not([aria-current])::before {
+      display: none;
+    }
+    .side a[aria-current='location'] {
+      border-color: rgb(var(--vault-rgb) / 0.35);
+    }
+  }
+  @media (max-width: 560px) {
+    .contacts {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

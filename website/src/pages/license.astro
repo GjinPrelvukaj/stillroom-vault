@@ -1,0 +1,14 @@
+---
+import DocLayout from '../layouts/DocLayout.astro';
+import { hasArt, ownArt } from '../lib/art';
+---
+
+<DocLayout legal picture={ownArt('page-legal-license', 'page-legal')}
+  banner={hasArt('page-legal-license')}
+  doc="license"
+  title="Source Licence (FSL-1.1-ALv2)"
+  h1="Stillroom Vault source licence"
+  eyebrow="Licence"
+  description="Stillroom Vault's source licence, FSL-1.1-ALv2: read, audit, build and change it for your own use. Each version becomes Apache 2.0 two years after release."
+  lead="Read it, audit it, build it and change it for your own use, but don’t sell it as a competing product. Each version becomes Apache 2.0 two years after its release. The vault reader in tools/ is MIT: anyone may use it for anything."
+/>

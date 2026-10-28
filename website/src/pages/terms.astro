@@ -1,0 +1,125 @@
+---
+import DocLayout from '../layouts/DocLayout.astro';
+import { email, site } from '../config';
+import { hasArt, ownArt } from '../lib/art';
+---
+
+<DocLayout picture={ownArt('page-legal-terms', 'page-legal')}
+  banner={hasArt('page-legal-terms')}
+  title="Terms and EULA"
+  h1="Stillroom Vault terms and licence agreement"
+  eyebrow="Legal"
+  description="The end-user licence agreement for Stillroom Vault: what a licence covers, your responsibility for your password and recovery key, and the limits of our liability."
+  lead="The short version: one licence is for one person, on all of their own Macs. Your vault is yours alone, so a forgotten password and lost recovery key can’t be undone by anyone, us included."
+  updated="26 October 2026"
+  draft
+  legal
+>
+    <h2 id="who">1. Who we are</h2>
+    <p>
+      Stillroom Vault (“Stillroom”, “the app”) is made and owned by {site.owners.join(' and ')}, and sold by {site.seller},
+      an individual based in {site.sellerCountry} (“we”, “us”). These terms are an agreement between you and us about using the app and any
+      licence key you buy. Write to <a href={`mailto:${email.legal}`}>{email.legal}</a> with any question about them.
+    </p>
+    <p>
+      Our order process is conducted by our online reseller Paddle.com. Paddle.com is the Merchant of Record for all our
+      orders. Paddle provides all customer service inquiries and handles returns. When you buy, Paddle’s
+      <a href="https://www.paddle.com/legal/checkout-buyer-terms" target="_blank" rel="noopener noreferrer">buyer terms</a> apply to the purchase itself. For help with
+      the app, write to <a href={`mailto:${email.support}`}>{email.support}</a>.
+    </p>
+
+    <h2 id="licence">2. Your licence</h2>
+    <ul>
+      <li><strong>Free:</strong> you may use the app, with every feature, for up to 25 items, for as long as you like.</li>
+      <li>
+        <strong>Stillroom Vault ($39):</strong> one person may use the app without the item limit on every Mac they own
+        or personally use.
+      </li>
+      <li><strong>Family ($129):</strong> up to five people you choose, each on every Mac they own or personally use.</li>
+      <li><strong>Teams:</strong> the number of people agreed with us in writing.</li>
+    </ul>
+    <p>
+      A licence includes every 1.x update. A later major version (2.0) may be a paid upgrade; the version you bought keeps
+      working. We don’t promise to make updates, but every update to 1.x is included when we do.
+    </p>
+    <p>
+      Please don’t share, publish or resell your licence key. It’s checked on your Mac, offline, and carries the email
+      address you bought with.
+    </p>
+    <p>
+      The app’s source code is separately available under the <a href="/license/">Functional Source License 1.1
+      (FSL-1.1-ALv2)</a>, and the vault reader in <code>tools/</code> under the MIT licence. Those licences govern the
+      source code; these terms govern copies of the app we distribute and the licence keys we sell.
+    </p>
+
+    <h2 id="your-vault">3. Your vault is your responsibility</h2>
+    <p>
+      Stillroom has no server and no account, and we never have a copy of your files, your password, your recovery key
+      or your emergency kit. That’s the point of it, and it means:
+    </p>
+    <ul>
+      <li>
+        <strong>If you forget your password and lose your recovery key and enough kit pieces, nobody can open your vault,
+        not even us.</strong> We can’t reset it, recover it or get your files back.
+      </li>
+      <li>
+        Keeping backups is up to you. The app makes encrypted backups and can export everything as ordinary files; please
+        use them.
+      </li>
+      <li>
+        The app has limits, documented plainly in our <a href="/security/">security rules</a>: for example, it doesn’t
+        protect against a weak password or against malware with administrator rights while the vault is open, and the
+        decoy is protection against thieves and abusers, not police.
+      </li>
+    </ul>
+
+    <h2 id="warranty">4. No warranty</h2>
+    <p>
+      We build Stillroom carefully and test it, but we provide it “as is” and “as available”, without warranties of any
+      kind, to the fullest extent the law allows. We don’t promise that it will be free of errors, or that it will keep
+      your data safe from every risk.
+    </p>
+
+    <h2 id="liability">5. Limits of our liability</h2>
+    <p>To the fullest extent the law allows:</p>
+    <ul>
+      <li>
+        we are not liable for lost or damaged data, including data you can’t open because a password, recovery key or kit
+        was forgotten or lost;
+      </li>
+      <li>we are not liable for indirect, incidental, special or consequential losses, or lost profits;</li>
+      <li>our total liability to you for anything to do with Stillroom is limited to what you paid for your licence.</li>
+    </ul>
+    <p>
+      Nothing in these terms limits liability that can’t be limited by law, such as for fraud, or takes away rights you
+      have as a consumer under the law of the country you live in.
+    </p>
+
+    <h2 id="refunds">6. Refunds</h2>
+    <p>You can get a full refund within 14 days of buying, for any reason. See the <a href="/refunds/">refund policy</a>.</p>
+
+    <h2 id="law">7. Using it lawfully</h2>
+    <p>
+      Stillroom uses strong encryption. You’re responsible for following the laws that apply where you use it, including
+      rules about encryption and about exporting it. Don’t use or send Stillroom anywhere, or to anyone, that export or
+      sanctions laws forbid.
+    </p>
+
+    <h2 id="ending">8. Ending this agreement</h2>
+    <p>
+      If you break these terms, your licence to use Stillroom beyond the free tier ends. Opening, exporting and backing up
+      your vault always keep working, licensed or not: we never hold your files hostage.
+    </p>
+
+    <h2 id="general">9. General</h2>
+    <p>
+      These terms are governed by the laws of the Republic of Kosovo, and disputes go to the courts of Prishtina, without
+      taking away any protection the law of your own country gives you as a consumer, including the right to go to your
+      own courts. These terms and Paddle’s buyer terms are the whole agreement about Stillroom. If a court finds part of
+      them unenforceable, the rest still applies. You may not transfer your licence without our agreement in writing.
+    </p>
+    <p>
+      If we change these terms, we’ll post the new version here with its date; the terms you accepted when you bought keep
+      applying to that purchase.
+    </p>
+</DocLayout>

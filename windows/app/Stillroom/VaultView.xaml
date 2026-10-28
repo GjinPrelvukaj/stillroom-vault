@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="Stillroom.VaultView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:model="using:Stillroom.Model">
+
+    <!-- The vault, open (the Mac's VaultView). The sidebar holds the library, the kinds of file, the tags in use and
+         Settings; the pane shows the chosen one. All Files is browsed by folder. Files dropped on the window go into
+         the folder that's open. -->
+    <Grid x:Name="Root" AllowDrop="True" DragOver="OnDragOver" DragLeave="OnDragLeave" Drop="OnDrop">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="230" />
+            <ColumnDefinition Width="1" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <!-- Sidebar -->
+        <Grid Background="#06FFFFFF" Padding="12,4,12,16">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <ScrollViewer VerticalScrollBarVisibility="Hidden">
+                <StackPanel x:Name="Shelves" Spacing="2" />
+            </ScrollViewer>
+            <StackPanel x:Name="Pages" Grid.Row="1" Spacing="2" Margin="0,12,0,0" />
+            <StackPanel Grid.Row="2" Padding="10,16" Spacing="2" AutomationProperties.AccessibilityView="Raw">
+                <TextBlock Text="IN THE VAULT" FontSize="10.5" FontWeight="SemiBold" CharacterSpacing="80" Foreground="{StaticResource QuietBrush}" />
+                <TextBlock x:Name="TotalSize" FontSize="17" FontWeight="SemiBold" />
+                <TextBlock x:Name="TotalCount" FontSize="12" Foreground="{StaticResource QuietBrush}" />
+            </StackPanel>
+            <Grid Grid.Row="3" ColumnSpacing="8">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <DropDownButton x:Name="AddButton" HorizontalAlignment="Stretch" Style="{StaticResource AccentButtonStyle}" AutomationProperties.Name="Add Files">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <FontIcon Glyph="&#xE710;" FontSize="13" />
+                        <TextBlock Text="Add Files" />
+                    </StackPanel>
+                    <DropDownButton.Flyout>
+                        <MenuFlyout Placement="TopEdgeAlignedLeft">
+                            <MenuFlyoutItem Text="Files…" Click="OnAddFiles">
+                                <MenuFlyoutItem.KeyboardAccelerators>
+                                    <KeyboardAccelerator Modifiers="Control" Key="N" />
+                                </MenuFlyoutItem.KeyboardAccelerators>
+                            </MenuFlyoutItem>
+                            <MenuFlyoutItem Text="A Folder…" Click="OnAddFolder" />
+                        </MenuFlyout>
+                    </DropDownButton.Flyout>
+                </DropDownButton>
+                <Button x:Name="LockButton" Grid.Column="1" Click="OnLock" AutomationProperties.Name="Lock">
+                    <FontIcon Glyph="&#xE72E;" FontSize="14" />
+                    <Button.KeyboardAccelerators>
+                        <KeyboardAccelerator Modifiers="Control,Shift" Key="L" />
+                    </Button.KeyboardAccelerators>
+                </Button>
+            </Grid>
+        </Grid>
+
+        <Rectangle Grid.Column="1" Fill="#0FFFFFFF" />
+
+        <!-- Pane -->
+        <Grid Grid.Column="2" Padding="28,4,28,20" RowSpacing="12">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <Grid x:Name="Header" ColumnSpacing="12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel Spacing="4" VerticalAlignment="Bottom">
+                    <TextBlock x:Name="Eyebrow" FontSize="10.5" FontWeight="SemiBold" CharacterSpacing="80" Foreground="{StaticResource QuietBrush}" />
+                    <TextBlock x:Name="Headline" FontSize="24" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                </StackPanel>
+                <TextBox x:Name="SearchBox" Grid.Column="1" Width="220" VerticalAlignment="Bottom" PlaceholderText="Search"
+                         TextChanged="OnSearch" AutomationProperties.Name="Search" />
+                <StackPanel x:Name="Actions" Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Bottom" />
+            </Grid>
+
+            <BreadcrumbBar x:Name="Crumbs" Grid.Row="1" ItemClicked="OnCrumb" Visibility="Collapsed" />
+
+            <StackPanel Grid.Row="2" Spacing="8">
+                <InfoBar x:Name="Notice" IsClosable="True" />
+                <!-- While files are open in other apps: how many, and a way to be done (each save is already sealed back in). -->
+                <InfoBar x:Name="EditingBar" IsClosable="False" Severity="Informational">
+                    <InfoBar.ActionButton>
+                        <Button Content="Done Editing" Click="OnDoneEditing" />
+                    </InfoBar.ActionButton>
+                </InfoBar>
+            </StackPanel>
+
+            <!-- After the recovery key or the kit: a new password before anything else. -->
+            <StackPanel x:Name="MustSetPassword" Grid.Row="3" Spacing="10" Padding="20" CornerRadius="12" Background="{StaticResource PanelBrush}" Visibility="Collapsed">
+                <TextBlock Text="Set a new password" FontSize="18" FontWeight="SemiBold" />
+                <TextBlock Style="{StaticResource BodyText}" TextAlignment="Left"
+                           Text="Your vault opened without its password. Pick a new password for it; the old one stops working." />
+                <TextBlock x:Name="PasswordLine" Style="{StaticResource QuietText}" TextAlignment="Left" Foreground="{StaticResource ProblemBrush}" />
+                <Button Content="Set Password…" Style="{StaticResource AccentButtonStyle}" Click="OnSetPassword" />
+            </StackPanel>
+
+            <ListView x:Name="Rows" Grid.Row="4" SelectionMode="None" IsItemClickEnabled="True" ItemClick="OnRowClick" ContextRequested="OnRowMenu"
+                      CanDragItems="True" DragItemsStarting="OnRowsDragStarting" AllowDrop="True" DragOver="OnRowsDragOver" Drop="OnRowsDrop"
+                      Background="{StaticResource PanelBrush}" CornerRadius="12" Padding="0,4">
+                <ListView.ItemContainerStyle>
+                    <Style TargetType="ListViewItem">
+                        <Setter Property="Padding" Value="14,0" />
+                        <Setter Property="MinHeight" Value="40" />
+                        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                    </Style>
+                </ListView.ItemContainerStyle>
+                <ListView.ItemTemplate>
+                    <DataTemplate x:DataType="model:Row">
+                        <Grid ColumnSpacing="12" Height="40" Background="Transparent" AutomationProperties.Name="{x:Bind Name}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="18" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <FontIcon Glyph="{x:Bind Glyph}" FontSize="15" Foreground="{x:Bind GlyphBrush}" />
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                <TextBlock Text="{x:Bind Name}" FontSize="14" TextTrimming="CharacterEllipsis" MaxWidth="420" />
+                                <ItemsControl ItemsSource="{x:Bind Tags}" VerticalAlignment="Center">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <StackPanel Orientation="Horizontal" Spacing="4" />
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="model:TagChip">
+                                            <Border Background="{x:Bind Fill}" CornerRadius="9" Padding="7,1" Height="18">
+                                                <TextBlock Text="{x:Bind Text}" Foreground="{x:Bind Ink}" FontSize="10.5" FontWeight="Medium" />
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                            <TextBlock Grid.Column="2" Text="{x:Bind Detail}" Visibility="{x:Bind DetailShown}" FontSize="12" Opacity="0.5"
+                                       VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                            <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="4" Visibility="{x:Bind VersionsShown}" Opacity="0.45" VerticalAlignment="Center"
+                                        ToolTipService.ToolTip="Earlier versions kept">
+                                <FontIcon Glyph="&#xE81C;" FontSize="12" />
+                                <TextBlock Text="{x:Bind Versions}" FontSize="12" />
+                            </StackPanel>
+                            <TextBlock Grid.Column="4" Text="{x:Bind Kind}" FontSize="12" Opacity="0.45" VerticalAlignment="Center" MaxWidth="160" TextTrimming="CharacterEllipsis" />
+                            <TextBlock Grid.Column="5" Text="{x:Bind Size}" FontSize="12" Opacity="0.45" VerticalAlignment="Center" Width="64" TextAlignment="Right" />
+                            <TextBlock Grid.Column="6" Text="{x:Bind Date}" FontSize="12" Opacity="0.45" VerticalAlignment="Center" Width="84" TextAlignment="Right" />
+                        </Grid>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+            </ListView>
+
+            <!-- Empty: a still ring, lit while files are over the window, and the one thing to do here. -->
+            <StackPanel x:Name="Empty" Grid.Row="4" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="16" Margin="0,0,0,60"
+                        Background="Transparent" ContextRequested="OnSpaceMenu">
+                <Grid Width="72" Height="72" HorizontalAlignment="Center">
+                    <Ellipse x:Name="EmptyRing" Stroke="{StaticResource VaultBrush}" StrokeThickness="2" StrokeDashArray="1,3" Opacity="0.5" />
+                    <FontIcon x:Name="EmptyGlyph" FontSize="20" Foreground="{StaticResource VaultBrush}" Opacity="0.75" />
+                </Grid>
+                <StackPanel Spacing="6">
+                    <TextBlock x:Name="EmptyTitle" Style="{StaticResource TitleText}" />
+                    <TextBlock x:Name="EmptyLine" Style="{StaticResource BodyText}" MaxWidth="340" />
+                </StackPanel>
+                <Button x:Name="EmptyAction" HorizontalAlignment="Center" Click="OnEmptyAction" />
+            </StackPanel>
+
+            <!-- A note or a secret, open in its editor; Settings and the intruder log come here too. -->
+            <ContentControl x:Name="Editor" Grid.Row="0" Grid.RowSpan="5" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" Visibility="Collapsed" />
+        </Grid>
+    </Grid>
+</UserControl>

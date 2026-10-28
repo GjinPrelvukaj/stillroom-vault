@@ -1,0 +1,69 @@
+---
+import DotRing from './ui/DotRing.astro';
+import Icon from './ui/Icon.astro';
+import { download, pricing } from '../config';
+---
+
+<section class="section cta-section" aria-labelledby="cta-title">
+  <img class="shadow" src="/art/wash-shadow.webp" width="1400" height="788" alt="" loading="lazy" decoding="async" aria-hidden="true" />
+  <div class="container">
+    <div class="cta reveal">
+      <div class="ring" aria-hidden="true">
+        <DotRing size={120} dot={4} lit={1} />
+        <img src="/app-icon-128.webp" width="64" height="64" alt="" />
+      </div>
+      <h2 id="cta-title" class="section-title rise">Try it with your own files, free for 25 items.</h2>
+      <p class="lead">Every feature is in the free version. Pay $39 once when you want more than {pricing.freeItems} items.</p>
+      <div class="buttons btn-row">
+        <a class="btn primary large" href="/download/"><Icon name="download" size={18} /> <span class="long">Download Stillroom Vault</span><span class="short">Download</span></a>
+        <a class="btn large" href="/pricing/">See pricing</a>
+      </div>
+      <p class="quiet">{download.requires}</p>
+    </div>
+  </div>
+</section>
+
+<style>
+  /* The page's last word, unboxed, close under whatever came before it. */
+  .cta-section {
+    position: relative;
+    isolation: isolate;
+    overflow: clip;
+    padding-top: 0;
+  }
+  /* A faint shadow of herbs falling in from the top corner (ART.md, "Paper washes"), behind everything. */
+  .shadow {
+    position: absolute;
+    top: 0;
+    left: -8%;
+    z-index: -1;
+    width: min(900px, 80vw);
+    max-width: none;
+    height: auto;
+    opacity: 0.5;
+    mask-image: radial-gradient(ellipse 50% 50% at 40% 45%, #000 35%, transparent);
+    pointer-events: none;
+    user-select: none;
+  }
+  .cta {
+    display: grid;
+    justify-items: center;
+    gap: 16px;
+    padding-block: var(--space-8) 0;
+    text-align: center;
+  }
+  .ring {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 120px;
+    height: 120px;
+    margin-bottom: 8px;
+  }
+  .ring img {
+    position: absolute;
+  }
+  .buttons {
+    margin-top: 8px;
+  }
+</style>

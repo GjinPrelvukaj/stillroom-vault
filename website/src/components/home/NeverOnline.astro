@@ -1,0 +1,131 @@
+---
+// Never goes online, in plain words: three short facts, and one live number from the browser's own record of what
+// this page has fetched from other sites (scripts/netpanel.ts). How the app is checked, and its one exception, are
+// on /security/, not here.
+import Icon from '../ui/Icon.astro';
+---
+
+<section class="section" id="never-online" aria-labelledby="never-title">
+  <div class="container">
+    <div class="section-head reveal">
+      <p class="eyebrow lit">Never goes online</p>
+      <h2 id="never-title" class="section-title" data-converge>Nothing leaves your Mac.</h2>
+      <p class="lead">
+        Stillroom makes no network connections, so there’s nothing of yours on a server for anyone to breach.
+        <a href="/security/">How we check</a>
+      </p>
+    </div>
+    <div class="facts quiet-cols stagger">
+      <article class="fact">
+        <Icon name="user-off" size={22} class="i-user-off" />
+        <h3 class="card-title">No account</h3>
+        <p>Nothing to sign up for. Your licence is checked on your Mac.</p>
+      </article>
+      <article class="fact">
+        <Icon name="server" size={22} class="i-server" />
+        <h3 class="card-title">No server, no sync</h3>
+        <p>Your vault is one folder on your Mac. Back it up to a disk you plug in.</p>
+      </article>
+      <article class="fact">
+        <Icon name="download" size={22} class="i-download" />
+        <h3 class="card-title">No update check</h3>
+        <p>Updates are downloads from this site, when you choose.</p>
+      </article>
+    </div>
+    <p class="live reveal" data-netpanel>
+      <span class="dot" aria-hidden="true"></span>
+      <span>
+        This page has loaded <strong class="count" data-foreign>0</strong> files from other sites since you opened it.
+        <span class="quiet">Your browser’s own count: no analytics, no cookies.</span>
+      </span>
+    </p>
+  </div>
+</section>
+
+<script>
+  import '../../scripts/netpanel';
+  import '../../scripts/converge';
+</script>
+
+<style>
+  .lead a {
+    color: var(--vault);
+    white-space: nowrap;
+  }
+  .fact :global(svg) {
+    color: var(--vault);
+  }
+  /* A small motion for each icon while its fact is hovered (after Skiper UI's 99 Animated icons): the slash redraws,
+     the server's lights blink, the arrow dips. Still with reduced motion. */
+  @media (prefers-reduced-motion: no-preference) {
+    .fact :global(svg *) {
+      transition: transform var(--bounce);
+    }
+    .fact:hover :global(.i-user-off path:last-child) {
+      animation: icon-draw 420ms var(--spring-change) both;
+    }
+    .fact:hover :global(.i-server path) {
+      animation: icon-blink 700ms steps(1) 2;
+    }
+    .fact:hover :global(.i-download path) {
+      transform: translateY(2px);
+    }
+  }
+  @keyframes icon-draw {
+    from {
+      stroke-dasharray: 26;
+      stroke-dashoffset: 26;
+    }
+    to {
+      stroke-dasharray: 26;
+      stroke-dashoffset: 0;
+    }
+  }
+  @keyframes icon-blink {
+    50% {
+      opacity: 0;
+    }
+  }
+  .live {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-3);
+    margin-top: var(--space-12);
+    padding: var(--space-6) var(--space-8);
+    border-radius: var(--r-panel);
+    background: var(--bg-raised);
+    font-size: var(--text-lg);
+  }
+  .live .quiet {
+    display: block;
+    margin-top: var(--space-1);
+    font-size: var(--text-sm);
+  }
+  .count {
+    color: var(--green);
+    font-family: var(--font-mono);
+  }
+  .dot {
+    flex: none;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--green);
+    translate: 0 -2px;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .dot {
+      animation: pulse 2s ease-in-out infinite;
+    }
+  }
+  @keyframes pulse {
+    50% {
+      opacity: 0.35;
+    }
+  }
+  @media (max-width: 900px) {
+    .facts {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

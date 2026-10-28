@@ -1,0 +1,3 @@
+# The vault the Mac app wrote, and the files it was made from, byte for byte. Without this, git on Windows (with
+# core.autocrlf) turns LF into CRLF in any file it guesses is text, which corrupts sealed files and the originals.
+* binary

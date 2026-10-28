@@ -1,0 +1,65 @@
+---
+import Base from '../layouts/Base.astro';
+import DotRing from '../components/ui/DotRing.astro';
+import Icon from '../components/ui/Icon.astro';
+import Art from '../components/Art.astro';
+import { hasArt } from '../lib/art';
+
+const pic = hasArt('page-404');
+---
+
+<Base title="Not Found" description="This page doesn’t exist. Stillroom Vault keeps everything else where you left it.">
+  <section class="nf container">
+    {
+      pic ? (
+        <Art name="page-404" ratio="3 / 2" eager plate class="nf-picture" />
+      ) : (
+        <div class="ring" aria-hidden="true">
+          <DotRing size={120} dot={4} lit={0.25} />
+          <Icon name="search" size={30} />
+        </div>
+      )
+    }
+    <p class="eyebrow lit">404</p>
+    <h1 class="title">Nothing called that.</h1>
+    <p class="lead">This page doesn’t exist, or it moved. Try one of these:</p>
+    <div class="links btn-row">
+      <a class="btn primary" href="/">Home</a>
+      <a class="btn" href="/features/">Features</a>
+      <a class="btn" href="/security/">Security</a>
+      <a class="btn" href="/support/">Support</a>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .nf {
+    display: grid;
+    justify-items: center;
+    gap: 16px;
+    padding: var(--space-24) 0 var(--space-12);
+    text-align: center;
+  }
+  .ring {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 120px;
+    height: 120px;
+    color: rgb(var(--vault-rgb) / 0.8);
+  }
+  .ring :global(svg:last-child) {
+    position: absolute;
+  }
+  .nf :global(.nf-picture) {
+    width: min(100%, 360px);
+  }
+  .title {
+    font-family: var(--font-serif);
+    font-size: var(--text-page);
+    font-weight: 500;
+  }
+  .links {
+    margin-top: 8px;
+  }
+</style>

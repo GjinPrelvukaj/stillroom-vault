@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Application
+    x:Class="Stillroom.App"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    RequestedTheme="Dark">
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
+            </ResourceDictionary.MergedDictionaries>
+
+            <!-- The Mac's design kit, as far as WinUI goes: Stillroom's violet (Color.vault, #B08CFF) for the accent,
+                 on black glass. -->
+            <Color x:Key="SystemAccentColor">#B08CFF</Color>
+            <Color x:Key="SystemAccentColorLight1">#C0A3FF</Color>
+            <Color x:Key="SystemAccentColorLight2">#D0BAFF</Color>
+            <Color x:Key="SystemAccentColorLight3">#E0D1FF</Color>
+            <Color x:Key="SystemAccentColorDark1">#9A73F0</Color>
+            <Color x:Key="SystemAccentColorDark2">#845BDB</Color>
+            <Color x:Key="SystemAccentColorDark3">#6E44C4</Color>
+            <SolidColorBrush x:Key="VaultBrush" Color="#B08CFF" />
+            <SolidColorBrush x:Key="GlassBrush" Color="#D9050508" />
+            <SolidColorBrush x:Key="PanelBrush" Color="#14FFFFFF" />
+            <SolidColorBrush x:Key="QuietBrush" Color="#80FFFFFF" />
+            <SolidColorBrush x:Key="ProblemBrush" Color="#D9FF6B6B" />
+
+            <Style x:Key="TitleText" TargetType="TextBlock">
+                <Setter Property="FontSize" Value="24" />
+                <Setter Property="FontWeight" Value="SemiBold" />
+                <Setter Property="TextAlignment" Value="Center" />
+            </Style>
+            <Style x:Key="BodyText" TargetType="TextBlock">
+                <Setter Property="FontSize" Value="14" />
+                <Setter Property="Foreground" Value="{StaticResource QuietBrush}" />
+                <Setter Property="TextWrapping" Value="Wrap" />
+                <Setter Property="TextAlignment" Value="Center" />
+            </Style>
+            <Style x:Key="QuietText" TargetType="TextBlock">
+                <Setter Property="FontSize" Value="12" />
+                <Setter Property="Foreground" Value="{StaticResource QuietBrush}" />
+                <Setter Property="TextWrapping" Value="Wrap" />
+                <Setter Property="TextAlignment" Value="Center" />
+            </Style>
+            <!-- The Mac's .quiet buttons: words only, no box. -->
+            <Style x:Key="QuietButton" TargetType="HyperlinkButton">
+                <Setter Property="Foreground" Value="{StaticResource QuietBrush}" />
+                <Setter Property="FontSize" Value="13" />
+            </Style>
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>

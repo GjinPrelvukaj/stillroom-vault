@@ -1,0 +1,892 @@
+@import './tokens.css';
+@import './prose.css';
+
+/* ---------- Base ---------- */
+[hidden] {
+  display: none !important;
+}
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  background: var(--bg);
+  scroll-padding-top: 96px;
+}
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--fg);
+  font: 400 var(--text-base) / 1.6 var(--font);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  overflow-x: clip;
+}
+img,
+svg,
+video {
+  display: block;
+  max-width: 100%;
+}
+figure {
+  margin: 0;
+}
+img {
+  height: auto;
+}
+h1,
+h2,
+h3,
+h4 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 600;
+  line-height: 1.12;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+/* Titles are set in the serif, one face throughout; small headings (h3, h4) stay in the sans as labels. */
+h1,
+h2 {
+  font-family: var(--font-serif);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+p {
+  margin: 0;
+  text-wrap: pretty;
+}
+a {
+  color: inherit;
+}
+code,
+kbd,
+pre,
+samp {
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+}
+kbd {
+  display: inline-block;
+  min-width: 1.6em;
+  padding: 0 0.35em;
+  border: 1px solid var(--hairline);
+  border-radius: 6px;
+  background: var(--glass);
+  text-align: center;
+  font-size: 0.85em;
+}
+::selection {
+  background: rgb(var(--vault-rgb) / 0.22);
+  color: var(--fg);
+}
+
+/* Focus: violet and always visible from the keyboard. */
+:focus-visible {
+  outline: 2px solid var(--vault);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
+.skip-link {
+  position: absolute;
+  left: 12px;
+  top: -60px;
+  z-index: 100;
+  padding: 12px 16px;
+  border-radius: var(--r-pill);
+  background: #1a1426;
+  color: #fff;
+  text-decoration: none;
+  transition: top var(--hover);
+}
+.skip-link:focus {
+  top: 12px;
+}
+
+/* Keeps a short token whole: a key chord, "SHA-256", "Apple silicon". */
+.nowrap {
+  white-space: nowrap;
+}
+
+.visually-hidden {
+  position: absolute !important;
+  /* Pinned to its box's start: left where it stood, one inside a sideways-scrolling table escaped the table's
+     clipping and widened the page on phones. */
+  inset-inline-start: 0;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* In-page links ("On this page", topic lists) glide to their section; reduced motion jumps. */
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+/* Film grain: a static, same-origin texture at very low strength over everything, so the near-black gradients
+   don't band. It never moves. Remade with: python3 (Pillow), 160×160 random black/white pixels, random alpha. */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  background: url('/noise.png');
+  opacity: 0.0075;
+  pointer-events: none;
+}
+
+/* Rolling numbers (src/scripts/micro.ts): each digit a column of 0-9 moved into place. */
+.roll {
+  display: inline-flex;
+  height: 1em;
+  line-height: 1;
+  overflow: hidden;
+  vertical-align: -0.08em;
+}
+.roll-col {
+  display: inline-block;
+  height: 1em;
+  overflow: hidden;
+}
+.roll-digits {
+  display: block;
+  font-variant-numeric: tabular-nums;
+  transition: transform var(--appear);
+}
+.roll-char .roll-digits {
+  transition: none;
+}
+
+/* Star border: one point of light travels once round the outline when it comes into view, then rests at the top. */
+.star-border {
+  position: relative;
+}
+.star-border > .star {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--vault);
+  box-shadow: 0 0 var(--space-2) rgb(var(--vault-rgb) / 0.8);
+  offset-path: inset(0 round var(--r-panel));
+  offset-distance: 0%;
+  opacity: 0;
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .star-border.go > .star {
+    animation: star-round 2.4s cubic-bezier(0.65, 0, 0.35, 1) forwards;
+  }
+}
+@keyframes star-round {
+  0% {
+    offset-distance: 0%;
+    opacity: 0;
+  }
+  8% {
+    opacity: 1;
+  }
+  92% {
+    opacity: 1;
+  }
+  100% {
+    offset-distance: 100%;
+    opacity: 0;
+  }
+}
+
+/* ---------- Layout ---------- */
+.container {
+  width: min(100% - 2 * var(--gutter), var(--wide));
+  margin-inline: auto;
+}
+.container-narrow {
+  width: min(100% - 2 * var(--gutter), var(--readable));
+  margin-inline: auto;
+}
+.section {
+  position: relative;
+  padding-block: var(--section-y);
+}
+/* Parts of one page that follow each other inside a section keep the same rhythm as sections. */
+.section-part + .section-part {
+  margin-top: calc(var(--section-y) * 2);
+}
+.section-head {
+  display: grid;
+  gap: var(--space-4);
+  max-width: 760px;
+  margin-bottom: var(--head-gap);
+}
+.section-head.center {
+  margin-inline: auto;
+  text-align: center;
+  justify-items: center;
+}
+/* Titles are set in the serif (the system's own); body and interface text in the sans. */
+.section-title,
+.page-title {
+  font-family: var(--font-serif);
+  font-weight: 500;
+  letter-spacing: -0.015em;
+}
+.section-title {
+  font-size: var(--text-title);
+  line-height: 1.08;
+}
+.lead {
+  font-size: var(--text-lead);
+  color: var(--fg-2);
+  line-height: 1.55;
+}
+.quiet {
+  color: var(--fg-quiet);
+  font-size: var(--text-quiet);
+}
+/* One style per heading job, used everywhere. */
+.card-title {
+  font-size: var(--text-card);
+  line-height: 1.3;
+}
+.page-title {
+  font-size: var(--text-page);
+  line-height: 1.04;
+}
+/* A small label above a heading, in sentence case. */
+.eyebrow {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--fg-eyebrow);
+}
+.eyebrow.lit {
+  color: var(--vault);
+}
+main p a,
+main li a {
+  color: var(--vault);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+}
+/* Text links, in running text and the footer's lists: a faint line at rest; on hover or focus a full line draws in
+   from the left, and runs out to the right when you leave (after Skiper UI's CssLink, 40). Drawn as a background,
+   not a pseudo-element, so a link that wraps draws along each of its lines in turn. Buttons, chips and links holding
+   a card's parts (anything but code or emphasis) are left alone. A list of links sets --link-rest: transparent.
+   Reduced motion: the line is simply there. */
+:is(main :is(p, li), .prose, .a, .site-footer) a:not([class]):not(:has(> :not(code, strong, em))) {
+  text-decoration: none;
+  background:
+    linear-gradient(currentColor, currentColor) right bottom / 0 1px no-repeat,
+    linear-gradient(var(--link-rest, color-mix(in srgb, currentColor 40%, transparent)), var(--link-rest, color-mix(in srgb, currentColor 40%, transparent))) left bottom / 100% 1px no-repeat;
+  transition:
+    background-size var(--change),
+    color var(--hover);
+}
+:is(main :is(p, li), .prose, .a, .site-footer) a:not([class]):not(:has(> :not(code, strong, em))):is(:hover, :focus-visible) {
+  background-position: left bottom, left bottom;
+  background-size: 100% 1px, 100% 1px;
+}
+.accent {
+  color: var(--vault);
+}
+.nowrap {
+  white-space: nowrap;
+}
+.mono {
+  font-family: var(--font-mono);
+}
+
+/* Sideways scrollers (wide tables, the tab track) fade at the edge that has more, so it's clear they scroll. Driven
+   by the element's own scroll position: no script, and nothing at all when it doesn't overflow. */
+@property --fade-l {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+@property --fade-r {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+@supports (animation-timeline: scroll()) {
+  .table-wrap,
+  .prose table,
+  .prose pre,
+  .segments {
+    mask-image: linear-gradient(90deg, transparent, #000 var(--fade-l), #000 calc(100% - var(--fade-r)), transparent);
+    animation: scroll-edges linear both;
+    animation-timeline: scroll(self inline);
+  }
+}
+@keyframes scroll-edges {
+  from {
+    --fade-l: 0px;
+    --fade-r: var(--space-12);
+  }
+  10% {
+    --fade-l: var(--space-12);
+  }
+  90% {
+    --fade-r: var(--space-12);
+  }
+  to {
+    --fade-l: var(--space-12);
+    --fade-r: 0px;
+  }
+}
+
+/* The same for boxes that scroll up and down (a page's contents list, the seal demo's bytes), top and bottom
+   (after Skiper UI's scroll with fade). */
+@property --fade-t {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+@property --fade-b {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+@supports (animation-timeline: scroll()) {
+  .fade-y {
+    mask-image: linear-gradient(transparent, #000 var(--fade-t), #000 calc(100% - var(--fade-b)), transparent);
+    animation: scroll-ends linear both;
+    animation-timeline: scroll(self block);
+  }
+}
+@keyframes scroll-ends {
+  from {
+    --fade-t: 0px;
+    --fade-b: var(--space-10);
+  }
+  10% {
+    --fade-t: var(--space-10);
+  }
+  90% {
+    --fade-b: var(--space-10);
+  }
+  to {
+    --fade-t: var(--space-10);
+    --fade-b: 0px;
+  }
+}
+
+/* App illustrations light up as they arrive, like the app's window when it comes to the front. Text never dims. */
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    .app-window,
+    .lights-up {
+      animation: lights-up linear both;
+      animation-timeline: view();
+      animation-range: entry 10% cover 35%;
+    }
+  }
+}
+@keyframes lights-up {
+  from {
+    filter: brightness(0.4) saturate(0.5);
+  }
+}
+
+/* Quiet columns: a few short points side by side, divided by hairlines rather than boxed, in the articles' calm
+   style. On phones they stack, a hairline between each. */
+.quiet-cols {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0 var(--space-12);
+  border-top: 1px solid var(--divider);
+}
+.quiet-cols > * {
+  display: grid;
+  align-content: start;
+  gap: var(--space-3);
+  padding-top: var(--space-8);
+}
+.quiet-cols :is(p) {
+  color: var(--fg-2);
+}
+.quiet-cols :is(svg) {
+  color: var(--vault);
+}
+@media (max-width: 860px) {
+  .quiet-cols {
+    grid-template-columns: minmax(0, 1fr);
+    border-top: 0;
+  }
+  .quiet-cols > * {
+    padding-block: var(--space-6);
+    border-top: 1px solid var(--divider);
+  }
+}
+
+/* Contents lists ([data-toc]): a violet dot beside the section being read, set by src/scripts/toc.ts. Links keep
+   room for it on their left; --dot-x places it in that room. */
+[data-toc] a {
+  position: relative;
+}
+/* The list's track: a hairline the dot rides on. */
+[data-toc] :is(ol, ul) {
+  position: relative;
+}
+[data-toc] :is(ol, ul)::before {
+  content: '';
+  position: absolute;
+  top: var(--space-2);
+  bottom: var(--space-2);
+  left: calc(var(--space-1) + 3px);
+  width: 1px;
+  background: var(--hairline);
+}
+[data-toc] a::before {
+  content: '';
+  position: absolute;
+  left: var(--dot-x, var(--space-1));
+  top: calc(var(--space-2) + 0.5lh); /* the middle of the first line, below the link's 8px top padding */
+  width: 6px;
+  height: 6px;
+  margin-top: -3px;
+  border-radius: 50%;
+  background: var(--vault);
+  opacity: 0;
+  transition: opacity var(--change); /* a fade, no movement, so reduced motion keeps it too */
+}
+[data-toc] a[aria-current='location'] {
+  color: var(--fg);
+}
+[data-toc] a[aria-current='location']::before {
+  opacity: 1;
+}
+
+/* ---------- Glass ---------- */
+.glass {
+  position: relative;
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--r-card);
+}
+/* A glass panel on an .ink surface is the dark instrument itself: solid near-black on the paper page. */
+.glass.ink {
+  background: #0d0c11;
+  border-color: rgb(255 255 255 / 0.08);
+  box-shadow: 0 30px 60px -30px rgb(22 21 26 / 0.45);
+}
+.glass.panel {
+  border-radius: var(--r-panel);
+}
+/* The card: raised paper with a hairline round it (on an .ink surface: black, lit along its bottom edge). */
+.card {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background: var(--bg-raised);
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-panel);
+}
+/* ---------- Buttons: capsules ---------- */
+.btn,
+main p a.btn {
+  --fill: var(--secondary-fill);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: var(--control);
+  padding: 0 16px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-pill);
+  background: var(--fill);
+  color: var(--fg);
+  font: 400 var(--text-base) / 1 var(--font);
+  text-decoration: none !important;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    transform var(--hover),
+    filter var(--hover),
+    background-color var(--hover),
+    opacity var(--hover);
+}
+.btn:hover {
+  background-color: color-mix(in srgb, var(--fill), var(--fg) 8%);
+  transform: scale(1.03);
+}
+.btn:active {
+  opacity: 0.7;
+  transform: scale(0.98);
+}
+.btn.primary {
+  --fill: var(--primary-fill);
+  border-color: var(--primary-fill);
+  color: var(--on-primary);
+  font-weight: 500;
+  padding-inline: 24px;
+}
+.btn.large {
+  min-height: 48px;
+  padding-inline: var(--space-6);
+}
+/* A pair (or a few) of buttons: a row on wide screens, equal columns on phones, two to a row. On phones a button
+   shows its .short label instead of its .long one. */
+.btn-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-3);
+}
+.btn .short {
+  display: none;
+}
+@media (max-width: 560px) {
+  .btn-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-2);
+    width: 100%;
+  }
+  .btn-row .btn {
+    padding-inline: var(--space-3);
+    white-space: nowrap;
+  }
+  .btn .long {
+    display: none;
+  }
+  .btn .short {
+    display: inline;
+  }
+}
+.btn.quiet {
+  border-color: transparent;
+  background: transparent;
+  color: var(--fg-quiet);
+  padding-inline: 8px;
+}
+.btn.quiet:hover {
+  color: var(--fg);
+  filter: none;
+}
+.btn[disabled],
+.btn[aria-disabled='true'] {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+  filter: none;
+}
+.btn svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+
+/* ---------- Fields ---------- */
+.field {
+  display: block;
+  width: 100%;
+  min-height: 40px;
+  padding: 12px 12px;
+  border: 1px solid var(--field-border);
+  border-radius: var(--r-field);
+  background: var(--field);
+  color: var(--fg);
+  font: 400 1rem / 1.5 var(--font);
+  transition:
+    background-color var(--hover),
+    border-color var(--hover);
+}
+.field::placeholder {
+  color: var(--fg-quiet);
+}
+.field:focus {
+  outline: none;
+  background: var(--field-focus);
+  border-color: var(--field-border-focus);
+}
+.field:focus-visible {
+  outline: 2px solid var(--vault);
+  outline-offset: 2px;
+}
+textarea.field {
+  resize: vertical;
+}
+
+/* ---------- Segments: a capsule track with a lit pill that slides ---------- */
+.segments {
+  position: relative;
+  display: inline-flex;
+  gap: 2px;
+  padding: 4px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-pill);
+  background: var(--field);
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.segments::-webkit-scrollbar {
+  display: none;
+}
+.segments .pill {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  left: 0;
+  width: 0;
+  border-radius: var(--r-pill);
+  background: var(--primary-fill);
+  transition:
+    transform var(--change),
+    width var(--change);
+  pointer-events: none;
+}
+.segments button {
+  position: relative;
+  z-index: 1;
+  min-height: 32px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: transparent;
+  color: var(--fg-quiet);
+  font: 400 var(--text-base) / 1 var(--font);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color var(--hover);
+}
+.segments button:hover {
+  color: var(--fg);
+}
+.segments button[aria-selected='true'],
+.segments button[aria-checked='true'] {
+  color: var(--on-primary);
+  font-weight: 500;
+}
+@media (max-width: 480px) {
+  .segments button {
+    padding: 0 12px;
+    font-size: var(--text-sm);
+  }
+}
+/* Without scripts (or before the pill is measured) the chosen one lights itself. */
+.segments:not(.measured) button[aria-selected='true'],
+.segments:not(.measured) button[aria-checked='true'] {
+  background: var(--primary-fill);
+}
+
+/* ---------- Bits ---------- */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--r-pill);
+  background: var(--glass);
+  color: var(--fg-2);
+  font-size: var(--text-sm);
+  white-space: nowrap;
+}
+.chip svg {
+  width: 14px;
+  height: 14px;
+  color: var(--vault);
+}
+.tick-list {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.tick-list li {
+  position: relative;
+  padding-left: 24px;
+  color: var(--fg-2);
+}
+.tick-list li::before {
+  content: '';
+  position: absolute;
+  left: 2px;
+  top: 0.45em;
+  width: 12px;
+  height: 7px;
+  border-left: 2px solid var(--vault);
+  border-bottom: 2px solid var(--vault);
+  transform: rotate(-45deg);
+}
+.cross-list li::before {
+  width: 12px;
+  height: 2px;
+  top: 0.75em;
+  border: 0;
+  background: var(--orange);
+  transform: none;
+}
+.note {
+  padding: 16px 16px;
+  border: 1px solid rgb(var(--vault-rgb) / 0.22);
+  border-radius: var(--r-card);
+  background: rgb(var(--vault-rgb) / 0.06);
+  color: var(--fg-2);
+  font-size: var(--text-base);
+}
+
+/* ---------- Arrivals ---------- */
+/* Every section arrives: fades in while rising 12px, staggered. Scroll-driven where the browser can (no JS),
+   otherwise scripts/motion.ts does it with GSAP. Reduced motion: no movement at all. */
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    .reveal,
+    .stagger > * {
+      animation: arrive linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 55%;
+    }
+    .stagger > :nth-child(2) {
+      animation-range: entry 6% entry 61%;
+    }
+    .stagger > :nth-child(3) {
+      animation-range: entry 12% entry 67%;
+    }
+    .stagger > :nth-child(4) {
+      animation-range: entry 18% entry 73%;
+    }
+    .stagger > :nth-child(5) {
+      animation-range: entry 24% entry 79%;
+    }
+    .stagger > :nth-child(n + 6) {
+      animation-range: entry 30% entry 85%;
+    }
+  }
+}
+@keyframes arrive {
+  from {
+    opacity: 0;
+    transform: translateY(24px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Page-load entrance for the first screen (CSS, so it needs no script). */
+@media (prefers-reduced-motion: no-preference) {
+  .enter {
+    animation: enter 700ms var(--spring-appear) both;
+  }
+  .enter-1 {
+    animation-delay: 60ms;
+  }
+  .enter-2 {
+    animation-delay: 120ms;
+  }
+  .enter-3 {
+    animation-delay: 180ms;
+  }
+  .enter-4 {
+    animation-delay: 240ms;
+  }
+  .enter-5 {
+    animation-delay: 300ms;
+  }
+}
+/* The page settling into place: a 6px rise out of a 2px blur, never a show. */
+@keyframes enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+    filter: blur(2px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
+
+/* Page to page: the browser's own view transitions (no router script), with the app's appear spring. */
+@media (prefers-reduced-motion: no-preference) {
+  @view-transition {
+    navigation: auto;
+  }
+  ::view-transition-old(root) {
+    animation: 220ms ease-out both vt-out;
+  }
+  ::view-transition-new(root) {
+    animation: var(--spring-appear-dur) var(--spring-appear) both vt-in;
+  }
+}
+@keyframes vt-out {
+  to {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+@keyframes vt-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+.site-header {
+  view-transition-name: site-header;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* A page heading's text, and the picture beside it once its image exists (the layouts' `picture`). */
+.hero-text {
+  display: grid;
+  gap: var(--space-4);
+}
+.with-picture > :is(.container, .container-wide) {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 440px);
+  gap: var(--space-8) var(--space-16);
+  align-items: center;
+}
+@media (max-width: 899px) {
+  .with-picture > :is(.container, .container-wide) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .hero-picture {
+    max-width: 400px;
+  }
+}
+
+/* The herb repeat (ART.md, "Paper washes"), faintly behind a page's heading: only on the download page. It sits
+   behind the words, away from the heading's picture (whose own paper would show as a box over it), and fades out on
+   every side, so it reads as the paper's own pattern rather than a band. */
+.herb-band {
+  position: relative;
+  isolation: isolate;
+}
+.herb-band::before {
+  content: '';
+  position: absolute;
+  inset: calc(-1 * var(--page-top)) 0 0;
+  z-index: -1;
+  background: url('/art/pattern-herbs.webp') 0 0 / 440px;
+  opacity: 0.4;
+  mask-image: radial-gradient(ellipse 45% 75% at 28% 40%, #000 25%, transparent 80%);
+  pointer-events: none;
+}

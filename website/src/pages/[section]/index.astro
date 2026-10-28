@@ -1,0 +1,33 @@
+---
+// A hub for each article section (/compare/, /guides/, /moving-from/, /learn/, /for/): every page in it, in order.
+import { getCollection } from 'astro:content';
+import PageLayout from '../../layouts/PageLayout.astro';
+import ArticleList from '../../components/ArticleList.astro';
+import { hubSections, sectionArt, sections, type Section } from '../../lib/sections';
+import { site } from '../../config';
+
+export function getStaticPaths() {
+  return hubSections.map((section) => ({ params: { section } }));
+}
+
+const section = Astro.params.section as Section;
+const s = sections[section];
+const pages = (await getCollection('pages', (p) => p.id.startsWith(`${section}/`))).sort(
+  (a, b) => a.data.order - b.data.order || a.data.name.localeCompare(b.data.name),
+);
+const list = {
+  '@context': 'https://schema.org',
+  '@type': 'ItemList',
+  name: s.h1,
+  itemListElement: pages.map((p, i) => ({
+    '@type': 'ListItem',
+    position: i + 1,
+    url: new URL(`/${p.id}/`, site.url).href,
+    name: p.data.name,
+  })),
+};
+---
+
+<PageLayout art={sectionArt[section]} picture={`page-${section}`} banner title={s.title} h1={s.h1} eyebrow={s.eyebrow} description={s.description} lead={s.lead} jsonLd={[list]}>
+  <ArticleList items={pages.map((p) => ({ href: `/${p.id}/`, name: p.data.name, description: p.data.description }))} />
+</PageLayout>

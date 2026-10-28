@@ -1,0 +1,261 @@
+---
+import Base from '../layouts/Base.astro';
+import DownloadCta from '../components/DownloadCta.astro';
+import ArticleList from '../components/ArticleList.astro';
+import Art from '../components/Art.astro';
+import BannerHero from '../components/BannerHero.astro';
+import { readmeFeatures } from '../lib/readme';
+import { breadcrumbJsonLd, softwareJsonLd } from '../lib/schema';
+import { getCollection } from 'astro:content';
+
+const groups = readmeFeatures();
+const look: Record<string, { lead: string }> = {
+  'keep-anything': {
+    lead: 'Files of every kind, notes and secrets, in one vault with folders, tags, versions and search.',
+  },
+  'view-without-unsealing-to-disk': {
+    lead: 'Look at what’s inside without a decrypted copy landing on your SSD.',
+  },
+  'ways-in': {
+    lead: 'Four ways to open your vault, each sealing its key, plus an optional lock to this Mac. Lose one way in, use another.',
+  },
+  'stay-shut': {
+    lead: 'It locks itself, hides from capture, and keeps a log of who tried.',
+  },
+  'never-locked-in': {
+    lead: 'Your files are yours: back them up, take them out, or read the vault without us.',
+  },
+};
+const fallback = { lead: '' };
+// Each feature's own page (src/content/pages/features/), listed at the foot of this one.
+const deep = (await getCollection('pages', (p) => p.id.startsWith('features/'))).sort((a, b) => a.data.order - b.data.order);
+---
+
+<Base
+  title="Features: Files, Notes, Passwords and 2FA"
+  description="Every Stillroom Vault feature: files, notes, passwords and 2FA codes, viewers that never write to disk, five ways in, a decoy, backups and a public format."
+  jsonLd={[softwareJsonLd(), breadcrumbJsonLd([['Features', '/features/']])]}
+>
+  <BannerHero
+    picture="page-features"
+    eyebrow="Features"
+    h1="Everything Stillroom Vault does, and how."
+    lead="One encrypted vault on your Mac for everything you’d lock in a drawer. Every feature is in every tier, Free included."
+  >
+    <nav class="jump enter enter-4" aria-label="Feature groups">
+      {groups.map((g) => <a class="chip" href={`#${g.slug}`}>{g.title}</a>)}
+    </nav>
+  </BannerHero>
+
+  <!-- The five groups as one stack of same-sized cards. Without scripts (or on small screens, or with reduced
+       motion) they are simply listed; scripts/feature-stack.ts pins them and slides each over the last. -->
+  <section class="section stack-section" aria-label="Features">
+    <div class="stack-stage" data-stack-stage>
+      <div class="container">
+        <div class="stack" data-stack>
+          {
+            groups.map((g, i) => {
+              const l = look[g.slug] ?? fallback;
+              return (
+                <article class="feature-card" id={g.slug} aria-labelledby={`${g.slug}-title`}>
+                  <div class="card-text">
+                    <p class="eyebrow card-count">
+                      {String(i + 1).padStart(2, '0')} / {String(groups.length).padStart(2, '0')}
+                    </p>
+                    <h2 id={`${g.slug}-title`} class="card-title">
+                      {g.title}
+                    </h2>
+                    {l.lead && <p class="card-lead">{l.lead}</p>}
+                    <ul class="items">
+                      {g.items.map((item) => (
+                        <li set:html={item} />
+                      ))}
+                    </ul>
+                    {g.slug === 'stay-shut' && (
+                      <p class="note">
+                        The decoy doesn’t fool someone who has one password and a copy of the folder: they can see the
+                        other vault holds something, though not what. It’s protection against thieves and abusers, not
+                        police. <a href="/security/#rules">Rule 2</a> says exactly what it does and doesn’t do.
+                      </p>
+                    )}
+                  </div>
+                  <div class="card-art">
+                    <Art name={`feature-${g.slug}`} ratio="3 / 2" plate sizes="(max-width: 900px) 92vw, 560px" />
+                  </div>
+                </article>
+              );
+            })
+          }
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="req-title">
+    <div class="container">
+      <div class="req glass panel reveal">
+        <div>
+          <p class="eyebrow lit">Requirements</p>
+          <h2 id="req-title" class="req-title">A Mac with Apple silicon, on macOS 26 or later.</h2>
+        </div>
+        <p class="quiet">
+          macOS 26 is the last macOS for Intel, and Touch ID and Lock to this Mac need the Secure Enclave, so Stillroom
+          Vault is built for Apple silicon only. A Windows version is in progress, with no date yet.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  {
+    deep.length > 0 && (
+      <section class="section" aria-labelledby="deep-title">
+        <div class="container">
+          <h2 id="deep-title" class="section-title">Each feature, in depth</h2>
+          <div class="deep"><ArticleList items={deep.map((p) => ({ href: `/${p.id}/`, name: p.data.name, description: p.data.description }))} /></div>
+        </div>
+      </section>
+    )
+  }
+
+  <DownloadCta />
+</Base>
+
+<style>
+  .deep {
+    margin-top: var(--head-gap);
+  }
+  .jump {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .jump a {
+    color: var(--fg-2);
+    text-decoration: none;
+    transition:
+      color var(--hover),
+      border-color var(--hover);
+  }
+  .jump a:hover {
+    color: var(--fg);
+    border-color: rgb(var(--vault-rgb) / 0.4);
+  }
+  /* The stack. Listed: one card under another. Pinned (.pinned, set by scripts/feature-stack.ts): every card fills
+     the same frame and the next slides up over the last as you scroll. */
+  .stack {
+    display: grid;
+    gap: var(--grid-gap);
+  }
+  .feature-card {
+    display: grid;
+    grid-template-columns: 1.1fr 0.9fr;
+    gap: var(--space-12);
+    align-items: center;
+    padding: var(--space-12);
+    border: 1px solid var(--hairline);
+    border-radius: var(--r-panel);
+    background: var(--bg);
+    scroll-margin-top: calc(var(--header-h) + var(--space-6));
+    position: relative;
+    isolation: isolate;
+  }
+  /* Each card is a sheet of laid paper: its grain, very faint (ART.md, "Paper washes"). */
+  .feature-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    background: url('/art/pattern-laid.webp') 0 0 / 520px;
+    opacity: 0.35;
+    pointer-events: none;
+  }
+  .card-text {
+    display: grid;
+    gap: var(--space-3);
+    align-content: center;
+  }
+  .card-count {
+    font-variant-numeric: tabular-nums;
+  }
+  .card-title {
+    font-size: var(--text-3xl);
+  }
+  .card-lead {
+    color: var(--fg-2);
+    font-size: var(--text-lg);
+    max-width: 52ch;
+  }
+  .card-art {
+    align-self: center;
+  }
+  .note {
+    margin-top: var(--space-2);
+  }
+
+  .stack-section:has(.pinned) {
+    padding-block: 0;
+  }
+  .stack-stage.pinned {
+    display: grid;
+    align-items: center;
+    height: calc(100svh - var(--header-h));
+  }
+  /* Every card in the same grid cell: the frame is as tall as the tallest card, and all of them fill it. */
+  .pinned .stack {
+    gap: 0;
+  }
+  .pinned .feature-card {
+    grid-area: 1 / 1;
+    transform-origin: 50% 0%;
+    box-shadow: 0 -1px 0 rgb(22 21 26 / 0.02), 0 24px 48px -24px rgb(22 21 26 / 0.18);
+    will-change: transform;
+  }
+
+  /* The items: plain rows between hairlines. */
+  .items {
+    margin: var(--space-2) 0 0;
+    padding: 0;
+    list-style: none;
+    border-top: 1px solid var(--hairline);
+  }
+  .items li {
+    padding: var(--space-4) 0;
+    border-bottom: 1px solid var(--hairline);
+    color: var(--fg-2);
+    font-size: var(--text-base);
+  }
+  .items :global(code) {
+    color: var(--fg);
+  }
+  .req {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    align-items: center;
+    padding: 32px;
+  }
+  .req-title {
+    margin-top: 12px;
+    font-size: var(--text-3xl);
+  }
+  @media (max-width: 900px) {
+    .feature-card,
+    .req {
+      grid-template-columns: 1fr;
+    }
+    .feature-card {
+      gap: var(--space-6);
+      padding: var(--card-pad);
+    }
+    .card-art {
+      order: -1;
+    }
+  }
+</style>
+
+<script>
+  import '../scripts/feature-stack';
+</script>
+

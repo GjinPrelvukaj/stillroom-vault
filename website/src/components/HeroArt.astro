@@ -1,0 +1,72 @@
+---
+// Faint artwork in the empty space beside an inner page's heading, until the page has its picture: the app's dot ring,
+// drawn large and very quiet, in a variant per section. Decorative only (aria-hidden), never behind text, hidden on
+// phones.
+export type ArtVariant = 'ring' | 'lit' | 'pair' | 'path' | 'arrive';
+interface Props {
+  variant?: ArtVariant;
+}
+const { variant = 'ring' } = Astro.props;
+
+const S = 560;
+const ring = (cx: number, cy: number, r: number, n: number, size: number, litFrom = -1, litTo = -1) =>
+  Array.from({ length: n }, (_, i) => {
+    const a = (i / n) * 2 * Math.PI - Math.PI / 2;
+    return { x: +(cx + r * Math.cos(a)).toFixed(1), y: +(cy + r * Math.sin(a)).toFixed(1), r: size, on: i >= litFrom && i < litTo };
+  });
+
+let dots: { x: number; y: number; r: number; on: boolean }[] = [];
+const c = S / 2;
+if (variant === 'ring' || variant === 'lit') {
+  dots = [...ring(c, c, 250, 72, 3.2, variant === 'lit' ? 0 : -1, variant === 'lit' ? 22 : -1), ...ring(c, c, 170, 48, 2.4)];
+}
+if (variant === 'pair') {
+  dots = [...ring(c - 70, c, 200, 60, 3), ...ring(c + 90, c, 200, 60, 3, 50, 60)];
+}
+if (variant === 'path') {
+  // A ring, and a dotted path leaving it towards the lower left.
+  dots = [...ring(c + 60, c - 40, 200, 60, 3)];
+  for (let i = 0; i < 16; i++) {
+    const t = i / 15;
+    dots.push({ x: +(c - 60 - t * 230).toFixed(1), y: +(c + 110 + Math.sin(t * Math.PI) * 60 + t * 120).toFixed(1), r: 3 - t * 1.6, on: i < 4 });
+  }
+}
+if (variant === 'arrive') {
+  // A ring, and dots drifting in from the left, growing as they near it.
+  dots = [...ring(c + 80, c, 200, 60, 3, 45, 60)];
+  const rows = [-60, -20, 20, 60];
+  rows.forEach((dy, row) => {
+    for (let i = 0; i < 7; i++) dots.push({ x: 20 + i * 34 + row * 9, y: c + dy, r: 0.8 + i * 0.32, on: i === 6 });
+  });
+}
+---
+
+<svg class="hero-art" viewBox={`0 0 ${S} ${S}`} aria-hidden="true" focusable="false">
+  {dots.map((d) => <circle class:list={['d', { on: d.on }]} cx={d.x} cy={d.y} r={d.r} />)}
+</svg>
+
+<style>
+  /* Fits the heading's height, so it's never cut off by the header's edge, and fades out towards every side. */
+  .hero-art {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    right: var(--space-8);
+    z-index: -1;
+    height: 100%;
+    aspect-ratio: 1;
+    mask-image: radial-gradient(closest-side, #000 70%, transparent);
+    pointer-events: none;
+  }
+  .d {
+    fill: rgb(22 21 26 / var(--art-opacity, 0.09));
+  }
+  .d.on {
+    fill: rgb(var(--vault-rgb) / calc(var(--art-opacity, 0.09) * 3));
+  }
+  @media (max-width: 899px) {
+    .hero-art {
+      display: none;
+    }
+  }
+</style>

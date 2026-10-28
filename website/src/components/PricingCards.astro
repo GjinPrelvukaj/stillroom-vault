@@ -1,0 +1,151 @@
+---
+import { email, paddle, pricing } from '../config';
+import PaddleCheckout from './PaddleCheckout.astro';
+import Icon from './ui/Icon.astro';
+import Art from './Art.astro';
+import { hasArt } from '../lib/art';
+interface Props {
+  /** On the pricing page the buy buttons are the full ones; elsewhere they're shorter, with the price. */
+  checkout?: boolean;
+  headingLevel?: 'h2' | 'h3';
+  /** Each tier's print. Off on the home page, where Learn more's prints already show nearby. */
+  pictures?: boolean;
+}
+const { checkout = false, headingLevel = 'h3', pictures = true } = Astro.props;
+const H = headingLevel;
+/** Whether a tier can be bought yet: until Paddle is set up, every page says "Coming soon", not just the pricing page. */
+const onSale = (tier: string) => Boolean(paddle.clientToken && paddle.prices[tier]);
+---
+
+<div class="cards stagger">
+  {
+    pricing.tiers.map((t) => {
+      const featured = 'featured' in t && t.featured;
+      return (
+        <article class:list={['tier glass panel', { featured, 'star-border': featured, plain: !pictures }]} aria-labelledby={`tier-${t.id}`}>
+          {pictures && hasArt(`tier-${t.id}`) && <Art name={`tier-${t.id}`} ratio="3 / 2" plate class="tier-picture" />}
+          <H id={`tier-${t.id}`} class="name">
+            {t.name}
+          </H>
+          <p class="price">
+            <span class="amount">{/^\$\d+$/.test(t.price) ? <>$<span data-roll>{t.price.slice(1)}</span></> : t.price}</span>
+            <span class="cadence">{t.cadence}</span>
+          </p>
+          <p class="blurb">{t.blurb}</p>
+          <ul class="tick-list">
+            {t.points.map((p) => (
+              <li>{p}</li>
+            ))}
+          </ul>
+          <div class="cta">
+            {t.id === 'free' && (
+              <a class="btn large" href="/download/">
+                <Icon name="download" size={16} /> Download free
+              </a>
+            )}
+            {(t.id === 'personal' || t.id === 'family') &&
+              (checkout ? (
+                <PaddleCheckout tier={t.id} label={`Buy ${t.name}`} featured={featured} />
+              ) : onSale(t.id) ? (
+                <a class:list={['btn large', { primary: featured }]} href={`/checkout/?plan=${t.id}`}>
+                  {t.id === 'personal' ? 'Buy for $39' : 'Buy for $129'}
+                </a>
+              ) : (
+                <button type="button" class:list={['btn large', { primary: featured }]} disabled>
+                  Coming soon
+                </button>
+              ))}
+            {t.id === 'teams' && (
+              <a class="btn large" href={`mailto:${email.hello}?subject=Stillroom%20Vault%20for%20Teams`}>
+                <Icon name="mail" size={16} /> Ask us
+              </a>
+            )}
+          </div>
+          {featured && <span class="star" aria-hidden="true" />}
+        </article>
+      );
+    })
+  }
+</div>
+
+<style>
+  .tier > :global(.tier-picture) {
+    margin: calc(-1 * var(--space-2)) 0 var(--space-2);
+  }
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    align-items: stretch;
+  }
+  /* Each card's rows (picture, name, price, blurb, list, button) are the row's own, so every list starts and every
+     button sits at the same height across the cards, however long a blurb runs. */
+  .tier {
+    display: grid;
+    grid-row: span 6;
+    grid-template-rows: subgrid;
+    gap: 16px;
+    padding: var(--card-pad);
+    overflow: hidden;
+    transition: transform var(--hover);
+  }
+  /* Without its picture a card has one row fewer. */
+  .tier.plain {
+    grid-row: span 5;
+  }
+  @media (hover: hover) {
+    .tier:hover {
+      transform: translateY(-4px);
+    }
+  }
+  .tier.featured {
+    border-color: rgb(var(--vault-rgb) / 0.35);
+    background: rgb(var(--vault-rgb) / 0.06);
+  }
+  .name {
+    font-size: var(--text-lg);
+    font-family: var(--font);
+    font-weight: 600;
+  }
+  .price {
+    display: grid;
+    gap: var(--space-1);
+  }
+  .amount {
+    font-size: var(--text-4xl);
+    font-weight: 600;
+    letter-spacing: -0.03em;
+    line-height: 1;
+  }
+  .tier:last-child .amount {
+    font-size: var(--text-3xl);
+  }
+  .cadence {
+    color: var(--fg-quiet);
+    font-size: var(--text-sm);
+  }
+  .blurb {
+    color: var(--fg-2);
+    font-size: var(--text-base);
+  }
+  .tick-list {
+    font-size: var(--text-base);
+    align-content: start;
+  }
+  .cta {
+    margin-top: 8px;
+  }
+  .cta :global(.btn) {
+    width: 100%;
+  }
+  @media (max-width: 1080px) {
+    .cards {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+  @media (max-width: 600px) {
+    .cards {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

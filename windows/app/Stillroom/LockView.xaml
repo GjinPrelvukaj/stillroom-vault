@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="Stillroom.LockView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- In place of everything while the vault is shut: nothing of what's inside is drawn. The first time, the same
+         screen makes the vault. -->
+    <StackPanel Width="340" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="16" Margin="0,0,0,60">
+        <!-- Files sent from Explorer wait for the vault to open. -->
+        <Border x:Name="Waiting" HorizontalAlignment="Center" CornerRadius="14" Padding="12,4" Background="#2EB08CFF" Visibility="Collapsed">
+            <TextBlock x:Name="WaitingText" FontSize="12" />
+        </Border>
+        <Grid Width="84" Height="84" HorizontalAlignment="Center">
+            <Ellipse x:Name="Ring" Stroke="{StaticResource VaultBrush}" StrokeThickness="2" StrokeDashArray="1,3" Opacity="0.7" />
+            <FontIcon x:Name="LockGlyph" Glyph="&#xE72E;" FontSize="24" Opacity="0.75" />
+            <ProgressRing x:Name="Working" IsActive="False" Width="84" Height="84" />
+        </Grid>
+
+        <StackPanel Spacing="6">
+            <TextBlock x:Name="Heading" Style="{StaticResource TitleText}" />
+            <TextBlock x:Name="Body" Style="{StaticResource BodyText}" />
+        </StackPanel>
+
+        <!-- One line, always room for it, so the buttons never jump when it appears. -->
+        <TextBlock x:Name="Line" Style="{StaticResource QuietText}" MinHeight="32" Text=" " />
+
+        <StackPanel x:Name="HelloChoice" Spacing="2" Visibility="Collapsed">
+            <CheckBox x:Name="HelloBox" Content="Open it with Windows Hello too" HorizontalAlignment="Center" />
+            <TextBlock Style="{StaticResource QuietText}" Text="Your Windows Hello PIN will open it too, not only your face or fingerprint." />
+        </StackPanel>
+
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="12">
+            <Button x:Name="HelloButton" Click="OnHello" Visibility="Collapsed" AutomationProperties.Name="Windows Hello">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <FontIcon Glyph="&#xEB68;" FontSize="16" />
+                    <TextBlock Text="Windows Hello" />
+                </StackPanel>
+            </Button>
+            <Button x:Name="GoButton" Style="{StaticResource AccentButtonStyle}" Click="OnGo" MinWidth="120" />
+        </StackPanel>
+
+        <TextBlock x:Name="Protected" Style="{StaticResource QuietText}" Opacity="0.8"
+                   Text="You'll type it on a screen of its own, out of other programs' sight." />
+
+        <StackPanel x:Name="Others" Orientation="Horizontal" HorizontalAlignment="Center" Spacing="16">
+            <HyperlinkButton x:Name="RecoveryLink" Style="{StaticResource QuietButton}" Content="Use Recovery Key" Click="OnUseRecovery" />
+            <HyperlinkButton x:Name="KitLink" Style="{StaticResource QuietButton}" Content="Use Emergency Kit" Click="OnUseKit" />
+            <HyperlinkButton x:Name="PasswordLink" Style="{StaticResource QuietButton}" Content="Use My Password" Click="OnUsePassword" />
+            <HyperlinkButton x:Name="RestoreLink" Style="{StaticResource QuietButton}" Content="Restore from a Backup…" Click="OnRestore" />
+        </StackPanel>
+    </StackPanel>
+</UserControl>

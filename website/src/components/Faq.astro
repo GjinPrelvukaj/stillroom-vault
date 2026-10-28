@@ -1,0 +1,185 @@
+---
+// Questions as native disclosures: they open and close without any script, from the keyboard too.
+import type { QA } from '../lib/faq';
+interface Props {
+  items: QA[];
+  headingLevel?: 'h3' | 'h4';
+}
+const { items, headingLevel = 'h3' } = Astro.props;
+const H = headingLevel;
+// Five or more questions run in two columns, the first half on the left: each column opens on its own, so an answer
+// never pushes the other column about, and reading order stays the same when they stack on phones.
+const columns = items.length >= 5 ? [items.slice(0, Math.ceil(items.length / 2)), items.slice(Math.ceil(items.length / 2))] : [items];
+---
+
+<div class:list={['faq', { split: columns.length > 1 }]}>
+  {
+    columns.map((column) => (
+      <div class="col">
+        {column.map((item) => (
+          <details class="qa glass" id={item.id}>
+            <summary>
+              <H class="q">{item.q}</H>
+              <span class="plus" aria-hidden="true" />
+            </summary>
+            <div class="a" set:html={item.a} />
+          </details>
+        ))}
+      </div>
+    ))
+  }
+</div>
+
+<style>
+  .faq {
+    display: grid;
+    gap: var(--space-3);
+    align-items: start;
+  }
+  .faq.split {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  /* A column is one joined stack of rows (after Skiper UI's bouncy accordion): an open row parts from its
+     neighbours on a bouncy spring, and the corners next to the gap round off. All CSS, so it works without scripts. */
+  .col {
+    display: grid;
+  }
+  @media (max-width: 860px) {
+    .faq.split {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+  .qa {
+    --r: 16px;
+    border-radius: 0;
+    transition:
+      margin var(--bounce),
+      border-radius var(--bounce),
+      background-color var(--change),
+      border-color var(--change);
+  }
+  .qa + .qa {
+    margin-top: -1px;
+  }
+  .qa:first-child,
+  .qa[open] + .qa {
+    border-top-left-radius: var(--r);
+    border-top-right-radius: var(--r);
+  }
+  .qa:last-child,
+  .qa:has(+ .qa[open]) {
+    border-bottom-left-radius: var(--r);
+    border-bottom-right-radius: var(--r);
+  }
+  .qa[open] {
+    border-radius: var(--r);
+    background: var(--bg-raised);
+    border-color: rgb(var(--vault-rgb) / 0.22);
+  }
+  .qa[open]:not(:first-child),
+  .qa[open] + .qa {
+    margin-top: var(--space-3);
+  }
+  .qa:hover:not([open]) {
+    background: var(--glass-strong);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .qa {
+      transition: none;
+    }
+  }
+  summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    min-height: 60px;
+    padding: 16px 24px;
+    cursor: pointer;
+    list-style: none;
+    border-radius: 16px;
+  }
+  summary::-webkit-details-marker {
+    display: none;
+  }
+  .q {
+    text-wrap: pretty; /* fill the line first, rather than balancing a short question into two */
+    font-family: var(--font);
+    font-size: var(--text-lg);
+    font-weight: 500;
+    letter-spacing: -0.005em;
+  }
+  .plus {
+    position: relative;
+    flex: none;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--glass-strong);
+  }
+  .plus::before,
+  .plus::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 12px;
+    height: 1.6px;
+    margin: -0.8px 0 0 -6px;
+    border-radius: 2px;
+    background: var(--fg);
+    transition: transform var(--change);
+  }
+  .plus::after {
+    transform: rotate(90deg);
+  }
+  .qa[open] .plus::after {
+    transform: rotate(0deg);
+  }
+  .qa[open] .plus {
+    background: var(--primary-fill);
+  }
+  .qa[open] .plus::before,
+  .qa[open] .plus::after {
+    background: var(--on-primary);
+  }
+  .a {
+    padding: 0 24px 24px;
+    color: var(--fg-2);
+    max-width: 760px;
+  }
+  .a :global(a) {
+    color: var(--vault);
+  }
+  /* Opening a question: its answer fades in and settles into place on the appear spring, in every browser. */
+  @media (prefers-reduced-motion: no-preference) {
+    .qa[open] .a {
+      animation: answer-in var(--spring-appear-dur) var(--spring-appear) both;
+    }
+  }
+  @keyframes answer-in {
+    from {
+      opacity: 0;
+      filter: blur(2px);
+      transform: translateY(calc(-1 * var(--space-2)));
+    }
+  }
+  /* Where the browser can animate to "auto", the answer's height opens on the change spring too. */
+  @media (prefers-reduced-motion: no-preference) {
+    @supports (interpolate-size: allow-keywords) {
+      .faq {
+        interpolate-size: allow-keywords;
+      }
+      .qa::details-content {
+        height: 0;
+        overflow: clip;
+        transition:
+          height var(--change),
+          content-visibility var(--spring-change-dur) allow-discrete;
+      }
+      .qa[open]::details-content {
+        height: auto;
+      }
+    }
+  }
+</style>

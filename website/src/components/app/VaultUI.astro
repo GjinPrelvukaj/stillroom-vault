@@ -1,0 +1,138 @@
+---
+// The vault window's inside: sidebar (VaultView's sections) and the list pane, from the app's own layout.
+import Icon from '../ui/Icon.astro';
+import { tagColors, type Row } from '../../lib/sample';
+import type { IconName } from '../../lib/icons';
+
+interface Props {
+  rows: Row[];
+  count: number;
+  rowsId?: string;
+  countId?: string;
+}
+const { rows, count, rowsId, countId } = Astro.props;
+
+const sections: { icon: IconName; name: string; count?: number; chosen?: boolean }[] = [
+  { icon: 'stack', name: 'All Files', count, chosen: true },
+  { icon: 'note', name: 'Notes', count: 9 },
+  { icon: 'key', name: 'Secrets', count: 31 },
+];
+const kinds: { icon: IconName; name: string; count: number }[] = [
+  { icon: 'photo', name: 'Images', count: 64 },
+  { icon: 'doc', name: 'Documents', count: 112 },
+  { icon: 'play', name: 'Audio & Video', count: 18 },
+  { icon: 'box', name: 'Other', count: 7 },
+];
+const tags = [
+  { name: 'family', color: tagColors.pink },
+  { name: 'home', color: tagColors.green },
+  { name: 'travel', color: tagColors.blue },
+];
+---
+
+<div class="vault-ui">
+  <aside class="v-sidebar">
+    {
+      sections.map((s) => (
+        <div class:list={['v-item', { chosen: s.chosen }]}>
+          <Icon name={s.icon} size={16} />
+          <span>{s.name}</span>
+          {s.count ? (
+            <span class="count" id={s.chosen ? countId && `${countId}-side` : undefined}>
+              {s.count}
+            </span>
+          ) : null}
+        </div>
+      ))
+    }
+    <div class="a-group">Kinds</div>
+    {
+      kinds.map((k) => (
+        <div class="v-item">
+          <Icon name={k.icon} size={16} />
+          <span>{k.name}</span>
+          <span class="count">{k.count}</span>
+        </div>
+      ))
+    }
+    <div class="a-group">Tags</div>
+    {
+      tags.map((t) => (
+        <div class="v-item">
+          <svg class="tag-dot" viewBox="0 0 8 8" width="8" height="8" aria-hidden="true">
+            <circle cx="4" cy="4" r="4" fill={t.color} />
+          </svg>
+          <span>{t.name}</span>
+        </div>
+      ))
+    }
+    <div class="spacer"></div>
+    <div class="v-item"><Icon name="person-shield" size={16} /><span>Intruder Log</span></div>
+    <div class="v-item"><Icon name="gear" size={16} /><span>Settings</span></div>
+    <div class="v-size">
+      <div class="a-eyebrow">In the vault</div>
+      <div class="figure">4.7 GB</div>
+      <div class="a-quiet">{count} items, all encrypted</div>
+    </div>
+    <div class="v-actions">
+      <span class="a-btn primary"><Icon name="plus" size={14} />Add Files</span>
+      <span class="a-btn"><Icon name="lock" size={14} /></span>
+    </div>
+  </aside>
+
+  <section class="v-pane">
+    <div class="v-head">
+      <div class="titles">
+        <div class="a-eyebrow">All Files</div>
+        <div class="a-title"><span id={countId}>{count}</span> files</div>
+      </div>
+      <div class="a-field"><Icon name="search" size={14} />Search</div>
+      <span class="field-btn"><Icon name="folder" size={16} /></span>
+    </div>
+    <div class="a-panel v-rows" id={rowsId}>
+      {
+        rows.map((r) => (
+          <div class="v-row">
+            <Icon name={r.icon} class:list={['ic', { folder: r.folder }]} size={18} />
+            <span class="name">{r.name}</span>
+            {r.tag && (
+              <span class="tag" data-color={r.tag.color}>
+                {r.tag.name}
+              </span>
+            )}
+            <span class="meta">
+              {r.folder ? (
+                <span>{r.items} items</span>
+              ) : (
+                <>
+                  <span class="kind">{r.kind}</span>
+                  <span class="size">{r.size ?? ''}</span>
+                  <span class="date">{r.date}</span>
+                </>
+              )}
+            </span>
+          </div>
+        ))
+      }
+    </div>
+  </section>
+</div>
+
+<style is:global>
+  .v-row .tag[data-color='#60A5FA'] {
+    background: rgb(96 165 250 / 0.18);
+    color: #60a5fa;
+  }
+  .v-row .tag[data-color='#F472B6'] {
+    background: rgb(244 114 182 / 0.18);
+    color: #f472b6;
+  }
+  .v-row .tag[data-color='#34D399'] {
+    background: rgb(52 211 153 / 0.18);
+    color: #34d399;
+  }
+  .v-row .tag[data-color='#FBBF24'] {
+    background: rgb(251 191 36 / 0.18);
+    color: #fbbf24;
+  }
+</style>

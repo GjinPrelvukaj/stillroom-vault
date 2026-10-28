@@ -1,0 +1,351 @@
+---
+import Icon from '../ui/Icon.astro';
+---
+
+<section class="section seal-demo" id="seal-it" aria-labelledby="seal-title">
+  <div class="container">
+    <div class="section-head reveal">
+      <p class="eyebrow lit">Seal it yourself</p>
+      <h2 id="seal-title" class="section-title rise">Try the seal, right here in your browser.</h2>
+      <p class="lead">
+        The same encryption Stillroom puts on every item, run by your browser. Nothing you type leaves this page.
+      </p>
+    </div>
+
+    <div class="demo glass panel reveal" data-seal-demo>
+      <form class="input" data-seal-form>
+        <label for="seal-text" class="eyebrow">Something to seal</label>
+        <div class="caret-wrap" data-smooth-caret>
+          <textarea id="seal-text" class="field" rows="4" maxlength="2000" spellcheck="false">The spare key is under the blue pot.</textarea>
+        </div>
+        <div class="buttons">
+          <button class="btn primary hold" type="submit" data-hold><span class="hold-fill" aria-hidden="true"></span><Icon name="lock" size={16} /> Seal it</button>
+          <button class="btn" type="button" data-open disabled><Icon name="lock-open" size={16} /> Open it</button>
+          <button class="btn" type="button" data-tamper disabled><Icon name="sparkle" size={16} /> Change one byte</button>
+        </div>
+        <div class="state">
+          <svg class="mark" viewBox="0 0 24 24" aria-hidden="true" data-mark data-state="idle">
+            <circle class="track" cx="12" cy="12" r="10" />
+            <circle class="arc" cx="12" cy="12" r="10" pathLength="100" />
+            <path class="tick" d="M7.5 12.5l3 3 6-6.5" pathLength="100" />
+            <path class="cross" d="M8.5 8.5l7 7M15.5 8.5l-7 7" pathLength="100" />
+          </svg>
+          <p class="status" role="status" aria-live="polite" data-status>
+            Press <strong>Seal it</strong>, or hold it. A fresh 256-bit key and a fresh nonce are made for every seal.
+          </p>
+        </div>
+        <noscript>
+          <p class="status">This demo needs JavaScript, because the encryption runs in your browser, on your device.</p>
+        </noscript>
+      </form>
+
+      <div class="output" aria-label="The sealed bytes">
+        <div class="kv">
+          <span class="eyebrow">Item key · 32 bytes</span>
+          <code class="hex key" data-key>made fresh when you press Seal it</code>
+        </div>
+        <div class="kv">
+          <span class="eyebrow">Bound to · not stored, must be given again to open</span>
+          <code class="hex bind" data-bind>“Vault item 3” + a fresh 16-byte id</code>
+        </div>
+        <div class="layout" aria-hidden="true">
+          <span class="seg nonce">nonce (12 bytes)</span>
+          <span class="sep">|</span>
+          <span class="seg ct">ciphertext</span>
+          <span class="sep">|</span>
+          <span class="seg tag">tag (16 bytes)</span>
+        </div>
+        <div class="bytes fade-y" data-bytes>
+          <span class="b nonce" data-nonce></span><span class="b ct" data-ct></span><span class="b tag" data-tag></span>
+          <span class="empty" data-empty>The sealed bytes appear here.</span>
+        </div>
+        <p class="sizes quiet" data-sizes></p>
+      </div>
+    </div>
+
+    <ul class="facts stagger">
+      <li><Icon name="shield" size={18} /> <span>Same text, new bytes every time: a fresh key and nonce for every seal.</span></li>
+      <li><Icon name="sparkle" size={18} /> <span>Change one byte anywhere and it refuses to open. Nothing partial comes out.</span></li>
+      <li><Icon name="cloud-off" size={18} /> <span>Nothing you type is sent anywhere, and <a href="#never-online">the count below</a> shows it.</span></li>
+    </ul>
+  </div>
+</section>
+
+<script>
+  import '../../scripts/seal';
+  import '../../scripts/caret';
+</script>
+
+<style>
+  .demo {
+    display: grid;
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+    gap: 32px;
+    padding: var(--card-pad);
+    overflow: hidden;
+  }
+  .input {
+    display: grid;
+    align-self: center;
+    gap: 12px;
+  }
+  /* The gliding caret (scripts/caret.ts, after Skiper UI's 106 Smooth caret input). The textarea stays a real one;
+     only while the script runs is its own caret hidden and this violet bar drawn in its place. */
+  .caret-wrap {
+    position: relative;
+  }
+  .caret-wrap:global(.smooth) textarea {
+    caret-color: transparent;
+  }
+  .caret-wrap :global(.glide-caret) {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 2px;
+    border-radius: 1px;
+    background: var(--vault);
+    opacity: 0;
+    pointer-events: none;
+  }
+  .caret-wrap:global(.smooth.shown) :global(.glide-caret) {
+    opacity: 1;
+    animation: caret-blink 1.1s steps(1) 0.5s infinite;
+  }
+  .caret-wrap:global(.gliding) :global(.glide-caret) {
+    transition: transform var(--hover);
+  }
+  @keyframes caret-blink {
+    50% {
+      opacity: 0;
+    }
+  }
+  .caret-wrap :global(.caret-mirror) {
+    position: absolute;
+    top: 0;
+    left: 0;
+    visibility: hidden;
+    box-sizing: border-box;
+    border: 0;
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+    pointer-events: none;
+  }
+  @media (forced-colors: active) {
+    .caret-wrap:global(.smooth) textarea {
+      caret-color: auto;
+    }
+    .caret-wrap :global(.glide-caret) {
+      display: none;
+    }
+  }
+  .buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .status {
+    min-height: 3em;
+    color: var(--fg-2);
+    font-size: var(--text-base);
+  }
+  /* The status mark: an idle ring, an arc while sealing, then a check (opened) or a cross (refused). */
+  .state {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: start;
+    gap: var(--space-3);
+  }
+  .mark {
+    width: 22px;
+    height: 22px;
+    margin-top: 2px;
+    fill: none;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    rotate: -90deg;
+  }
+  .track {
+    stroke: var(--hairline);
+  }
+  .arc {
+    stroke: var(--vault);
+    stroke-dasharray: 100;
+    stroke-dashoffset: 100;
+  }
+  .tick,
+  .cross {
+    stroke-dasharray: 100;
+    stroke-dashoffset: 100;
+    rotate: 90deg;
+    transform-origin: 12px 12px;
+  }
+  .tick {
+    stroke: var(--green);
+  }
+  .cross {
+    stroke: var(--red);
+  }
+  .mark[data-state='busy'] .arc {
+    stroke-dashoffset: 35;
+  }
+  .mark[data-state='sealed'] .arc,
+  .mark[data-state='ok'] .arc {
+    stroke-dashoffset: 0;
+  }
+  .mark[data-state='ok'] .tick,
+  .mark[data-state='bad'] .cross {
+    stroke-dashoffset: 0;
+  }
+  .mark[data-state='bad'] .track {
+    stroke: rgb(255 107 107 / 0.4);
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .arc,
+    .tick,
+    .cross {
+      transition: stroke-dashoffset var(--appear);
+    }
+    .mark[data-state='busy'] {
+      animation: mark-spin 0.9s linear infinite;
+    }
+  }
+  @keyframes mark-spin {
+    to {
+      rotate: 270deg;
+    }
+  }
+  /* Hold to seal: the button fills while held and seals when full; a plain click seals at once. */
+  .hold {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+  }
+  .hold-fill {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: rgb(var(--vault-rgb) / 0.45);
+    transform: scaleX(0);
+    transform-origin: 0 50%;
+  }
+  .hold.holding .hold-fill {
+    transform: scaleX(1);
+    transition: transform 700ms linear;
+  }
+  .status :global(.ok) {
+    color: var(--green);
+  }
+  .status :global(.bad) {
+    color: var(--orange);
+  }
+  .output {
+    display: grid;
+    align-content: start;
+    gap: 16px;
+    min-width: 0;
+  }
+  .kv {
+    display: grid;
+    gap: 8px;
+  }
+  .hex {
+    display: block;
+    padding: 12px 12px;
+    border: 1px solid var(--glass-border);
+    border-radius: var(--r-field);
+    background: var(--bg);
+    color: var(--fg-2);
+    font-size: var(--text-sm);
+    line-height: 1.6;
+    overflow-wrap: anywhere;
+  }
+  .layout {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+  }
+  .seg {
+    padding: 4px 12px;
+    border-radius: var(--r-pill);
+  }
+  .sep {
+    color: var(--fg-quiet);
+  }
+  .seg.nonce,
+  .b.nonce {
+    --c: 29 122 82; /* --green */
+  }
+  .seg.ct,
+  .b.ct {
+    --c: var(--vault-rgb);
+  }
+  .seg.tag,
+  .b.tag {
+    --c: 180 86 26; /* --orange */
+  }
+  .seg {
+    background: rgb(var(--c) / 0.12);
+    color: color-mix(in srgb, rgb(var(--c)), #000 25%);
+  }
+  .bytes {
+    position: relative;
+    min-height: 168px;
+    max-height: 320px;
+    overflow: auto;
+    padding: 16px;
+    border: 1px solid var(--glass-border);
+    border-radius: var(--r-card);
+    background: var(--bg);
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+    line-height: 1.75;
+    overflow-wrap: anywhere;
+    word-break: break-all;
+  }
+  .b {
+    color: rgb(var(--c));
+  }
+  .b:not(:empty) {
+    margin-right: 0.6ch;
+  }
+  .bytes :global(.flipped) {
+    border-radius: 3px;
+    background: var(--orange);
+    color: #000;
+  }
+  .empty {
+    color: var(--fg-quiet);
+    font-family: var(--font);
+  }
+  .facts {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin: 24px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  .facts li {
+    display: flex;
+    gap: 12px;
+    color: var(--fg-2);
+    font-size: var(--text-base);
+  }
+  .facts :global(svg) {
+    flex: none;
+    margin-top: 4px;
+    color: var(--vault);
+  }
+  @media (max-width: 900px) {
+    .demo {
+      grid-template-columns: 1fr;
+    }
+    .facts {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

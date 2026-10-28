@@ -1,0 +1,102 @@
+---
+import DocLayout from '../layouts/DocLayout.astro';
+import OpenWithoutUs from '../components/home/OpenWithoutUs.astro';
+---
+
+<DocLayout picture="page-format"
+  banner
+  doc="format"
+  title="Open File Format: Read a Vault Without Us"
+  h1="The Stillroom Vault file format"
+  eyebrow="Format 4 · public"
+  description="Every file in a Stillroom Vault, byte by byte: AES-256-GCM seals, Argon2id key files, the two slots, item keys and Padmé padding. Enough to read a vault without the app."
+  lead="Every file in a vault, exactly enough to read one without the app. Nothing here is secret: a vault opens with its password, its recovery key or enough kit pieces, and with nothing else."
+  deep
+>
+  <Fragment slot="after">
+    <OpenWithoutUs />
+  </Fragment>
+</DocLayout>
+
+<script>
+  import '../scripts/terms';
+</script>
+
+<style>
+  /* The glossary terms scripts/terms.ts wraps, and their tip (after Skiper UI's #101, custom tooltip). */
+  :global(.prose .term) {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-decoration: underline dotted rgb(var(--vault-rgb) / 0.7);
+    text-decoration-thickness: 1.5px;
+    text-underline-offset: 0.22em;
+    cursor: help;
+    transition: color var(--hover);
+  }
+  :global(.prose .term:hover) {
+    color: var(--vault);
+  }
+  :global(.term-tip) {
+    position: fixed;
+    z-index: 70;
+    width: max-content;
+    max-width: min(320px, calc(100vw - 16px));
+    padding: var(--space-3) var(--space-4);
+    border: 1px solid var(--hairline);
+    border-radius: var(--r-card);
+    background: var(--bg);
+    box-shadow: 0 10px 30px -12px rgb(22 21 26 / 0.25);
+    color: var(--fg-2);
+    font-size: var(--text-sm);
+    line-height: 1.5;
+    text-wrap: pretty;
+    pointer-events: none;
+  }
+  :global(.term-tip[hidden]) {
+    display: none;
+  }
+  /* The arrow: a square turned 45°, its two outer edges drawn in the tip's border. */
+  :global(.term-tip-arrow) {
+    position: absolute;
+    left: var(--arrow-x, 50%);
+    width: 10px;
+    height: 10px;
+    border: 1px solid var(--hairline);
+    background: var(--bg);
+    translate: -50% 0;
+    rotate: 45deg;
+  }
+  :global(.term-tip[data-side='top'] .term-tip-arrow) {
+    bottom: -6px;
+    border-top: 0;
+    border-left: 0;
+  }
+  :global(.term-tip[data-side='bottom'] .term-tip-arrow) {
+    top: -6px;
+    border-right: 0;
+    border-bottom: 0;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    :global(.term-tip.in) {
+      animation: tip-in var(--change) both;
+    }
+    :global(.term-tip.in[data-side='bottom']) {
+      animation-name: tip-in-below;
+    }
+  }
+  @keyframes tip-in {
+    from {
+      opacity: 0;
+      transform: translateY(4px) scale(0.96);
+    }
+  }
+  @keyframes tip-in-below {
+    from {
+      opacity: 0;
+      transform: translateY(-4px) scale(0.96);
+    }
+  }
+</style>

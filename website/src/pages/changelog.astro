@@ -1,0 +1,123 @@
+---
+import DocLayout from '../layouts/DocLayout.astro';
+---
+
+<DocLayout picture="page-changelog"
+  banner
+  thread={false}
+  doc="changelog"
+  title="Changelog and Release Notes"
+  h1="Stillroom Vault changelog"
+  eyebrow="What changed"
+  description="Every notable change to Stillroom Vault, by version: format 4, item keys, the decoy redesign, fixes from code review, licensing and pricing."
+  lead="What changed, by version. Updates are manual: each release lands on the download page with these notes, and buyers get an email."
+  deep
+/>
+
+<script>
+  import '../scripts/timeline';
+  import '../scripts/your-version';
+</script>
+
+<style>
+  /* "You have 1.0.0, 1.0.1 is out" (scripts/your-version.ts), when the app's Check for Updates opened this page. */
+  :global(.your-version) {
+    display: grid;
+    gap: var(--space-3);
+    margin: 0 0 var(--space-10);
+    padding: var(--space-4) var(--space-6);
+    border: 1px solid rgb(var(--vault-rgb) / 0.22);
+    border-radius: var(--r-card);
+    background: rgb(var(--vault-rgb) / 0.06);
+  }
+  :global(.your-version.urgent) {
+    border-color: color-mix(in srgb, var(--orange) 45%, transparent);
+    background: color-mix(in srgb, var(--orange) 10%, transparent);
+  }
+  :global(.your-version p) {
+    margin: 0;
+  }
+  :global(.your-version p:has(.btn)) {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-3) var(--space-4);
+    color: var(--fg-2);
+    font-size: var(--text-sm);
+  }
+  /* The versions as a timeline (after Skiper UI's #74): a line down the left of the text, a marker at each version,
+     the line filling as you read and the version being read lit (scripts/timeline.ts sets --tl-top, --tl-fill and
+     .tl-current; without it the line runs the full height and every marker is quiet). */
+  :global(.prose) {
+    --tl: 28px;
+    position: relative;
+    max-width: calc(760px + var(--tl));
+    padding-left: var(--tl);
+  }
+  @media (min-width: 720px) {
+    :global(.prose) {
+      --tl: 48px;
+    }
+  }
+  :global(.prose)::before,
+  :global(.prose)::after {
+    content: '';
+    position: absolute;
+    left: 5px;
+    top: var(--tl-top, 0);
+    width: 1px;
+  }
+  :global(.prose)::before {
+    bottom: 0;
+    background: linear-gradient(var(--hairline) 85%, transparent);
+  }
+  :global(.prose)::after {
+    height: var(--tl-fill, 0);
+    background: var(--vault);
+  }
+  :global(.prose > h2) {
+    position: relative;
+  }
+  :global(.prose > h2)::before {
+    content: '';
+    position: absolute;
+    left: calc(-1 * var(--tl));
+    top: calc(1.2em + 0.5lh);
+    width: 11px;
+    height: 11px;
+    border: 1px solid var(--hairline);
+    border-radius: 50%;
+    background: var(--bg);
+    translate: 0 -50%;
+    transition:
+      background var(--change),
+      border-color var(--change),
+      scale var(--change);
+  }
+  :global(.prose > h2.tl-current)::before {
+    border-color: var(--vault);
+    background: var(--vault);
+    scale: 1.15;
+  }
+  :global(.prose > h2 a) {
+    color: inherit;
+    text-decoration-color: var(--hairline);
+    transition: color var(--hover);
+  }
+  :global(.prose > h2.tl-current a) {
+    color: var(--vault);
+  }
+  :global(.tl-date) {
+    display: block;
+    margin-top: var(--space-1);
+    color: var(--fg-quiet);
+    font-family: var(--font);
+    font-size: var(--text-sm);
+    font-variant-numeric: tabular-nums;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    :global(.prose > h2)::before {
+      transition: none;
+    }
+  }
+</style>

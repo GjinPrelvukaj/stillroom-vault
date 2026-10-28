@@ -1,0 +1,33 @@
+---
+// The buy button. Until Paddle is configured (PUBLIC_PADDLE_* variables, see website/README.md) it renders a disabled
+// "Coming soon". When configured, it leads to the checkout page with this edition chosen.
+import { paddle } from '../config';
+import Icon from './ui/Icon.astro';
+interface Props {
+  tier: 'personal' | 'family';
+  label: string;
+  featured?: boolean;
+}
+const { tier, label, featured = false } = Astro.props;
+const priceId = paddle.prices[tier];
+const ready = Boolean(paddle.clientToken && priceId);
+---
+
+{
+  ready ? (
+    <a class:list={['btn large buy', { primary: featured }]} href={`/checkout/?plan=${tier}`}>
+      <Icon name="lock" size={16} />
+      {label}
+    </a>
+  ) : (
+    <button type="button" class:list={['btn large buy', { primary: featured }]} disabled aria-describedby="checkout-soon">
+      Coming soon
+    </button>
+  )
+}
+
+<style>
+  .buy {
+    width: 100%;
+  }
+</style>

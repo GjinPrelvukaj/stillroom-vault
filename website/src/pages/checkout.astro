@@ -1,0 +1,246 @@
+---
+// The checkout: Paddle's payment form inline, beside our own order summary. Paddle still sells (Merchant of Record),
+// takes the card and charges the tax; this page shows what's bought and the totals Paddle sends it (Paddle requires
+// both), and says thank you when the payment goes through. Paddle.js loads here and nowhere else (public/_headers).
+import PageLayout from '../layouts/PageLayout.astro';
+import Icon from '../components/ui/Icon.astro';
+import { paddle, paddleWording, pricing } from '../config';
+
+const configured = Boolean(paddle.clientToken && paddle.prices.personal && paddle.prices.family);
+const plans = (['personal', 'family'] as const).map((id) => {
+  const tier = pricing.tiers.find((t) => t.id === id)!;
+  return {
+    id,
+    priceId: paddle.prices[id] ?? '',
+    tab: id === 'personal' ? 'Personal' : 'Family',
+    name: id === 'personal' ? 'Stillroom Vault' : 'Stillroom Vault Family',
+    who: id === 'personal' ? 'One person, on all of their own Macs' : 'Up to 5 people, each on all of their own Macs',
+    price: tier.price,
+  };
+});
+const first = plans[0]!;
+---
+
+<PageLayout
+  title="Checkout"
+  h1="Buy Stillroom Vault"
+  eyebrow="Checkout"
+  description="Buy Stillroom Vault: one payment for every 1.x update, on all of your own Macs. Your licence key arrives by email."
+  lead="One payment, nothing to renew. Paddle takes the payment, and your licence key arrives by email a moment later."
+>
+  {
+    configured ? (
+      <div class="checkout" data-checkout data-token={paddle.clientToken} data-env={paddle.environment}>
+        <aside class="summary glass panel" aria-labelledby="summary-title">
+          <div class="plans" role="group" aria-label="Choose an edition">
+            {plans.map((p) => (
+              <a class="plan" href={`/checkout/?plan=${p.id}`} data-plan={p.id} data-price={p.priceId} data-name={p.name} data-who={p.who} data-from={p.price} aria-current={p === first ? 'true' : undefined}>
+                {p.tab} <span>{p.price}</span>
+              </a>
+            ))}
+          </div>
+
+          <div class="what">
+            <p class="eyebrow">Order summary</p>
+            <h2 id="summary-title" data-show-name>{first.name}</h2>
+            <p class="who" data-show-who>{first.who}</p>
+          </div>
+
+          <dl class="totals" aria-live="polite">
+            <div><dt>Subtotal</dt><dd data-subtotal>…</dd></div>
+            <div><dt>Tax</dt><dd data-tax>…</dd></div>
+            <div class="grand"><dt>Total today</dt><dd data-total>{first.price}</dd></div>
+          </dl>
+          <p class="once">A one-time payment. Nothing renews.</p>
+
+          <ul class="tick-list gets">
+            <li>Every feature, with no item limit</li>
+            <li>Every 1.x update</li>
+            <li>Your key by email, checked on your Mac, offline</li>
+            <li>Refunds within 14 days, no questions asked</li>
+          </ul>
+
+          <p class="fine">
+            <a href="/refunds/">Refund policy</a> · <a href="/terms/">Terms</a><br />
+            {paddleWording}
+          </p>
+        </aside>
+
+        <section class="pay glass panel" aria-label="Payment">
+          <p class="status" data-status>Loading the secure checkout…</p>
+          <div class="checkout-frame"></div>
+          <noscript><p class="status">The checkout needs JavaScript, from this site and from Paddle. Everything else on this site works without it.</p></noscript>
+        </section>
+      </div>
+    ) : (
+      <p class="note">Checkout opens with version 1.0. Until then the free version has every feature.</p>
+    )
+  }
+
+  <section class="done glass panel" data-done hidden aria-labelledby="done-title" tabindex="-1">
+    <span class="seal"><Icon name="check" size={28} /></span>
+    <h2 id="done-title">Thank you. Stillroom Vault is yours.</h2>
+    <p class="lead-in">Your licence key is on its way to <strong data-email>your email</strong>. It usually arrives within a minute; if it doesn’t, look in spam.</p>
+    <ol class="steps">
+      <li>Open Stillroom Vault on your Mac. No copy yet? <a href="/download/">Download it</a>.</li>
+      <li>Go to <strong>Settings › Licence</strong>.</li>
+      <li>Paste the key. The 25-item limit lifts at once.</li>
+    </ol>
+    <p class="fine">Paddle sends your receipt separately. Nothing arrived after ten minutes? Write to <a href="/support/">support</a> with your order number.</p>
+  </section>
+</PageLayout>
+
+<script>
+  import '../scripts/checkout';
+</script>
+
+<style>
+  .checkout {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-6);
+  }
+  .summary,
+  .pay,
+  .done {
+    padding: var(--card-pad);
+  }
+  .summary {
+    display: grid;
+    gap: var(--space-6);
+    align-content: start;
+  }
+  .plans {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-1);
+    padding: var(--space-1);
+    border: 1px solid var(--divider);
+    border-radius: 999px;
+  }
+  .plan {
+    padding: 10px 14px;
+    border-radius: 999px;
+    color: var(--fg-2);
+    font-size: var(--text-sm);
+    font-weight: 600;
+    text-align: center;
+    text-decoration: none;
+    transition: background var(--hover), color var(--hover);
+  }
+  .plan span {
+    color: var(--fg-quiet);
+    font-weight: 400;
+  }
+  .plan[aria-current='true'] {
+    background: rgb(var(--vault-rgb) / 0.1);
+    color: var(--vault);
+  }
+  .plan[aria-current='true'] span {
+    color: inherit;
+  }
+  .what {
+    display: grid;
+    gap: var(--space-2);
+  }
+  .what h2 {
+    font-size: var(--text-3xl);
+    line-height: 1.1;
+  }
+  .who {
+    color: var(--fg-2);
+  }
+  .totals {
+    display: grid;
+    margin: 0;
+    border-top: 1px solid var(--divider);
+  }
+  .totals div {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-4);
+    padding: var(--space-3) 0;
+    border-bottom: 1px solid var(--divider);
+  }
+  .totals dt {
+    color: var(--fg-2);
+  }
+  .totals dd {
+    margin: 0;
+    font-variant-numeric: tabular-nums;
+  }
+  .totals .grand {
+    border-bottom: 0;
+    padding-top: var(--space-4);
+  }
+  .grand dt,
+  .grand dd {
+    color: var(--fg);
+    font-size: var(--text-xl);
+    font-weight: 600;
+  }
+  .once {
+    margin-top: calc(-1 * var(--space-4));
+    color: var(--fg-quiet);
+    font-size: var(--text-sm);
+  }
+  .gets {
+    font-size: var(--text-base);
+  }
+  .fine {
+    color: var(--fg-quiet);
+    font-size: var(--text-xs);
+    line-height: 1.6;
+  }
+  .pay {
+    min-height: 480px;
+  }
+  .status {
+    color: var(--fg-quiet);
+  }
+  .status:empty {
+    display: none;
+  }
+  .done {
+    display: grid;
+    justify-items: start;
+    gap: var(--space-4);
+    max-width: 720px;
+    margin: 0 auto;
+  }
+  .done[hidden] {
+    display: none;
+  }
+  .seal {
+    display: grid;
+    place-items: center;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: rgb(var(--vault-rgb) / 0.12);
+    color: var(--vault);
+  }
+  .done h2 {
+    font-size: var(--text-4xl);
+    line-height: 1.1;
+  }
+  .lead-in {
+    color: var(--fg-2);
+    font-size: var(--text-lg);
+  }
+  .steps {
+    display: grid;
+    gap: var(--space-2);
+    padding-left: 1.25em;
+    color: var(--fg-2);
+  }
+  @media (max-width: 860px) {
+    .checkout {
+      grid-template-columns: 1fr;
+    }
+    /* Paddle's form brings its own side padding. */
+    .pay {
+      padding: var(--space-2);
+    }
+  }
+</style>

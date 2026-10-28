@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Window
+    x:Class="Stillroom.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="Stillroom">
+    <Window.SystemBackdrop>
+        <DesktopAcrylicBackdrop />
+    </Window.SystemBackdrop>
+
+    <!-- Black glass over the desktop, as the Mac's window; the lock screen or the vault on top. -->
+    <Grid Background="{StaticResource GlassBrush}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="40" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        <Grid x:Name="TitleBar">
+            <TextBlock Text="Stillroom" Margin="16,0,0,0" VerticalAlignment="Center" FontSize="12" Foreground="{StaticResource QuietBrush}" />
+        </Grid>
+        <ContentControl x:Name="Page" Grid.Row="1" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" />
+    </Grid>
+</Window>

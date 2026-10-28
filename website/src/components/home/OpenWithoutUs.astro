@@ -1,0 +1,156 @@
+---
+import Icon from '../ui/Icon.astro';
+import { sha256 } from '../../lib/repo';
+
+interface Props {
+  heading?: 'h2' | 'h3';
+  id?: string;
+}
+const { heading = 'h2', id = 'open-without-us' } = Astro.props;
+const H = heading;
+const hash = sha256('tools/stillroom-open.py');
+const lines: { kind: 'cmd' | 'out' | 'prompt' | 'done'; text: string }[] = [
+  { kind: 'cmd', text: 'pip install cryptography argon2-cffi' },
+  { kind: 'cmd', text: 'python3 stillroom-open.py ~/Library/Application\\ Support/Stillroom/Store ~/Desktop/Out' },
+  { kind: 'prompt', text: 'Password: ' },
+  { kind: 'out', text: '  1/4  Taxes/2025/w2.pdf' },
+  { kind: 'out', text: '  2/4  Passport photo page.heic' },
+  { kind: 'out', text: '  3/4  Bank login.txt' },
+  { kind: 'out', text: '  4/4  Things to tell the lawyer.md' },
+  { kind: 'done', text: 'Done: 4 items, unencrypted, in /Users/you/Desktop/Out' },
+];
+---
+
+<section class="section open-without" id={id} aria-labelledby={`${id}-title`}>
+  <div class="container grid">
+    <div class="copy reveal">
+      <p class="eyebrow lit">Open it without us</p>
+      <H id={`${id}-title`} class="section-title rise">You can open your vault without us.</H>
+      <p class="lead">
+        Every byte on disk is documented, and <code>stillroom-open.py</code> reads a vault without the app, on any
+        computer with Python. It needs exactly what Stillroom needs: the vault folder, and the password, the recovery key,
+        or enough pieces of the emergency kit. It has no way in without one of those.
+      </p>
+      <p class="quiet">
+        The reader is MIT-licensed: anyone may use it for anything. Publishing the format gives no one a way in.
+      </p>
+      <div class="links">
+        <a class="btn primary" href="/tools/stillroom-open.py" download><Icon name="download" size={16} /> stillroom-open.py</a>
+        <a class="btn" href="/format/">Read the format</a>
+        <a class="btn quiet" href="/tools/LICENSE.md">MIT licence</a>
+      </div>
+      <p class="hash quiet"><span>SHA-256</span> <code>{hash}</code></p>
+    </div>
+
+    <div class="term glass panel reveal" data-terminal>
+      <div class="term-bar" aria-hidden="true"><i></i><i></i><i></i><span>Terminal · example run</span></div>
+      <pre class="visually-hidden">{lines.map((l) => (l.kind === 'cmd' ? `$ ${l.text}` : l.text)).join('\n')}</pre>
+      <pre class="screen" aria-hidden="true"><code>{
+        lines.map((l) => (
+          <span class:list={['line', l.kind]} data-kind={l.kind}>{l.kind === 'cmd' && <span class="ps">$ </span>}<span class="t">{l.text}</span>{'\n'}</span>
+        ))
+      }<span class="cursor"></span></code></pre>
+    </div>
+  </div>
+</section>
+
+<script>
+  import '../../scripts/terminal';
+</script>
+
+<style>
+  .grid {
+    display: grid;
+    grid-template-columns: 0.95fr 1.05fr;
+    gap: 48px;
+    align-items: center;
+  }
+  .copy {
+    display: grid;
+    gap: 16px;
+  }
+  .links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 4px;
+  }
+  .hash {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 12px;
+    font-size: var(--text-xs);
+  }
+  .hash code {
+    overflow-wrap: anywhere;
+    color: var(--fg-2);
+  }
+  .term {
+    position: relative;
+    overflow: hidden;
+    background: var(--bg-raised);
+  }
+  .term-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--glass-border);
+    color: var(--fg-quiet);
+    font-size: var(--text-xs);
+  }
+  .term-bar i {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--hairline);
+  }
+  .term-bar span {
+    margin-left: 8px;
+  }
+  .screen {
+    position: relative;
+    z-index: 1;
+    min-height: 300px;
+    margin: 0;
+    padding: 24px 24px 64px;
+    color: var(--fg-2);
+    font-size: var(--text-sm);
+    line-height: 1.85;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+  .ps {
+    color: var(--vault);
+  }
+  .line.cmd .t {
+    color: var(--fg);
+  }
+  .line.done {
+    color: var(--green);
+  }
+  .cursor {
+    display: inline-block;
+    width: 0.6em;
+    height: 1.1em;
+    margin-left: 2px;
+    vertical-align: text-bottom;
+    background: var(--vault);
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .cursor {
+      animation: blink 1.06s steps(1) infinite;
+    }
+  }
+  @keyframes blink {
+    50% {
+      opacity: 0;
+    }
+  }
+  @media (max-width: 900px) {
+    .grid {
+      grid-template-columns: 1fr;
+      gap: 32px;
+    }
+  }
+</style>

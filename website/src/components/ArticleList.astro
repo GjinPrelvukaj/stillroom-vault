@@ -1,0 +1,87 @@
+---
+// A list of articles (a section's hub, the feature pages on /features/), across the full width like a journal's index:
+// a row each, the name in the serif, what it answers beside it, hairlines between.
+import Icon from './ui/Icon.astro';
+
+interface Props {
+  items: { href: string; name: string; description: string }[];
+}
+const { items } = Astro.props;
+---
+
+<ul class="article-list">
+  {
+    items.map((item) => (
+      <li>
+        <a href={item.href}>
+          <span class="text">
+            <span class="name">{item.name}</span>
+            <span class="what">{item.description}</span>
+          </span>
+          <span class="go" aria-hidden="true"><Icon name="arrow" size={18} /></span>
+        </a>
+      </li>
+    ))
+  }
+</ul>
+
+<style>
+  .article-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    border-top: 1px solid var(--divider);
+  }
+  li {
+    border-bottom: 1px solid var(--divider);
+  }
+  a {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--space-6);
+    padding: var(--space-6) 0;
+    text-decoration: none;
+  }
+  .text {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr);
+    align-items: baseline;
+    gap: var(--space-2) var(--space-12);
+  }
+  .name {
+    color: var(--fg);
+    font-family: var(--font-serif);
+    font-size: var(--text-2xl);
+    line-height: 1.25;
+    transition: color var(--hover);
+  }
+  .what {
+    color: var(--fg-2);
+    font-size: var(--text-base);
+    line-height: 1.55;
+  }
+  .go {
+    color: var(--fg-quiet);
+    transition:
+      color var(--hover),
+      transform var(--hover);
+  }
+  a:hover .name,
+  a:hover .go {
+    color: var(--vault);
+  }
+  @media (hover: hover) and (prefers-reduced-motion: no-preference) {
+    a:hover .go {
+      transform: translateX(var(--space-1));
+    }
+  }
+  @media (max-width: 767px) {
+    .text {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .name {
+      font-size: var(--text-xl);
+    }
+  }
+</style>

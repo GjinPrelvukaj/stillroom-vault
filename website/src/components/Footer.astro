@@ -1,0 +1,293 @@
+---
+import { email, paddle, paddleWording, site } from '../config';
+import Icon from './ui/Icon.astro';
+import Owners from './Owners.astro';
+// The wordmark, as in the header: STILLR, the app's dot ring as the O, then OM.
+const markDots = Array.from({ length: 16 }, (_, i) => {
+  const a = (i / 16) * 2 * Math.PI - Math.PI / 2;
+  return { x: +(12 + 8.6 * Math.cos(a)).toFixed(2), y: +(12 + 8.6 * Math.sin(a)).toFixed(2) };
+});
+// The checkout page loads Paddle's script, so its footer doesn't claim zero third parties.
+const paddleHere = Boolean(paddle.clientToken) && Astro.url.pathname.startsWith('/checkout');
+const cols = [
+  {
+    title: 'Product',
+    links: [
+      ['/features/', 'Features'],
+      ['/security/', 'Security'],
+      ['/format/', 'File format'],
+      ['/pricing/', 'Pricing'],
+      ['/download/', 'Download'],
+      ['/changelog/', 'Changelog'],
+    ],
+  },
+  {
+    title: 'Learn',
+    links: [
+      ['/guides/', 'Guides'],
+      ['/compare/', 'Comparisons'],
+      ['/moving-from/', 'Moving to Stillroom'],
+      ['/learn/', 'Encryption explained'],
+      ['/for/', 'Who it’s for'],
+    ],
+  },
+  {
+    title: 'Help',
+    links: [
+      ['/support/', 'Support and FAQ'],
+      ['/support/#forgot', 'Forgot your password?'],
+      ['/security-policy/', 'Report a security problem'],
+    ],
+  },
+  {
+    title: 'Legal',
+    links: [
+      ['/terms/', 'Terms and EULA'],
+      ['/refunds/', 'Refund policy'],
+      ['/privacy/', 'Privacy policy'],
+      ['/license/', 'Source licence (FSL\u20111.1\u2011ALv2)'],
+    ],
+  },
+];
+---
+
+<footer class="site-footer ink">
+  <div class="container inner">
+    <div class="start">
+      <a class="brand" href="/">
+        <span class="visually-hidden">Stillroom Vault, home</span><span aria-hidden="true">STILLR</span><svg class="brand-o" viewBox="0 0 24 24" aria-hidden="true"
+          >{markDots.map((d) => <circle cx={d.x} cy={d.y} r="1.45" />)}</svg
+        ><span aria-hidden="true">OM</span>
+      </a>
+      <div class="start-foot">
+        {
+          paddleHere ? (
+            <p class="quiet">This page loads Paddle’s checkout, which may set cookies when you buy. Every other page loads nothing from anyone else.</p>
+          ) : (
+            <ul class="zero" aria-label="What this website keeps about you">
+              <li><span class="n" data-scramble>0</span> cookies</li>
+              <li><span class="n" data-scramble>0</span> trackers</li>
+              <li><span class="n" data-scramble>0</span> third-party requests</li>
+            </ul>
+          )
+        }
+        <p class="copy">© {site.year} <Owners id="owners-footer" /></p>
+      </div>
+    </div>
+
+    <nav class="groups" aria-label="Site">
+      {
+        cols.map((col) => (
+          <details class="group" data-glide>
+            <summary>
+              {col.title}
+              <Icon name="chevron" size={16} />
+            </summary>
+            <ul>
+              {col.links.map(([href, label]) => (
+                <li>
+                  <a href={href}>{label}</a>
+                </li>
+              ))}
+            </ul>
+          </details>
+        ))
+      }
+    </nav>
+
+    <div class="end">
+      <div>
+        <h2 class="end-title">Never online</h2>
+        <p class="quiet">{site.tagline}</p>
+      </div>
+      <div>
+        <h2 class="end-title">Write to us</h2>
+        <ul>
+          <li><a href={`mailto:${email.hello}`}>{email.hello}</a></li>
+          <li><a href={`mailto:${email.support}`}>{email.support}</a></li>
+          <li><a href={`mailto:${email.security}`}>{email.security}</a></li>
+          <li><a href={`mailto:${email.legal}`}>{email.legal}</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="bottom">
+      <p>{paddleWording}</p>
+      <p>Source licensed <a href="/license/">FSL&#8209;1.1&#8209;ALv2</a>; the vault reader <a href="/format/#open-without-us">MIT</a></p>
+    </div>
+  </div>
+</footer>
+
+<style>
+  /* Three columns: the name (and, at its foot, what this site keeps and the copyright), every page in folding groups,
+     then a line about the app and the addresses. */
+  .site-footer {
+    padding: var(--space-16) 0 var(--space-12);
+    background: var(--bg);
+  }
+  .inner {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) minmax(0, 1fr);
+    gap: var(--space-12) var(--space-16);
+  }
+  .start {
+    display: grid;
+    grid-template-rows: auto 1fr;
+    gap: var(--space-8);
+  }
+  .start-foot {
+    display: grid;
+    align-content: end;
+    gap: var(--space-4);
+  }
+  /* The wordmark, as in the header, a size up. */
+  .brand {
+    display: inline-flex;
+    align-items: center;
+    align-self: start;
+    color: var(--fg);
+    font-family: var(--font-display);
+    font-size: var(--text-2xl);
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-decoration: none;
+  }
+  .brand-o {
+    flex: none;
+    width: 0.95em;
+    height: 0.95em;
+    margin: 0 0.1em;
+    fill: currentColor;
+  }
+  .brand-o circle:nth-child(-n + 4) {
+    fill: var(--vault);
+  }
+  .zero {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2) var(--space-4);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    color: var(--fg-quiet);
+    font-size: var(--text-sm);
+  }
+  .zero .n {
+    display: inline-block;
+    min-width: 1ch;
+    color: var(--vault);
+    font-family: var(--font-mono);
+    font-weight: 600;
+  }
+  .copy {
+    color: var(--fg-quiet);
+    font-size: var(--text-sm);
+  }
+  .groups {
+    border-top: 1px solid var(--divider);
+    align-self: start;
+  }
+  .group {
+    border-bottom: 1px solid var(--divider);
+  }
+  .group summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-4) 0;
+    color: var(--fg-2);
+    cursor: pointer;
+    list-style: none;
+    transition: color var(--hover);
+  }
+  .group summary::-webkit-details-marker {
+    display: none;
+  }
+  .group summary:hover {
+    color: var(--fg);
+  }
+  .group summary :global(svg) {
+    transform: rotate(90deg);
+    transition: transform var(--change);
+  }
+  .group[open]:not([data-closing]) summary :global(svg) {
+    transform: rotate(-90deg);
+  }
+  /* Opening and closing glide: scripts/disclosure.ts eases the list's height open and shut, in every browser, and the
+     links fade in. Still a <details>, so it opens without scripts; reduced motion snaps. */
+  @media (prefers-reduced-motion: no-preference) {
+    .group[open]:not([data-closing]) ul {
+      animation: links-in var(--spring-appear-dur) var(--spring-appear) both;
+    }
+  }
+  @keyframes links-in {
+    from {
+      opacity: 0;
+      transform: translateY(calc(-1 * var(--space-2)));
+    }
+  }
+  .group ul,
+  .end ul {
+    display: grid;
+    gap: var(--space-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .group ul {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    padding-bottom: var(--space-6);
+  }
+  .group a,
+  .end a {
+    color: var(--fg-quiet);
+    font-size: var(--text-sm);
+    text-decoration: none;
+    transition: color var(--hover);
+  }
+  .group a:hover,
+  .end a:hover {
+    color: var(--fg);
+  }
+  /* Lists of links: no line at rest, only the hover line drawn in (global.css, text links). */
+  .group a,
+  .end a {
+    --link-rest: transparent;
+  }
+  .end {
+    display: grid;
+    align-content: start;
+    gap: var(--space-8);
+    font-size: var(--text-sm);
+  }
+  .end-title {
+    margin-bottom: var(--space-2);
+    font-family: var(--font);
+    font-size: var(--text-sm);
+    font-weight: 600;
+  }
+  .bottom {
+    grid-column: 1 / -1;
+    display: grid;
+    gap: var(--space-2);
+    padding-top: var(--space-6);
+    border-top: 1px solid var(--divider);
+    color: var(--fg-quiet);
+    font-size: var(--text-xs);
+  }
+  .bottom a {
+    color: var(--fg-2);
+  }
+  @media (max-width: 960px) {
+    .inner {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .start {
+      grid-template-rows: auto;
+    }
+  }
+</style>
+
+<script>
+  import '../scripts/disclosure';
+</script>

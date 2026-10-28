@@ -1,0 +1,311 @@
+---
+import Icon from '../ui/Icon.astro';
+
+const files: [string, string][] = [
+  ['password.key', '92 B'],
+  ['recovery.key', '92 B'],
+  ['kit.key', '92 B'],
+  ['cover.key', '60 B'],
+  ['list', '24 KB'],
+  ['search', '96 KB'],
+];
+// Blob names in the shared Files/ folder: random-looking, the same kind for both slots.
+const blobs = ['3f9a0c1e', 'b71d44e2', '0c5ee9a7', 'e2a19f30', '7d03b6c8', '91fa2e57', 'c4b8017d', '5e6f2a91', 'a0d7c3e4', '2b9e8f16', 'f61c05ad', '8e4d7b23'];
+
+const lenses = [
+  {
+    id: 'keyboard',
+    label: 'At the keyboard',
+    verdict: 'Fooled',
+    tone: 'ok',
+    text: 'Given the decoy password, the decoy looks complete. Settings has the same rows in both vaults. It has its own recovery key, its own emergency kit and the same intruder log. Unlock tries every password, recovery key and kit on both slots, so the time taken says nothing.',
+  },
+  {
+    id: 'copy',
+    label: 'A copy of the folder',
+    verdict: 'Fooled',
+    tone: 'ok',
+    text: 'With one copy and no password, the letters say nothing, both slots hold the same files, and both slots’ items share one Files/ folder under names only a slot can tell apart. Every key file has the same dates, so a decoy set a year later leaves nothing newer.',
+  },
+  {
+    id: 'later',
+    label: 'Copies over time',
+    verdict: 'Partly fooled',
+    tone: 'mid',
+    text: 'Every save rewrites both slots’ lists inside covers of one size, with one date, so added items can’t be told apart by slot. But copies taken at different times show when ways in change: a new password, recovery key or kit rewrites only that slot’s file, and setting or removing a decoy rewrites the whole other slot folder.',
+  },
+  {
+    id: 'password',
+    label: 'One password + a copy',
+    verdict: 'Not fooled',
+    tone: 'bad',
+    text: 'Someone with one password and a copy of the folder can see sealed files and a list size their vault doesn’t account for, and so that the other slot holds something and roughly how much, though not what.',
+  },
+];
+---
+
+<section class="section decoy" aria-labelledby="decoy-title">
+  <div class="container">
+    <div class="section-head reveal">
+      <p class="eyebrow lit">The decoy</p>
+      <h2 id="decoy-title" class="section-title rise">Two vaults built alike. Guess which one is yours.</h2>
+      <p class="lead">
+        A decoy password opens a second, harmless vault, for when someone makes you open Stillroom in front of them. On
+        disk, the two slots are built exactly alike, and nothing records which one is yours.
+      </p>
+    </div>
+
+    <div class="diagram glass panel reveal" data-decoy data-lens="keyboard">
+      <div class="slots">
+        {
+          ['a', 'b'].map((slot) => (
+            <div class="slot" data-slot={slot}>
+              <div class="slot-head">
+                <Icon name="folder" size={18} />
+                <span class="mono">{slot}/</span>
+                <span class="yours" data-yours>
+                  yours
+                </span>
+              </div>
+              <ul>
+                {files.map(([name, size]) => (
+                  <li data-file={name}>
+                    <Icon name={name.endsWith('.key') ? 'key' : 'doc'} size={14} />
+                    <span class="mono">{name}</span>
+                    <span class="meta">{size}</span>
+                    <span class="meta">24 Oct 2026</span>
+                  </li>
+                ))}
+              </ul>
+              <button class="btn pick" type="button" data-pick={slot}>
+                <span class="mono">{slot}</span> is mine
+              </button>
+            </div>
+          ))
+        }
+      </div>
+      <div class="shared">
+        <div class="slot-head"><Icon name="folder" size={18} /><span class="mono">Files/</span><span class="quiet">both slots’ items, one folder</span></div>
+        <div class="blobs">
+          {blobs.map((b) => <span class="blob mono">{b}….stillroom</span>)}
+        </div>
+      </div>
+      <p class="answer" role="status" aria-live="polite" data-answer>
+        Pick one. Anyone holding a copy of the folder has the same odds you do.
+      </p>
+    </div>
+
+    <div class="lenses reveal">
+      <p class="eyebrow">Who’s looking</p>
+      <div class="segments" role="tablist" aria-label="Who is looking at the vault" data-lens-tabs>
+        <span class="pill" aria-hidden="true"></span>
+        {
+          lenses.map((l, i) => (
+            <button
+              type="button"
+              role="tab"
+              id={`lens-${l.id}`}
+              data-value={l.id}
+              aria-controls={`lens-panel-${l.id}`}
+              aria-selected={i === 0 ? 'true' : 'false'}
+              tabindex={i === 0 ? 0 : -1}
+            >
+              {l.label}
+            </button>
+          ))
+        }
+      </div>
+      {
+        lenses.map((l, i) => (
+          <div class="lens glass" role="tabpanel" id={`lens-panel-${l.id}`} aria-labelledby={`lens-${l.id}`} hidden={i !== 0} data-tabpanel>
+            <p class:list={['verdict', l.tone]}>{l.verdict}</p>
+            <p>{l.text}</p>
+          </div>
+        ))
+      }
+    </div>
+
+    <div class="limits reveal">
+      <p class="say-it">Protection against thieves and abusers, not police.</p>
+      <p class="quiet">
+        Touch ID opens one vault, the one where it was last turned on: if you rely on the decoy, turn Touch ID on in the
+        decoy or not at all. Setting a decoy from inside the decoy deletes the real vault. The full list of what it does and
+        doesn’t do is <a href="/security/#rules">rule 2 of the security rules</a>.
+      </p>
+    </div>
+  </div>
+</section>
+
+<script>
+  import '../../scripts/decoy';
+</script>
+
+<style>
+  .diagram {
+    display: grid;
+    gap: 16px;
+    padding: var(--card-pad);
+  }
+  .slots {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  .slot,
+  .shared {
+    display: grid;
+    gap: 12px;
+    padding: 16px;
+    border: 1px solid var(--glass-border);
+    border-radius: var(--r-card);
+    background: var(--bg);
+    transition:
+      border-color var(--change),
+      box-shadow var(--change);
+  }
+  .slot-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-weight: 600;
+  }
+  .slot-head :global(svg) {
+    color: var(--vault);
+  }
+  .yours {
+    margin-left: auto;
+    padding: 2px 12px;
+    border-radius: var(--r-pill);
+    background: rgb(var(--vault-rgb) / 0.24);
+    color: var(--vault);
+    font-size: var(--text-xs);
+    font-weight: 600;
+    opacity: 0;
+    transform: scale(0.8);
+    transition:
+      opacity var(--change),
+      transform var(--change);
+  }
+  .slot.is-yours {
+    border-color: rgb(var(--vault-rgb) / 0.5);
+    box-shadow: 0 0 0 4px rgb(var(--vault-rgb) / 0.1);
+  }
+  .slot.is-yours .yours {
+    opacity: 1;
+    transform: none;
+  }
+  ul {
+    display: grid;
+    gap: 4px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  li {
+    display: grid;
+    grid-template-columns: 16px 1fr auto auto;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 8px;
+    border-radius: 8px;
+    font-size: var(--text-sm);
+    transition: background-color var(--change);
+  }
+  li :global(svg) {
+    opacity: 0.6;
+  }
+  .meta {
+    color: var(--fg-quiet);
+    font-size: var(--text-xs);
+  }
+  .pick {
+    justify-self: start;
+  }
+  .blobs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .blob {
+    padding: 4px 8px;
+    border-radius: 8px;
+    background: var(--glass);
+    color: var(--fg-quiet);
+    font-size: var(--text-xs);
+  }
+  .answer {
+    min-height: 3em;
+    color: var(--fg-2);
+  }
+  .answer :global(strong) {
+    color: var(--vault);
+  }
+  /* The lenses light what each onlooker can or can't use. */
+  .diagram[data-lens='later'] [data-slot='b'] [data-file='recovery.key'],
+  .diagram[data-lens='later'] [data-slot='a'] [data-file='password.key'] {
+    background: rgb(255 159 67 / 0.12);
+  }
+  .diagram[data-lens='password'] [data-slot='b'] {
+    border-color: rgb(255 159 67 / 0.45);
+    box-shadow: 0 0 0 4px rgb(255 159 67 / 0.08);
+  }
+  .diagram[data-lens='password'] .blob:nth-child(3n) {
+    background: rgb(255 159 67 / 0.14);
+    color: var(--orange);
+  }
+  .lenses {
+    display: grid;
+    justify-items: start;
+    gap: 16px;
+    margin-top: 40px;
+  }
+  .lens {
+    display: grid;
+    gap: 8px;
+    max-width: 820px;
+    padding: var(--card-pad);
+  }
+  .lens p:last-child {
+    color: var(--fg-2);
+  }
+  .verdict {
+    font-weight: 600;
+  }
+  .verdict.ok {
+    color: var(--green);
+  }
+  .verdict.mid {
+    color: #ffd166;
+  }
+  .verdict.bad {
+    color: var(--orange);
+  }
+  .limits {
+    display: grid;
+    gap: 12px;
+    max-width: 820px;
+    margin-top: 32px;
+  }
+  .say-it {
+    font-size: var(--text-2xl);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  .limits .quiet {
+    font-size: var(--text-base);
+  }
+  @media (max-width: 720px) {
+    .slots {
+      grid-template-columns: 1fr;
+    }
+    .diagram {
+      padding: 16px;
+    }
+    li {
+      grid-template-columns: 16px 1fr auto;
+    }
+    li .meta:last-child {
+      display: none;
+    }
+  }
+</style>

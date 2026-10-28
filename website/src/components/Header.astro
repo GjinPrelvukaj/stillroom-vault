@@ -1,0 +1,642 @@
+---
+// The header: pill links either side of the wordmark, whose "O" is the app's dot ring. It stays put; away from the top
+// the wordmark is folded to "S" and the ring, its letters tucking into the ring one by one, and it unfolds again back at
+// the top (scripts/header.ts). The menu is a
+// full-screen ink panel: featured reading on the left, every page on the right. It's a <details>, so it opens and
+// closes without scripts; scripts only add Escape to close and keep focus inside.
+import { getCollection } from 'astro:content';
+import { nav } from '../config';
+import { hubSections, sections } from '../lib/sections';
+import Icon from './ui/Icon.astro';
+import Art from './Art.astro';
+import Search from './Search.astro';
+
+const path = Astro.url.pathname;
+const current = (href: string) => path === href || (href !== '/' && path.startsWith(href));
+
+const ring = (cx: number, cy: number, r: number, n: number) =>
+  Array.from({ length: n }, (_, i) => {
+    const a = (i / n) * 2 * Math.PI - Math.PI / 2;
+    return { x: +(cx + r * Math.cos(a)).toFixed(2), y: +(cy + r * Math.sin(a)).toFixed(2) };
+  });
+const markDots = ring(12, 12, 8.6, 16);
+// Each folding letter's distance from the ring, which orders the fold.
+const before = [...'TILLR'].map((ch, i, all) => ({ ch, d: all.length - 1 - i }));
+const after = [...'OM'].map((ch, d) => ({ ch, d }));
+
+const pages = await getCollection('pages');
+const bySection = (s: string) => pages.filter((p) => p.id.startsWith(`${s}/`)).sort((a, b) => a.data.order - b.data.order);
+const featured = ['learn/argon2id', 'compare/cryptomator', 'guides/encrypt-files-on-mac']
+  .map((id) => pages.find((p) => p.id === id))
+  .filter((p) => p !== undefined);
+const tints = ['olive', 'slate', 'rose'];
+const groups = [
+  ...hubSections.map((s) => ({ title: sections[s].name, hub: `/${s}/`, links: bySection(s).map((p) => [`/${p.id}/`, p.data.name]) })),
+  {
+    title: 'Legal',
+    hub: '',
+    links: [
+      ['/terms/', 'Terms and EULA'],
+      ['/refunds/', 'Refund policy'],
+      ['/privacy/', 'Privacy policy'],
+      ['/license/', 'Source licence'],
+      ['/security-policy/', 'Report a security problem'],
+    ],
+  },
+];
+const main = [{ href: '/', label: 'Home' }, ...nav, { href: '/download/', label: 'Download' }, { href: '/changelog/', label: 'Changelog' }];
+---
+
+<header class="site-header" data-header>
+  <div class="bar">
+    <nav class="side start" aria-label="Main pages">
+      {
+        nav.slice(0, 3).map((item) => (
+          <a class="pill" href={item.href} aria-current={current(item.href) ? 'page' : undefined}>
+            {item.label}
+          </a>
+        ))
+      }
+    </nav>
+
+    <a class="mark" href="/">
+      <span class="visually-hidden">Stillroom Vault, home</span><span aria-hidden="true">S</span>{before.map((l) => <span class={`fold d${l.d}`} aria-hidden="true"><span>{l.ch}</span></span>)}<svg
+        class="mark-o"
+        viewBox="0 0 24 24"
+        aria-hidden="true">{markDots.map((d) => <circle cx={d.x} cy={d.y} r="1.45" />)}</svg
+      >{after.map((l) => <span class={`fold d${l.d}`} aria-hidden="true"><span>{l.ch}</span></span>)}
+    </a>
+
+    <div class="side end">
+      <nav class="end-links" aria-label="Pricing and support">
+        {
+          nav.slice(3).map((item) => (
+            <a class="pill" href={item.href} aria-current={current(item.href) ? 'page' : undefined}>
+              {item.label}
+            </a>
+          ))
+        }
+      </nav>
+      <a class="pill dark" href="/download/" aria-label="Download Stillroom Vault"><Icon name="download" size={14} /> <span class="dl-text">Download</span></a>
+      <Search />
+      <details class="menu" data-menu>
+        <summary class="menu-button" aria-label="Menu">
+          <span class="lines" aria-hidden="true"><i></i><i></i></span>
+        </summary>
+        <div class="menu-panel ink">
+          <div class="menu-inner">
+            <section class="menu-feature" aria-label="Featured reading">
+              {
+                featured.map((p, i) => (
+                  <a class="feature" href={`/${p.id}/`}>
+                    <Art name={`menu-${i + 1}`} tint={tints[i] as 'olive' | 'slate' | 'rose'} ratio="5 / 3" plate />
+                    <span class="feature-tag">{sections[p.id.split('/')[0] as keyof typeof sections].name}</span>
+                    <strong>{p.data.name}</strong>
+                  </a>
+                ))
+              }
+            </section>
+            <nav class="menu-nav" aria-label="Main">
+              <ul class="big" data-text-roll>
+                {
+                  main.map((item) => (
+                    <li>
+                      <a href={item.href} aria-current={path === item.href ? 'page' : undefined}>
+                        {item.label}
+                      </a>
+                    </li>
+                  ))
+                }
+              </ul>
+              <div class="groups">
+                {
+                  groups.map((g) => (
+                    <details class="group">
+                      <summary>
+                        {g.title}
+                        <Icon name="chevron" size={16} />
+                      </summary>
+                      <ul>
+                        {g.hub && (
+                          <li>
+                            <a href={g.hub}>All {g.title.toLowerCase()}</a>
+                          </li>
+                        )}
+                        {g.links.map(([href, label]) => (
+                          <li>
+                            <a href={href}>{label}</a>
+                          </li>
+                        ))}
+                      </ul>
+                    </details>
+                  ))
+                }
+              </div>
+            </nav>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+</header>
+<div class="bottom-fade" aria-hidden="true"></div>
+
+<script>
+  import '../scripts/header';
+  import '../scripts/text-roll';
+</script>
+
+<style>
+  .site-header {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    border-bottom: 1px solid transparent;
+    background-color: var(--bg);
+    /* No backdrop-filter: it would make the header the box the fixed, full-screen menu is placed in. */
+    transition: border-color var(--change);
+  }
+  /* Away from the top, a progressive blur hangs under the bar (after Skiper UI's), so text slides softly beneath it
+     instead of meeting a hard edge. On a child, not the header, which must not get a backdrop-filter (see above). */
+  .site-header::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    height: var(--space-8);
+    /* Blur only, no paper tint: the tint showed as a pale smear over the ink footer and the app's window. */
+    backdrop-filter: blur(var(--space-1));
+    -webkit-backdrop-filter: blur(var(--space-1));
+    mask-image: linear-gradient(#000 40%, transparent);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--change);
+  }
+  .site-header.scrolled::after {
+    opacity: 1;
+  }
+  @media (prefers-reduced-transparency: reduce) {
+    .site-header::after {
+      display: none;
+    }
+    .site-header.scrolled {
+      border-bottom-color: var(--divider);
+    }
+  }
+  .bar {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: var(--space-4);
+    height: var(--header-h);
+    padding-inline: var(--gutter);
+  }
+  .side {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+  .side.end,
+  .end-links {
+    justify-content: flex-end;
+  }
+  .end-links {
+    display: flex;
+    gap: var(--space-2);
+  }
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    min-height: 32px;
+    padding: 0 var(--space-3);
+    border: 1px solid var(--hairline);
+    border-radius: var(--r-pill);
+    color: var(--fg-2);
+    font-size: var(--text-sm);
+    text-decoration: none;
+    white-space: nowrap;
+    transition:
+      color var(--hover),
+      background-color var(--hover),
+      border-color var(--hover);
+  }
+  .pill:hover {
+    color: var(--fg);
+    background: var(--glass-strong);
+  }
+  .pill[aria-current='page'] {
+    color: var(--fg);
+    border-color: var(--fg-quiet);
+  }
+  .pill.dark {
+    border-color: var(--ink);
+    background: var(--ink);
+    color: var(--paper);
+  }
+  .pill.dark:hover {
+    background: color-mix(in srgb, var(--ink), var(--paper) 14%);
+  }
+
+  /* The wordmark, and its fold. */
+  .mark {
+    display: inline-flex;
+    align-items: center;
+    color: var(--fg);
+    font-family: var(--font-display);
+    font-size: var(--text-xl);
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-decoration: none;
+  }
+  /* Folding, the letters next to the ring go first and the rest follow outwards; unfolding runs the same way, so
+     the name seems to come out of the ring. */
+  .fold {
+    display: inline-grid;
+    grid-template-columns: 1fr;
+    transition:
+      grid-template-columns var(--change),
+      opacity var(--hover);
+  }
+  .fold.d1 {
+    transition-delay: 40ms;
+  }
+  .fold.d2 {
+    transition-delay: 80ms;
+  }
+  .fold.d3 {
+    transition-delay: 120ms;
+  }
+  .fold.d4 {
+    transition-delay: 160ms;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .fold {
+      transition: none;
+    }
+  }
+  .fold > span {
+    overflow: hidden;
+  }
+  .mark-o {
+    flex: none;
+    width: 0.95em;
+    height: 0.95em;
+    margin: 0 0.1em;
+    fill: currentColor;
+  }
+  .mark-o circle:nth-child(-n + 4) {
+    fill: var(--vault);
+  }
+  .site-header.folded .fold {
+    grid-template-columns: 0fr;
+    opacity: 0;
+  }
+
+  /* The menu button: two lines that cross into an X while the menu is open, above the panel. */
+  .menu {
+    position: static;
+  }
+  .menu-button {
+    position: relative;
+    z-index: 2;
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    border: 1px solid var(--hairline);
+    border-radius: var(--r-field);
+    cursor: pointer;
+    list-style: none;
+    transition: background-color var(--hover);
+  }
+  .menu-button::-webkit-details-marker {
+    display: none;
+  }
+  .menu-button:hover {
+    background: var(--glass-strong);
+  }
+  .lines {
+    display: grid;
+    gap: 5px;
+  }
+  .lines i {
+    display: block;
+    width: 16px;
+    height: 1.5px;
+    border-radius: 2px;
+    background: var(--fg);
+    transition: transform var(--change);
+  }
+  .menu[open] .menu-button {
+    position: fixed;
+    top: calc((var(--header-h) - 36px) / 2);
+    right: var(--gutter);
+    z-index: 61;
+    border-color: rgb(255 255 255 / 0.2);
+  }
+  .menu[open] .lines i {
+    background: rgb(255 255 255 / 0.94);
+  }
+  .menu[open] .lines i:first-child {
+    transform: translateY(3.25px) rotate(45deg);
+  }
+  .menu[open] .lines i:last-child {
+    transform: translateY(-3.25px) rotate(-45deg);
+  }
+
+  /* The panel: the whole screen, in ink. */
+  .menu-panel {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  /* In: the ink drops from the top edge like a curtain, then its contents arrive one after another, rising a little.
+     Out (.closing, set by scripts/header.ts): the curtain goes back up, faster, contents first. Reduced motion: none. */
+  @media (prefers-reduced-motion: no-preference) {
+    .menu[open] .menu-panel {
+      animation: menu-in 640ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+    .menu.closing .menu-panel {
+      animation: menu-out 380ms cubic-bezier(0.55, 0, 0.75, 0.2) both;
+    }
+    .menu[open] :is(.feature, .big li, .groups) {
+      animation: item-in 560ms cubic-bezier(0.22, 1, 0.36, 1) both;
+      animation-delay: calc(160ms + var(--n, 0) * 45ms);
+    }
+    .menu.closing :is(.feature, .big li, .groups) {
+      animation: item-out 180ms ease-in both;
+      animation-delay: 0ms;
+    }
+    .big li:nth-child(2),
+    .feature:nth-child(2) {
+      --n: 1;
+    }
+    .big li:nth-child(3),
+    .feature:nth-child(3) {
+      --n: 2;
+    }
+    .big li:nth-child(4) {
+      --n: 3;
+    }
+    .big li:nth-child(5) {
+      --n: 4;
+    }
+    .big li:nth-child(6) {
+      --n: 5;
+    }
+    .big li:nth-child(7) {
+      --n: 6;
+    }
+    .big li:nth-child(8),
+    .groups {
+      --n: 7;
+    }
+  }
+  @keyframes menu-in {
+    from {
+      clip-path: inset(0 0 100% 0);
+    }
+    to {
+      clip-path: inset(0);
+    }
+  }
+  @keyframes menu-out {
+    from {
+      clip-path: inset(0);
+    }
+    to {
+      clip-path: inset(0 0 100% 0);
+    }
+  }
+  @keyframes item-in {
+    from {
+      opacity: 0;
+      transform: translateY(var(--space-4));
+    }
+  }
+  @keyframes item-out {
+    to {
+      opacity: 0;
+    }
+  }
+  :global(html:has(.menu[open])) {
+    overflow: hidden;
+  }
+  .menu-inner {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
+    gap: var(--space-16);
+    min-height: 100%;
+    padding: calc(var(--header-h) + var(--space-12)) var(--gutter) var(--space-16);
+  }
+  .menu-feature {
+    display: grid;
+    align-content: start;
+    gap: var(--space-8);
+    max-width: 420px;
+  }
+  .feature {
+    display: grid;
+    gap: var(--space-2);
+    text-decoration: none;
+  }
+  .feature-tag {
+    color: var(--fg-quiet);
+    font-size: var(--text-sm);
+  }
+  .feature strong {
+    font-size: var(--text-lg);
+    font-weight: 600;
+  }
+  .feature:hover strong {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  .big {
+    display: grid;
+    gap: var(--space-2);
+    margin: 0 0 var(--space-12);
+    padding: 0;
+    list-style: none;
+  }
+  .big a {
+    color: var(--fg-2);
+    font-family: var(--font-serif);
+    font-size: var(--text-4xl);
+    line-height: 1.2;
+    text-decoration: none;
+    transition: color var(--hover);
+  }
+  .big a:hover,
+  .big a[aria-current='page'] {
+    color: var(--fg);
+  }
+  /* The letter roll (scripts/text-roll.ts, after Skiper UI's text roll navigation, 58): the word's letters rise out of
+     its box as their twins rise in from below, on the change spring. Reduced motion: the word stays still. */
+  .big a {
+    position: relative;
+    display: inline-block;
+  }
+  .big :global(.text-roll) {
+    position: relative;
+    display: block;
+    overflow: hidden;
+  }
+  .big :global(.text-roll-row.under) {
+    position: absolute;
+    inset: 0;
+  }
+  .big :global(.text-roll-row span) {
+    display: inline-block;
+    transition: transform var(--change);
+  }
+  .big :global(.text-roll-row.under span) {
+    transform: translateY(100%);
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .big a:is(:hover, :focus-visible) :global(.text-roll-row span) {
+      transform: translateY(-100%);
+    }
+    .big a:is(:hover, :focus-visible) :global(.text-roll-row.under span) {
+      transform: none;
+    }
+  }
+  .groups {
+    border-top: 1px solid var(--hairline);
+  }
+  .group {
+    border-bottom: 1px solid var(--hairline);
+  }
+  .group summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-4) 0;
+    color: var(--fg-2);
+    font-size: var(--text-sm);
+    cursor: pointer;
+    list-style: none;
+  }
+  .group summary::-webkit-details-marker {
+    display: none;
+  }
+  .group summary :global(svg) {
+    transform: rotate(90deg);
+    transition: transform var(--change);
+  }
+  .group[open] summary :global(svg) {
+    transform: rotate(-90deg);
+  }
+  .group ul {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-2) var(--space-6);
+    margin: 0;
+    padding: 0 0 var(--space-6);
+    list-style: none;
+  }
+  .group ul a {
+    color: var(--fg-quiet);
+    font-size: var(--text-sm);
+    text-decoration: none;
+  }
+  .group ul a:hover {
+    color: var(--fg);
+  }
+
+  /* The progressive blur at the screen's foot, in paper. */
+  .bottom-fade {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 49;
+    height: var(--space-16);
+    background: linear-gradient(rgb(247 246 242 / 0), rgb(247 246 242 / 0.6));
+    backdrop-filter: blur(var(--space-1));
+    -webkit-backdrop-filter: blur(var(--space-1));
+    mask-image: linear-gradient(transparent, #000);
+    pointer-events: none;
+  }
+  /* It fades in over the first 200px of scrolling, so at the top of a page whatever peeks below the opening (the
+     first panel under a banner) is crisp and reads as "there's more"; and it fades out over the last screen. Two
+     scroll-driven numbers multiplied, since two animations on opacity itself would fight. */
+  @property --fade-in {
+    syntax: '<number>';
+    inherits: false;
+    initial-value: 1;
+  }
+  @property --fade-out {
+    syntax: '<number>';
+    inherits: false;
+    initial-value: 1;
+  }
+  @supports (animation-timeline: scroll()) {
+    .bottom-fade {
+      opacity: calc(var(--fade-in) * var(--fade-out));
+      animation:
+        fade-in-from-top linear both,
+        fade-out-at-end linear both;
+      animation-timeline: scroll(root), scroll(root);
+      animation-range:
+        0 200px,
+        calc(100% - 100vh) 100%;
+    }
+  }
+  @keyframes fade-in-from-top {
+    from {
+      --fade-in: 0;
+    }
+    to {
+      --fade-in: 1;
+    }
+  }
+  @keyframes fade-out-at-end {
+    to {
+      --fade-out: 0;
+    }
+  }
+  @media (prefers-reduced-transparency: reduce) {
+    .bottom-fade {
+      display: none;
+    }
+  }
+
+  @media (max-width: 960px) {
+    .side.start,
+    .end-links {
+      display: none;
+    }
+    .bar {
+      grid-template-columns: auto 1fr;
+    }
+    .menu-inner {
+      grid-template-columns: minmax(0, 1fr);
+      gap: var(--space-12);
+    }
+    .menu-feature {
+      order: 2;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      max-width: none;
+      gap: var(--space-4);
+    }
+    .feature strong {
+      font-size: var(--text-sm);
+    }
+  }
+  @media (max-width: 560px) {
+    .dl-text {
+      display: none;
+    }
+    .menu-feature {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .group ul {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+</style>

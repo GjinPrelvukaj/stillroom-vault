@@ -1,0 +1,214 @@
+---
+// "What it does": what the vault keeps and how it keeps it shut, as quiet rows that each lead to the page explaining
+// that part in full. Hairlines, no boxes: the same calm as the articles.
+import Icon from '../ui/Icon.astro';
+import type { IconName } from '../../lib/icons';
+
+const rows: { icon: IconName; name: string; text: string; href: string }[] = [
+  {
+    icon: 'folder',
+    name: 'Drop in files and whole folders',
+    text: 'Each copy is read back and checked before Stillroom offers to delete the original.',
+    href: '/features/#keep-anything',
+  },
+  {
+    icon: 'eye',
+    name: 'Viewed in memory',
+    text: 'PDFs, images, text and email open in built-in viewers, without a decrypted copy on disk.',
+    href: '/features/view-without-decrypting/',
+  },
+  {
+    icon: 'clock',
+    name: 'Two-factor codes, live',
+    text: 'A secret holding a setup key shows its current code, beside the login.',
+    href: '/guides/store-two-factor-backup-codes/',
+  },
+  {
+    icon: 'key',
+    name: 'Four ways in',
+    text: 'Password, recovery key, emergency kit and Touch ID. Lose one, use another.',
+    href: '/features/recovery-key/',
+  },
+  {
+    icon: 'stack',
+    name: 'A decoy password',
+    text: 'A second, harmless vault for when someone makes you open it. Against thieves and abusers, not police.',
+    href: '/features/decoy-password/',
+  },
+  {
+    icon: 'eye-off',
+    name: 'Hidden from capture',
+    text: 'Kept out of screenshots and screen sharing unless you choose to show a vault.',
+    href: '/features/hidden-from-capture/',
+  },
+  {
+    icon: 'person-shield',
+    name: 'An intruder log',
+    text: 'Wrong tries, and a photo if you allow it, sealed so only an open vault reads them.',
+    href: '/features/intruder-log/',
+  },
+  {
+    icon: 'archive',
+    name: 'Never locked in',
+    text: 'Encrypted backups, plain-file export, and a public format you can read without us.',
+    href: '/format/',
+  },
+];
+---
+
+<section class="section bento-section" aria-labelledby="bento-title">
+  <div class="container">
+    <div class="section-head reveal">
+      <p class="eyebrow lit">What it does</p>
+      <h2 id="bento-title" class="section-title rise">Keep anything, and open it without a decrypted copy on your disk.</h2>
+      <p class="lead">
+        Scans, contracts, photos, passwords, two-factor setups and private notes: whatever you’d lock in a drawer.
+      </p>
+    </div>
+
+    <ul class="rows stagger">
+      {
+        rows.map((r) => (
+          <li>
+            <a href={r.href}>
+              <Icon name={r.icon} size={22} class={`i-${r.icon}`} />
+              <span class="text">
+                <span class="name">{r.name}</span>
+                <span class="what">{r.text}</span>
+              </span>
+              <span class="go" aria-hidden="true"><Icon name="arrow" size={16} /></span>
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+    <p class="more-row reveal"><a class="btn" href="/features/">Every feature <Icon name="arrow" size={16} /></a></p>
+  </div>
+</section>
+
+<style>
+  .rows {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: var(--space-12);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  li {
+    border-top: 1px solid var(--divider);
+  }
+  li:nth-last-child(-n + 2) {
+    border-bottom: 1px solid var(--divider);
+  }
+  li > a {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: start;
+    gap: var(--space-4);
+    height: 100%;
+    padding: var(--space-6) var(--space-3);
+    margin-inline: calc(-1 * var(--space-3));
+    border-radius: var(--r-card);
+    text-decoration: none;
+    transition: background-color var(--hover);
+  }
+  li > a > :global(svg:first-child) {
+    margin-top: 2px;
+    color: var(--vault);
+  }
+  .text {
+    display: grid;
+    gap: var(--space-1);
+  }
+  .name {
+    color: var(--fg);
+    font-size: var(--text-lg);
+    font-weight: 600;
+    transition: color var(--hover);
+  }
+  .what {
+    color: var(--fg-2);
+    font-size: var(--text-base);
+    line-height: 1.55;
+  }
+  .go {
+    margin-top: var(--space-1);
+    color: var(--fg-quiet);
+    transition:
+      color var(--hover),
+      transform var(--hover);
+  }
+  li > a:hover {
+    background: var(--glass);
+  }
+  li > a:hover .name,
+  li > a:hover .go {
+    color: var(--vault);
+  }
+  @media (hover: hover) and (prefers-reduced-motion: no-preference) {
+    a:hover .go {
+      transform: translateX(var(--space-1));
+    }
+  }
+  /* Each icon does one small thing of its own while its row is hovered or focused (after Skiper UI's 99 Animated
+     icons): the folder tips open, the eye looks along, the clock hand turns, the key turns, the stack lifts, the
+     slash redraws, the shield steps forward, the lid lifts. Still with reduced motion. */
+  @media (prefers-reduced-motion: no-preference) {
+    li > a > :global(svg),
+    li > a > :global(svg *) {
+      transition: transform var(--bounce);
+    }
+    li > a:is(:hover, :focus-visible) > :global(.i-folder) {
+      transform: rotate(-8deg) translateY(-1px);
+    }
+    li > a:is(:hover, :focus-visible) > :global(.i-eye circle) {
+      transform: translateX(2px);
+    }
+    li > a > :global(.i-clock path) {
+      transform-origin: 12px 12px;
+    }
+    li > a:is(:hover, :focus-visible) > :global(.i-clock path) {
+      transform: rotate(120deg);
+    }
+    li > a:is(:hover, :focus-visible) > :global(.i-key) {
+      transform: rotate(-18deg);
+    }
+    li > a:is(:hover, :focus-visible) > :global(.i-stack path) {
+      transform: translateY(-2px);
+    }
+    li > a:is(:hover, :focus-visible) > :global(.i-eye-off path:first-child) {
+      animation: icon-draw 420ms var(--spring-change) both;
+    }
+    li > a > :global(.i-person-shield path:last-child) {
+      transform-origin: 17.5px 16.5px;
+    }
+    li > a:is(:hover, :focus-visible) > :global(.i-person-shield path:last-child) {
+      transform: scale(1.14);
+    }
+    li > a:is(:hover, :focus-visible) > :global(.i-archive rect) {
+      transform: translateY(-2px);
+    }
+  }
+  @keyframes icon-draw {
+    from {
+      stroke-dasharray: 26;
+      stroke-dashoffset: 26;
+    }
+    to {
+      stroke-dasharray: 26;
+      stroke-dashoffset: 0;
+    }
+  }
+  .more-row {
+    margin-top: var(--space-8);
+  }
+  @media (max-width: 760px) {
+    .rows {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    li:nth-last-child(2) {
+      border-bottom: 0;
+    }
+  }
+</style>
