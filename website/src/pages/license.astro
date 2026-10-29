@@ -1,14 +1,40 @@
 ---
 import DocLayout from '../layouts/DocLayout.astro';
-import { hasArt, ownArt } from '../lib/art';
+import Icon from '../components/ui/Icon.astro';
+import { site } from '../config';
 ---
 
-<DocLayout legal picture={ownArt('page-legal-license', 'page-legal')}
-  banner={hasArt('page-legal-license')}
+<DocLayout legal
+  pointsTitle="The short version"
+  points={[
+    '**Read it, audit it, build it and change it** for your own use.',
+    '**Don\'t sell it** as a competing product.',
+    '**Each version becomes Apache 2.0** two years after its release.',
+    '**The vault reader in tools/ is MIT:** anyone may use it for anything.',
+  ]}
   doc="license"
   title="Source Licence (FSL-1.1-ALv2)"
   h1="Stillroom Vault source licence"
   eyebrow="Licence"
   description="Stillroom Vault's source licence, FSL-1.1-ALv2: read, audit, build and change it for your own use. Each version becomes Apache 2.0 two years after release."
-  lead="Read it, audit it, build it and change it for your own use, but don’t sell it as a competing product. Each version becomes Apache 2.0 two years after its release. The vault reader in tools/ is MIT: anyone may use it for anything."
-/>
+  lead="The licence for Stillroom Vault’s source code: FSL-1.1-ALv2, and MIT for the vault reader."
+>
+  <!-- The source itself, right under the heading: one public snapshot per release. -->
+  <Fragment slot="before">
+    <div class="container source">
+      <a class="btn primary" href={site.repo}><Icon name="external" size={16} /> Read the source on GitHub</a>
+      <span class="quiet">One public snapshot of the code for every release.</span>
+    </div>
+  </Fragment>
+</DocLayout>
+
+<style>
+  .source {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-4);
+    margin-bottom: var(--space-12);
+  }
+</style>

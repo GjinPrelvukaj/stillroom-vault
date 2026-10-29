@@ -7,7 +7,7 @@ const markDots = Array.from({ length: 16 }, (_, i) => {
   const a = (i / 16) * 2 * Math.PI - Math.PI / 2;
   return { x: +(12 + 8.6 * Math.cos(a)).toFixed(2), y: +(12 + 8.6 * Math.sin(a)).toFixed(2) };
 });
-// The checkout page loads Paddle's script, so its footer doesn't claim zero third parties.
+// The checkout page loads Paddle's script, which may set cookies, so its footer says so.
 const paddleHere = Boolean(paddle.clientToken) && Astro.url.pathname.startsWith('/checkout');
 const cols = [
   {
@@ -19,6 +19,8 @@ const cols = [
       ['/pricing/', 'Pricing'],
       ['/download/', 'Download'],
       ['/changelog/', 'Changelog'],
+      [site.repo, 'Source on GitHub'],
+      ['/about/', 'About Stillroom'],
     ],
   },
   {
@@ -29,6 +31,7 @@ const cols = [
       ['/moving-from/', 'Moving to Stillroom'],
       ['/learn/', 'Encryption explained'],
       ['/for/', 'Who it’s for'],
+      ['/tools/', 'Free tools'],
     ],
   },
   {
@@ -60,17 +63,7 @@ const cols = [
         ><span aria-hidden="true">OM</span>
       </a>
       <div class="start-foot">
-        {
-          paddleHere ? (
-            <p class="quiet">This page loads Paddle’s checkout, which may set cookies when you buy. Every other page loads nothing from anyone else.</p>
-          ) : (
-            <ul class="zero" aria-label="What this website keeps about you">
-              <li><span class="n" data-scramble>0</span> cookies</li>
-              <li><span class="n" data-scramble>0</span> trackers</li>
-              <li><span class="n" data-scramble>0</span> third-party requests</li>
-            </ul>
-          )
-        }
+        {paddleHere && <p class="quiet">This page loads Paddle’s checkout, which may set cookies when you buy.</p>}
         <p class="copy">© {site.year} <Owners id="owners-footer" /></p>
       </div>
     </div>
@@ -113,13 +106,13 @@ const cols = [
 
     <div class="bottom">
       <p>{paddleWording}</p>
-      <p>Source licensed <a href="/license/">FSL&#8209;1.1&#8209;ALv2</a>; the vault reader <a href="/format/#open-without-us">MIT</a></p>
+      <p>Source licensed <a href="/license/">FSL&#8209;1.1&#8209;ALv2</a>, <a href={site.repo}>on GitHub</a>; the vault reader <a href="/format/#open-without-us">MIT</a></p>
     </div>
   </div>
 </footer>
 
 <style>
-  /* Three columns: the name (and, at its foot, what this site keeps and the copyright), every page in folding groups,
+  /* Three columns: the name (and, at its foot, the copyright), every page in folding groups,
      then a line about the app and the addresses. */
   .site-footer {
     padding: var(--space-16) 0 var(--space-12);
@@ -161,23 +154,6 @@ const cols = [
   }
   .brand-o circle:nth-child(-n + 4) {
     fill: var(--vault);
-  }
-  .zero {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-2) var(--space-4);
-    margin: 0;
-    padding: 0;
-    list-style: none;
-    color: var(--fg-quiet);
-    font-size: var(--text-sm);
-  }
-  .zero .n {
-    display: inline-block;
-    min-width: 1ch;
-    color: var(--vault);
-    font-family: var(--font-mono);
-    font-weight: 600;
   }
   .copy {
     color: var(--fg-quiet);

@@ -1,0 +1,157 @@
+---
+// The free tools hub, after Claude Academy's use-case library: a row of topics that jump to their section, then each
+// topic as a titled section of cards. A card is the tool's picture as a short strip, its name, what it does, and one
+// quiet line saying what kind of tool it is.
+import Art from '../Art.astro';
+import Icon from '../ui/Icon.astro';
+import { toolGroups, toolKind } from '../../lib/tools';
+
+interface Props {
+  items: { href: string; name: string; description: string; art: string }[];
+}
+const { items } = Astro.props;
+const bySlug = new Map(items.map((i) => [i.href.split('/')[2]!, i]));
+const groups = toolGroups.map((g) => ({ ...g, tools: g.slugs.map((s) => bySlug.get(s)).filter((t) => t !== undefined) }));
+// Every tool page belongs to a group; a new one without a place in lib/tools.ts fails the build rather than vanishing.
+const missing = items.filter((i) => !groups.some((g) => g.tools.includes(i)));
+if (missing.length) throw new Error(`Free tools with no group in src/lib/tools.ts: ${missing.map((m) => m.href).join(', ')}`);
+---
+
+<nav class="topics" aria-label="Topics">
+  {groups.map((g) => <a href={`#${g.id}`}>{g.title}</a>)}
+</nav>
+
+{
+  groups.map((g) => (
+    <section class="group" id={g.id} aria-labelledby={`${g.id}-title`}>
+      <div class="group-head">
+        <h2 id={`${g.id}-title`}>{g.title}</h2>
+        <p class="quiet">{g.lead}</p>
+      </div>
+      <ul class="cards">
+        {g.tools.map((t) => (
+          <li>
+            <a href={t.href}>
+              <Art name={t.art} ratio="2 / 1" plate sizes="(max-width: 900px) 92vw, 400px" />
+              <span class="body">
+                <span class="name">{t.name}</span>
+                <span class="what">{t.description}</span>
+                <span class="meta">
+                  {toolKind[t.href.split('/')[2]!]} <span aria-hidden="true">·</span> <Icon name="cloud-off" size={13} /> Runs in your browser
+                </span>
+              </span>
+            </a>
+          </li>
+        ))}
+      </ul>
+    </section>
+  ))
+}
+
+<style>
+  .topics {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin-bottom: var(--space-12);
+  }
+  .topics a {
+    padding: 6px 14px;
+    border: 1px solid var(--hairline);
+    border-radius: var(--r-pill);
+    color: var(--fg-2);
+    font-size: var(--text-sm);
+    text-decoration: none;
+    transition:
+      color var(--hover),
+      border-color var(--hover);
+  }
+  .topics a:hover {
+    border-color: var(--vault);
+    color: var(--vault);
+  }
+  .group {
+    scroll-margin-top: calc(var(--header-h) + var(--space-6));
+  }
+  .group + .group {
+    margin-top: var(--space-16);
+  }
+  .group-head {
+    display: grid;
+    gap: var(--space-2);
+    margin-bottom: var(--space-6);
+  }
+  .group-head h2 {
+    font-family: var(--font-serif);
+    font-size: var(--text-3xl);
+    font-weight: 400;
+  }
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--space-6);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .cards a {
+    display: grid;
+    grid-template-rows: auto 1fr;
+    height: 100%;
+    overflow: hidden;
+    border: 1px solid var(--hairline);
+    border-radius: var(--r-panel);
+    background: var(--bg-raised);
+    color: inherit;
+    text-decoration: none;
+    transition:
+      transform var(--hover),
+      border-color var(--hover);
+  }
+  .cards a:hover {
+    transform: translateY(-3px);
+    border-color: rgb(var(--vault-rgb) / 0.4);
+  }
+  /* The picture is the card's top strip: square corners, the card rounds it. */
+  .cards :global(.art) {
+    border-radius: 0;
+  }
+  .body {
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    gap: var(--space-2);
+    padding: var(--space-6);
+  }
+  .name {
+    color: var(--fg);
+    font-family: var(--font-serif);
+    font-size: var(--text-2xl);
+    line-height: 1.2;
+  }
+  .cards a:hover .name {
+    color: var(--vault);
+  }
+  .what {
+    color: var(--fg-2);
+    font-size: var(--text-sm);
+    line-height: 1.55;
+  }
+  .meta {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: var(--space-2);
+    color: var(--fg-quiet);
+    font-size: var(--text-sm);
+  }
+  @media (max-width: 1000px) {
+    .cards {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+  @media (max-width: 600px) {
+    .cards {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

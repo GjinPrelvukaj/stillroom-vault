@@ -6,7 +6,6 @@
 // paper washes lie behind it all, placed differently on every page (ART.md, "Paper washes").
 import Base from './Base.astro';
 import Art from '../components/Art.astro';
-import BannerHero from '../components/BannerHero.astro';
 import { hasArt } from '../lib/art';
 import { getCollection, getEntry, render, type CollectionEntry } from 'astro:content';
 import { sections, type Section } from '../lib/sections';
@@ -32,24 +31,33 @@ interface Props {
   jsonLd?: Record<string, unknown>[];
   /** The thread down the text's margin (off where the page draws its own line, like the changelog's timeline). */
   thread?: boolean;
-  /** Open with the picture as a banner behind the heading (BannerHero). Only for a picture that is this page's alone. */
-  banner?: boolean;
   /** A legal page: the other legal pages listed beside it, and the seller's note at its end. */
   legal?: boolean;
   /** When the text was last changed (pages written here rather than in markdown). */
   updated?: string;
   /** Not yet reviewed: says so in the page's source. */
   draft?: boolean;
+  /** An article's "In short" points, shown in a box before the text. */
+  points?: string[];
+  /** The points box's label. */
+  pointsTitle?: string;
+  /** One line from the article, set large before its second chapter. */
+  quote?: string;
+  /** night: the page on the kit's dark surface. */
+  theme?: 'paper' | 'night';
 }
 const {
   picture, doc, page, title, h1, eyebrow, description, lead, deep = false, trail = [], jsonLd = [], thread = true,
-  banner = false, legal = false, updated, draft = false,
+  legal = false, updated, draft = false, points = [], pointsTitle = 'In short', quote, theme = 'paper',
 } = Astro.props;
 // The text: a markdown entry (an article, or one of the repository's documents), or, for pages written here (the
 // terms, privacy and refund pages), whatever is passed in, its headings read out of it for the contents.
 const entry = page ?? (doc ? await getEntry('docs', doc) : undefined);
 if (!entry && !Astro.slots.has('default')) throw new Error(`No document "${doc}"`);
 const written = entry ? '' : await Astro.slots.render('default');
+// A page's own heading (a tool page's ToolHero), when one was really passed: a slot given an empty expression still
+// counts as present to Astro.slots.has, which once dropped every article's heading, so the rendered HTML decides.
+const hero = Astro.slots.has('hero') ? (await Astro.slots.render('hero')).trim() : '';
 const headings = entry
   ? (await render(entry)).headings
   : [...written.matchAll(/<h([23])[^>]*\sid="([^"]+)"[^>]*>([\s\S]*?)<\/h\1>/g)].map((m) => ({
@@ -58,7 +66,18 @@ const headings = entry
       // The contents list numbers chapters itself, so a heading's own "1." is left off there.
       text: m[3]!.replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').trim().replace(/^\d+\.\s+/, ''),
     }));
-const html = entry ? siteHtml(entry.rendered?.html ?? '') : written;
+let html = entry ? siteHtml(entry.rendered?.html ?? '') : written;
+if (page) {
+  // An article's tables sit in a tinted panel, a little wider than the text, like a figure.
+  html = html.replace(/<table\b[\s\S]*?<\/table>/g, (t) => `<figure class="panel">${t}</figure>`);
+  // Its quote goes before the second chapter (or the first, in a one-chapter article).
+  if (quote) {
+    const h2s = [...html.matchAll(/<h2\b/g)];
+    const at = (h2s[1] ?? h2s[0])?.index ?? html.length;
+    const q = quote.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+    html = `${html.slice(0, at)}<blockquote class="pull"><p>${q}</p></blockquote>${html.slice(at)}`;
+  }
+}
 const source = entry?.collection === 'docs' ? entry.data.source : null;
 const legalPages: [string, string][] = [
   ['/terms/', 'Terms and EULA'],
@@ -94,9 +113,9 @@ const pick = <T,>(list: T[]): T => list[Math.floor(rand() * list.length)]!;
 const n = (k: number) => Math.floor(rand() * k);
 const washes = ['wash-ink', 'wash-marble', 'wash-contours', 'wash-folds'].filter(hasArt);
 const sidePieces = ['side-ink', 'side-marble', 'side-leaf'].filter(hasArt);
-const wash = washes.length && !banner ? { name: pick(washes), cls: `wash wy${n(3)} wx${n(3)} r${n(3)}${rand() < 0.5 ? ' flip' : ''}` } : null;
+const wash = washes.length && theme !== 'night' ? { name: pick(washes), cls: `wash wy${n(3)} wx${n(3)} r${n(3)}${rand() < 0.5 ? ' flip' : ''}` } : null;
 const firstSide = rand() < 0.5 ? 'l' : 'r';
-const sideCount = Math.min(sidePieces.length, html.length > 20000 ? 2 : 1);
+const sideCount = theme === 'night' ? 0 : Math.min(sidePieces.length, html.length > 20000 ? 2 : 1);
 const sides = sidePieces
   .sort(() => rand() - 0.5)
   .slice(0, sideCount)
@@ -119,7 +138,7 @@ const article = {
 };
 ---
 
-<Base title={title} description={description} ogType="article" jsonLd={[article, breadcrumbJsonLd([...trail, [page ? page.data.name : title, path]]), ...jsonLd]}>
+<Base title={title} description={description} ogType="article" theme={theme} jsonLd={[article, breadcrumbJsonLd([...trail, [page ? page.data.name : title, path]]), ...jsonLd]}>
   {draft && <Fragment set:html="<!-- Draft, not yet reviewed. Not legal advice; have it checked before relying on it. -->" />}
   <div class="progress" aria-hidden="true"></div>
   <div class="paper-wrap">
@@ -134,8 +153,8 @@ const article = {
     )
   }
   {
-    banner && pic ? (
-      <BannerHero picture={pic} eyebrow={eyebrow} h1={h1} lead={lead} />
+    hero ? (
+      <Fragment set:html={hero} />
     ) : (
       <header class="doc-hero">
         <div class="container-wide hero-text">
@@ -178,7 +197,20 @@ const article = {
       )
     }
     <div class="main-col">
-      {pic && !banner && <Art name={pic} ratio="3 / 2" eager plate sizes="(max-width: 900px) 92vw, 820px" class="cover enter enter-3" />}
+      <slot name="tool" />
+      {pic && <Art name={pic} ratio="3 / 2" eager plate sizes="(max-width: 900px) 92vw, 820px" class="cover enter enter-3" />}
+      {
+        points.length > 0 && (
+          <aside class="points enter enter-3" aria-label={pointsTitle}>
+            <p class="eyebrow lit">{pointsTitle}</p>
+            <ul>
+              {points.map((p) => (
+                <li set:html={p.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')} />
+              ))}
+            </ul>
+          </aside>
+        )
+      }
       <article class="prose" data-thread={thread ? '' : undefined}>
         <Fragment set:html={html} />
         <slot name="end" />
@@ -373,6 +405,32 @@ const article = {
   }
   .main-col > :global(.cover) {
     max-width: var(--readable);
+  }
+  /* "In short": the article's points, in a raised box the text's width. */
+  .points {
+    width: 100%;
+    max-width: 760px;
+    padding: var(--card-pad);
+    border: 1px solid var(--hairline);
+    border-radius: var(--r-panel);
+    background: var(--bg-raised);
+  }
+  .points ul {
+    margin: var(--space-3) 0 0;
+    padding-left: 1.2em;
+    color: var(--fg-2);
+    font-size: var(--text-lg);
+    line-height: 1.6;
+  }
+  .points li + li {
+    margin-top: var(--space-2);
+  }
+  .points li::marker {
+    color: var(--vault);
+  }
+  .points :global(strong) {
+    color: var(--fg);
+    font-weight: 600;
   }
   .rail {
     display: grid;

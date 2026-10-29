@@ -31,13 +31,16 @@ ${doesNot.map((p) => `- ${strip(p)}`).join('\n')}
 - [Download](${site.url}/download/)
 - [Support and FAQ](${site.url}/support/): forgotten passwords, backups, moving Macs
 - [Changelog](${site.url}/changelog/)
+- [About](${site.url}/about/): why Stillroom exists, what its makers hold themselves to, and how it's paid for
+- [Free tools](${site.url}/tools/): passphrase and PIN generators, a password strength checker, two-factor codes and QR reader, file checksums, a printable backup code sheet and a Shamir demo, all run in the browser
 - [Report a security problem](${site.url}/security-policy/): ${email.security}
 
 ## Legal
 - [Terms and EULA](${site.url}/terms/)
 - [Refund policy](${site.url}/refunds/): 14 days, no questions
-- [Privacy policy](${site.url}/privacy/): the app collects nothing; the site sets no cookies and runs no analytics
+- [Privacy policy](${site.url}/privacy/): the app collects nothing; the site sets no cookies and counts visits with Cloudflare Web Analytics, which identifies no one
 - [Source licence](${site.url}/license/): FSL-1.1-ALv2
+- [Source code](${site.repo}): one public snapshot per release, on GitHub
 `;
   return new Response(body, { headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
 };

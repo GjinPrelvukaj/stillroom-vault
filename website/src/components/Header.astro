@@ -44,7 +44,7 @@ const groups = [
     ],
   },
 ];
-const main = [{ href: '/', label: 'Home' }, ...nav, { href: '/download/', label: 'Download' }, { href: '/changelog/', label: 'Changelog' }];
+const main = [{ href: '/', label: 'Home' }, ...nav, { href: '/download/', label: 'Download' }, { href: '/changelog/', label: 'Changelog' }, { href: '/about/', label: 'About' }];
 ---
 
 <header class="site-header" data-header>
@@ -237,6 +237,15 @@ const main = [{ href: '/', label: 'Home' }, ...nav, { href: '/download/', label:
   }
   .pill.dark:hover {
     background: color-mix(in srgb, var(--ink), var(--paper) 14%);
+  }
+  /* On a night page (body.ink) the dark pill would vanish into the page: it turns light instead. */
+  :global(body.ink) .pill.dark {
+    border-color: var(--paper);
+    background: var(--paper);
+    color: var(--ink);
+  }
+  :global(body.ink) .pill.dark:hover {
+    background: color-mix(in srgb, var(--paper), var(--ink) 12%);
   }
 
   /* The wordmark, and its fold. */
@@ -548,7 +557,7 @@ const main = [{ href: '/', label: 'Home' }, ...nav, { href: '/download/', label:
     color: var(--fg);
   }
 
-  /* The progressive blur at the screen's foot, in paper. */
+  /* The progressive blur at the screen's foot, in the page's own colour: paper, or ink on the dark pages. */
   .bottom-fade {
     position: fixed;
     bottom: 0;
@@ -556,7 +565,7 @@ const main = [{ href: '/', label: 'Home' }, ...nav, { href: '/download/', label:
     right: 0;
     z-index: 49;
     height: var(--space-16);
-    background: linear-gradient(rgb(247 246 242 / 0), rgb(247 246 242 / 0.6));
+    background: linear-gradient(transparent, color-mix(in srgb, var(--bg) 60%, transparent));
     backdrop-filter: blur(var(--space-1));
     -webkit-backdrop-filter: blur(var(--space-1));
     mask-image: linear-gradient(transparent, #000);

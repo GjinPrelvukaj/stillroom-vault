@@ -1,0 +1,53 @@
+---
+import ToolFrame from './ToolFrame.astro';
+import Icon from '../ui/Icon.astro';
+---
+
+<ToolFrame label="PIN generator">
+  <div class="t-row">
+    <label class="t-field"><span class="t-label">Digits</span>
+      <select class="field" data-len>{[4, 5, 6, 8, 10, 12].map((n) => <option selected={n === 6}>{n}</option>)}</select></label>
+    <label class="t-field"><span class="t-label">How many</span>
+      <select class="field" data-count>{[1, 3, 5, 10].map((n) => <option selected={n === 5}>{n}</option>)}</select></label>
+    <label class="t-check"><input type="checkbox" checked data-skip /> Leave out PINs people guess first</label>
+  </div>
+  <div class="t-row">
+    <button class="btn primary" type="button" data-again><Icon name="dice" size={16} /> <span>Make new PINs</span></button>
+  </div>
+  <ol class="t-list" aria-live="polite" data-pins></ol>
+  <p class="t-note" data-note></p>
+</ToolFrame>
+
+<script>
+  import { pin } from '../../scripts/tools/pin';
+  import { copyButton } from '../../scripts/tools/ui';
+
+  const root = document.querySelector<HTMLElement>('[data-tool]');
+  if (root) {
+    const $ = <T extends Element>(s: string) => root.querySelector<T>(s)!;
+    const len = $<HTMLSelectElement>('[data-len]');
+    const count = $<HTMLSelectElement>('[data-count]');
+    const skip = $<HTMLInputElement>('[data-skip]');
+    const list = $<HTMLElement>('[data-pins]');
+    const note = $<HTMLElement>('[data-note]');
+
+    const make = () => {
+      const n = Number(len.value);
+      list.replaceChildren(
+        ...Array.from({ length: Number(count.value) }, () => {
+          const p = pin(n, skip.checked);
+          const li = document.createElement('li');
+          const code = Object.assign(document.createElement('span'), { className: 't-mono', textContent: p });
+          const btn = Object.assign(document.createElement('button'), { type: 'button', className: 'btn', innerHTML: '<span>Copy</span>' });
+          copyButton(btn, () => p);
+          li.append(code, btn);
+          return li;
+        }),
+      );
+      note.textContent = `A ${n}-digit PIN has ${(10 ** n).toLocaleString('en')} possibilities. That’s fine where wrong tries are limited, like a phone or a bank card, and not enough on its own anywhere else.`;
+    };
+    for (const el of [len, count, skip]) el.addEventListener('change', make);
+    $<HTMLButtonElement>('[data-again]').addEventListener('click', make);
+    make();
+  }
+</script>

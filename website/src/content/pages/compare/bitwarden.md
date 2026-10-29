@@ -1,12 +1,12 @@
 ---
-title: 'Stillroom Vault vs Bitwarden'
-description: 'Bitwarden is an open source, cross-platform password manager with a free plan. Stillroom Vault is an offline Mac vault for files and secrets.'
+title: 'Bitwarden Alternative for Mac: Fully Offline'
+description: 'An offline Bitwarden alternative for Mac: Stillroom Vault keeps passwords, files and two-factor codes on your Mac with no server. How the two compare.'
 h1: 'Stillroom Vault vs Bitwarden'
 lead: 'Bitwarden is an open source password manager that syncs to every device, with a generous free plan. Stillroom Vault is a Mac vault that never goes online. Here is how to choose, or use both.'
 name: 'Bitwarden'
 updated: '27 October 2026'
 order: 60
-related: ['/moving-from/bitwarden/', '/compare/1password/', '/compare/keepassxc/', '/guides/store-two-factor-backup-codes/']
+related: ['/moving-from/bitwarden/', '/compare/1password-vs-bitwarden/', '/compare/1password/', '/compare/keepassxc/', '/guides/store-two-factor-backup-codes/']
 faq:
   - q: 'Is Bitwarden free?'
     a: 'Bitwarden has a free plan with no limit on passwords or devices. Premium adds features such as the built-in authenticator, emergency access and encrypted file storage, and a Families plan covers up to six people.'

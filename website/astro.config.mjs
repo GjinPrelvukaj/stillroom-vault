@@ -3,7 +3,7 @@ import { defineConfig } from 'astro/config';
 import sitemap from '@astrojs/sitemap';
 
 export default defineConfig({
-  site: 'https://stillroomvault.com',
+  site: 'https://www.stillroomvault.com',
   trailingSlash: 'always',
   // Astro's compression drops the space before an inline link that starts a new source line ("as<a>the format</a>").
   // Cloudflare compresses responses anyway.

@@ -6,7 +6,7 @@ lead: 'Export your logins from the Passwords app, bring them into Stillroom as s
 name: 'Apple Passwords'
 updated: '27 October 2026'
 order: 10
-related: ['/moving-from/chrome/', '/guides/store-two-factor-backup-codes/', '/features/recovery-key/']
+related: ['/tools/qr-code-reader/', '/moving-from/chrome/', '/guides/store-two-factor-backup-codes/', '/features/recovery-key/']
 faq:
   - q: 'Do my verification codes come across from Apple Passwords?'
     a: 'When the export holds a two-factor setup for an account, Stillroom keeps it in a concealed field called Two-factor setup and shows the live code under it. Check one or two accounts after the import to make sure.'

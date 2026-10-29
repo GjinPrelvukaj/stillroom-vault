@@ -6,7 +6,7 @@ lead: 'Backup codes are the spare key to an account that uses two-factor sign-in
 name: 'Store two-factor backup codes'
 updated: '27 October 2026'
 order: 50
-related: ['/compare/apple-notes-locked-notes/', '/moving-from/apple-passwords/', '/features/recovery-key/', '/compare/1password/']
+related: ['/tools/recovery-code-sheet/', '/tools/qr-code-reader/', '/compare/apple-notes-locked-notes/', '/moving-from/apple-passwords/', '/features/recovery-key/', '/compare/1password/']
 faq:
   - q: 'What are two-factor backup codes?'
     a: 'One-time codes a website gives you when you turn on two-factor sign-in. Each one can stand in for a code from your phone once, so you can get back in if you lose the phone or authenticator app.'
@@ -42,7 +42,7 @@ Both are as sensitive as the password itself. Together with your password, eithe
 
 ### On paper
 
-Printing the codes and keeping them with your passport or other papers is a sound choice. It cannot be hacked from across the internet and does not depend on any device. The risks are the physical ones: fire, loss, and anyone in your home. Mark each code as used when you use it.
+Printing the codes and keeping them with your passport or other papers is a sound choice. It cannot be hacked from across the internet and does not depend on any device. The risks are the physical ones: fire, loss, and anyone in your home. Mark each code as used when you use it. The free [recovery code sheet](/tools/recovery-code-sheet/) prints a site's codes on one page, with a box to tick beside each.
 
 ### In a locked note
 

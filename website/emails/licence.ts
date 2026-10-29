@@ -20,7 +20,7 @@ export interface LicenceEmailInput {
   issued: string;
 }
 
-export const SITE = 'https://stillroomvault.com';
+export const SITE = 'https://www.stillroomvault.com';
 export const C = {
   paper: '#f7f6f2',
   raised: '#efede6',

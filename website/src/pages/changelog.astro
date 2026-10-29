@@ -1,9 +1,21 @@
 ---
 import DocLayout from '../layouts/DocLayout.astro';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+
+// Every released version, read from CHANGELOG.md: its date, its opening line, and how many changes it lists. Shown as
+// an index above the full notes, newest first, each linking to its notes (the heading ids markdown gives them).
+const md = readFileSync(resolve(process.cwd(), '../CHANGELOG.md'), 'utf8');
+const versions = [...md.matchAll(/^## \[(\d[^\]]*)\] - (\d{4}-\d{2}-\d{2})\n([\s\S]*?)(?=^## |(?![\s\S]))/gm)].map((m) => {
+  const [, version, date, body] = m as unknown as [string, string, string, string];
+  const intro = body.trim().split('\n')[0]!.startsWith('#') ? '' : body.trim().split('\n')[0]!;
+  const changes = (body.match(/^- /gm) ?? []).length;
+  return { version, date, intro: intro.split('. ')[0]!.replace(/\.$/, '') + '.', changes, id: `${version.replace(/\./g, '')}---${date}` };
+});
+const day = (d: string) => new Date(`${d}T12:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
 ---
 
-<DocLayout picture="page-changelog"
-  banner
+<DocLayout
   thread={false}
   doc="changelog"
   title="Changelog and Release Notes"
@@ -12,7 +24,25 @@ import DocLayout from '../layouts/DocLayout.astro';
   description="Every notable change to Stillroom Vault, by version: format 4, item keys, the decoy redesign, fixes from code review, licensing and pricing."
   lead="What changed, by version. Updates are manual: each release lands on the download page with these notes, and buyers get an email."
   deep
-/>
+>
+  <Fragment slot="before">
+    <section class="container versions" aria-labelledby="v-title">
+      <h2 id="v-title" class="visually-hidden">Versions</h2>
+      <ol>
+        {versions.map((v, i) => (
+          <li>
+            <a href={`#${v.id}`}>
+              <span class="v">{v.version}{i === 0 && <span class="latest">Latest</span>}</span>
+              <span class="d">{day(v.date)}</span>
+              <span class="i">{v.intro}</span>
+              <span class="c">{v.changes} changes</span>
+            </a>
+          </li>
+        ))}
+      </ol>
+    </section>
+  </Fragment>
+</DocLayout>
 
 <script>
   import '../scripts/timeline';
@@ -20,6 +50,65 @@ import DocLayout from '../layouts/DocLayout.astro';
 </script>
 
 <style>
+  /* The version index: a row per release, like a news list (version, date, its first line, how many changes). */
+  .versions {
+    margin-bottom: var(--space-16);
+  }
+  .versions ol {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    border-top: 1px solid var(--divider);
+  }
+  .versions li {
+    border-bottom: 1px solid var(--divider);
+  }
+  .versions a {
+    display: grid;
+    grid-template-columns: 9rem 11rem minmax(0, 1fr) auto;
+    gap: var(--space-6);
+    align-items: baseline;
+    padding: var(--space-4) 0;
+    color: var(--fg-2);
+    text-decoration: none;
+  }
+  .versions a:hover .v {
+    color: var(--vault);
+  }
+  .v {
+    color: var(--fg);
+    font-family: var(--font-serif);
+    font-size: var(--text-2xl);
+    transition: color var(--hover);
+  }
+  .latest {
+    margin-left: var(--space-3);
+    padding: 2px 8px;
+    border-radius: var(--r-pill);
+    background: rgb(var(--vault-rgb) / 0.1);
+    color: var(--vault);
+    font-family: var(--font);
+    font-size: var(--text-xs);
+    vertical-align: middle;
+  }
+  .d,
+  .c {
+    font-size: var(--text-sm);
+    color: var(--fg-quiet);
+    font-variant-numeric: tabular-nums;
+  }
+  @media (max-width: 800px) {
+    .versions a {
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: var(--space-2) var(--space-4);
+    }
+    .i {
+      grid-column: 1 / -1;
+    }
+    .c {
+      display: none;
+    }
+  }
   /* "You have 1.0.0, 1.0.1 is out" (scripts/your-version.ts), when the app's Check for Updates opened this page. */
   :global(.your-version) {
     display: grid;

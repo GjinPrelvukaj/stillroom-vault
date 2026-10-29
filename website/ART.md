@@ -1,7 +1,7 @@
 # Art for stillroomvault.com
 
 Every picture on the site is a slot named after where it sits, filled by `public/art/<slot>.webp`: the site finds the
-file by name at build time, so adding or swapping one is a file and a rebuild. All 34 slots are filled today, in the earlier two-ink risograph series; they're being redrawn in the collage series below (the security page's print is the first). The ten paper washes stay as they are. Without
+file by name at build time, so adding or swapping one is a file and a rebuild. Every slot is filled, all in the collage series below. The ten paper washes stay as they are. Without
 its file a slot falls back quietly: Learn more, the menu and the features page show a drawn dot ring, and everywhere
 else the picture is simply left out.
 
@@ -22,13 +22,13 @@ One series, so every image belongs with the others (the paper washes below are t
 - **Violet** (#6043CA) is the strongest colour in every picture, on the one thing that is "sealed" or important.
 - **Never**: text or letters, logos, faces, screens or phones, padlock clip-art, glowing light, neon, 3D renders,
   "hacker" imagery.
-- Each prompt below says where its picture sits (a banner behind a heading, a framed card, the home picture) and
+- Each prompt below says where its picture sits (beside a heading, a framed card, the home picture) and
   composes for it.
 
 Add to every prompt: *"Style: a mixed-media collage with the feel of a museum archive. A finely detailed vintage watercolour and ink illustration, like a plate from a 19th-century naturalist's or architect's book, combined with a soft, grainy, sun-faded photograph. Muted, warm palette: aged-paper ochre, faded sky blue, sage green, umber and cream, with the one violet (#6043CA) element as the strongest colour in the picture. Visible paper grain and fine print noise over everything, nothing glossy or digital. No text, letters or numbers, no logos, no people's faces, no screens, phones or laptops."*
 
 The prints are full scenes, so they're added as plates (`--plate`, kept as printed) and shown framed with rounded
-corners, or as banners. Export as WebP (quality about 80, under 300 KB) at the size given.
+corners. Export as WebP (quality about 80, under 300 KB) at the size given.
 
 ## The slots
 
@@ -43,6 +43,7 @@ corners, or as banners. Export as WebP (quality about 80, under 300 KB) at the s
 | `menu-2` | The menu, second (Stillroom vs Cryptomator) | 1536 × 1024 | 5:3 |
 | `menu-3` | The menu, third (Encrypt files on a Mac) | 1536 × 1024 | 5:3 |
 | `page-features` | Beside the Features heading | 1536 × 1024 | 3:2, uncropped |
+| `page-about` | About: the picture in the team panel | 1536 × 1024 | 3:2 |
 | `page-compare` | Comparisons, and every comparison page | 1536 × 1024 | 3:2 |
 | `page-guides` | Guides, and every guide | 1536 × 1024 | 3:2 |
 | `page-moving-from` | Moving to Stillroom, and every page in it | 1536 × 1024 | 3:2 |
@@ -73,17 +74,33 @@ Every slot crops to fill (`object-fit: cover`), so keep the subject away from th
 
 ## Per page
 
-Every page that opens with a banner (`BannerHero`) has its own print, in a second, richer series: full-colour
-collages of a vintage naturalist's watercolour and a grainy, sun-faded photograph, with a framed panel on the right
-showing the page's subject as a window into a private place, and a calm left side for the heading. Violet stays
-the strongest colour. They're loose slots (no `--plate`), 1536 × 1024, shown edge to edge and faded into the
-paper on the left and at the foot.
+No page opens with a full-width banner: pictures are always framed. Pages have their own prints in a second, richer
+series: full-colour collages of a vintage naturalist's watercolour and a grainy, sun-faded photograph, with a framed
+panel showing the page's subject as a window into a private place. Violet stays the strongest colour. 1536 × 1024,
+added with `--plate` so they keep their own colour (without it, add-art.py lifts the paper and washes a full scene out).
 
-- The eight pages that open with a banner today: `page-guides`, `page-compare`, `page-moving-from`, `page-learn`,
-  `page-for`, `page-security`, `page-format`, `page-changelog`. Their new prints replace the risograph ones.
-- Every article, `article-<section>-<slug>` (for example `article-guides-encrypt-files-on-mac`), and every legal
-  page, `page-legal-<page>`. Until its image exists the page keeps its section's shared print, shown smaller, and
-  switches to the banner by itself once it's added.
+- Section hubs (`page-guides`, `page-compare`, `page-moving-from`, `page-learn`, `page-for`): beside the heading.
+  Each hub then lays its articles out its own way (`HubCards`).
+- Every article, `article-<section>-<slug>` (for example `article-guides-encrypt-files-on-mac`), is shown framed
+  under the heading and lead. Until its image exists the article shows its section's print there.
+- Security, format, changelog and the legal pages have no picture: they open with a plain heading. Their earlier
+  prints (`page-security`, `page-format`, `page-changelog`, `page-legal-*`) aren't shown on the page, but still make
+  its link preview.
+- Link previews (`scripts/make-og.mjs`) are each page's picture full-bleed, with the wordmark and heading over a fade.
+  A page that shows no picture uses its print from the script's `prints` table; add a new page there if it has one.
+
+## Article pieces
+
+Articles share one layout, so what makes each feel like itself is its picture and a few optional pieces, set in its
+frontmatter (src/content.config.ts):
+
+- `points`: an "In short" box of three or so lines under the picture (`**bold**` works).
+- `quote`: one line from the article itself, set large before its second chapter.
+- `picture: false`: no picture, for a short page that reads better plain.
+- `theme: 'night'`: the whole page on the dark surface (`.ink`), with no paper washes. Use rarely.
+- `demo: 'seal'`: the home page's seal demo after the article.
+
+Every table in an article is set in a tinted panel a little wider than the text, with nothing to set.
 
 The comparisons always show two things side by side; the Moving to Stillroom pages always show something being
 carried from one place into another. `Stillroom Website Assets/PROMPTS.md` on Gjin's Desktop is the same list as a
@@ -141,6 +158,14 @@ brief for whoever makes them.
 | `article-moving-from-cryptomator` | [Moving from Cryptomator](/moving-from/cryptomator/) |
 | `article-moving-from-firefox` | [Moving from Firefox](/moving-from/firefox/) |
 | `article-moving-from-veracrypt` | [Moving from VeraCrypt](/moving-from/veracrypt/) |
+| `article-tools-passphrase-generator` | [Passphrase generator](/tools/passphrase-generator/) |
+| `article-tools-password-strength` | [Password strength checker](/tools/password-strength/) |
+| `article-tools-two-factor-codes` | [Two-factor code generator](/tools/two-factor-codes/) |
+| `article-tools-qr-code-reader` | [Two-factor QR code reader](/tools/qr-code-reader/) |
+| `article-tools-file-checksum` | [File checksum checker](/tools/file-checksum/) |
+| `article-tools-recovery-code-sheet` | [Printable recovery codes](/tools/recovery-code-sheet/) |
+| `article-tools-shamir-split` | [Shamir split demo](/tools/shamir-split/) |
+| `article-tools-pin-generator` | [PIN generator](/tools/pin-generator/) |
 | `page-legal-terms` | [Terms and EULA](/terms/) |
 | `page-legal-privacy` | [Privacy policy](/privacy/) |
 | `page-legal-refunds` | [Refund policy](/refunds/) |
@@ -217,6 +242,8 @@ The script sends each one followed by the shared line under "The look".
 **menu-2**: Two small wooden boxes side by side: one open and empty, one closed and tied with violet string. Composition, landscape, the whole frame filled, no blank background: a rectangular inset panel with a thin off-white border, centred or a little off-centre, shows the subject painted in the vintage watercolour; around and behind it the same world continues in the grainy sun-faded photograph (open sky, or the surface or wall it belongs to), parts of the scene crossing the border. Keep the subject whole and well inside the frame: the edges may be cropped a little.
 
 **menu-3**: A paper folder tied shut with string, a few sheets peeking out of it, lying on a table. The string is violet. Composition, landscape, the whole frame filled, no blank background: a rectangular inset panel with a thin off-white border, centred or a little off-centre, shows the subject painted in the vintage watercolour; around and behind it the same world continues in the grainy sun-faded photograph (open sky, or the surface or wall it belongs to), parts of the scene crossing the border. Keep the subject whole and well inside the frame: the edges may be cropped a little.
+
+**page-about**: Two old porcelain theatre masks resting on the shelf of a dark, wood-panelled study inside an old house at night, both cracked and mended along every crack in the way of kintsugi: the left one mended with gold, the right one with violet. Their eyes are empty openings; they are masks, not faces, with no expression painted on. A single candle, or a sliver of moonlight from a half-shuttered window, catches the gold and violet seams; the rest of the room falls away into deep shadow: shelves of old books, a heavy curtain, a key on a hook barely visible in the dark. Quiet, mysterious, like a room nobody has opened in years. The violet seams are the strongest colour. Composition, landscape, the whole frame filled, no blank background: a rectangular inset panel with a thin off-white border, centred or a little off-centre, shows the masks painted in the vintage watercolour; around and behind it the same room continues in the grainy, dim photograph, parts of the scene crossing the border. Keep the masks whole and well inside the frame: the edges may be cropped a little. This one picture is the series at night: in place of the shared style line's sun-faded photograph and daylight palette, a low-lit photograph and a dark, warm palette (deep umber, walnut brown, candlelit ochre, soft shadow), violet the strongest colour and gold the second.
 
 **page-features**: An old wooden card-catalogue cabinet seen straight on, one small drawer pulled open with a single index card standing up in it. The card is violet. Composition, landscape, the whole frame filled, no blank background: a rectangular inset panel with a thin off-white border, centred or a little off-centre, shows the subject painted in the vintage watercolour; around and behind it the same world continues in the grainy sun-faded photograph (open sky, or the surface or wall it belongs to), parts of the scene crossing the border. Keep the subject whole and well inside the frame: the edges may be cropped a little.
 
@@ -351,6 +378,22 @@ The script sends each one followed by the shared line under "The look".
 **article-moving-from-firefox**: A long card-catalogue drawer pulled out of its cabinet, its cards being moved into a small chest with a hinged lid beside it. The chest is violet. No animals. No writing on the cards. Composition, wide landscape, the whole frame filled, no blank background: in the right half, a rectangular inset panel with a thin off-white border, a little taller than wide, shows the subject above painted in the vintage watercolour. Around and behind the panel the same world continues in the other medium, the grainy sun-faded photograph (open sky with soft clouds, or the surface or wall the subject belongs to), so the panel reads as a window into a private place. Parts of the scene may cross the panel's border. The left third is calm and soft, mostly sky or plain surface with little detail, because a heading will sit over it. Keep everything important inside the middle three fifths of the height: the top and bottom fifth will be cropped.
 
 **article-moving-from-veracrypt**: A large heavy travelling trunk lying open, a few books being lifted out of it into a smaller wooden box beside it. The smaller box is violet. No writing. Composition, wide landscape, the whole frame filled, no blank background: in the right half, a rectangular inset panel with a thin off-white border, a little taller than wide, shows the subject above painted in the vintage watercolour. Around and behind the panel the same world continues in the other medium, the grainy sun-faded photograph (open sky with soft clouds, or the surface or wall the subject belongs to), so the panel reads as a window into a private place. Parts of the scene may cross the panel's border. The left third is calm and soft, mostly sky or plain surface with little detail, because a heading will sit over it. Keep everything important inside the middle three fifths of the height: the top and bottom fifth will be cropped.
+
+**article-tools-passphrase-generator**: A small cloth bag tipped over on a wooden table, old bone dice spilled from it, five of them lined up in a neat row. The fifth die in the row is violet. Dice show only their pips. Composition, wide landscape, the whole frame filled, no blank background: in the right half, a rectangular inset panel with a thin off-white border, a little taller than wide, shows the subject above painted in the vintage watercolour. Around and behind the panel the same world continues in the other medium, the grainy sun-faded photograph (open sky with soft clouds, or the surface or wall the subject belongs to), so the panel reads as a window into a private place. Parts of the scene may cross the panel's border. The left third is calm and soft, mostly sky or plain surface with little detail, because a heading will sit over it. Keep everything important inside the middle three fifths of the height: the top and bottom fifth will be cropped.
+
+**article-tools-password-strength**: An old dry-stone arch over a garden gate, every stone fitted tight, the keystone at the top larger than the rest. The keystone is violet. Composition, wide landscape, the whole frame filled, no blank background: in the right half, a rectangular inset panel with a thin off-white border, a little taller than wide, shows the subject above painted in the vintage watercolour. Around and behind the panel the same world continues in the other medium, the grainy sun-faded photograph (open sky with soft clouds, or the surface or wall the subject belongs to), so the panel reads as a window into a private place. Parts of the scene may cross the panel's border. The left third is calm and soft, mostly sky or plain surface with little detail, because a heading will sit over it. Keep everything important inside the middle three fifths of the height: the top and bottom fifth will be cropped.
+
+**article-tools-two-factor-codes**: An open brass pocket watch lying on a folded linen cloth beside a small old key, the watch face plain with only tick marks and no numerals. The watch hands are violet. Composition, wide landscape, the whole frame filled, no blank background: in the right half, a rectangular inset panel with a thin off-white border, a little taller than wide, shows the subject above painted in the vintage watercolour. Around and behind the panel the same world continues in the other medium, the grainy sun-faded photograph (open sky with soft clouds, or the surface or wall the subject belongs to), so the panel reads as a window into a private place. Parts of the scene may cross the panel's border. The left third is calm and soft, mostly sky or plain surface with little detail, because a heading will sit over it. Keep everything important inside the middle three fifths of the height: the top and bottom fifth will be cropped.
+
+**article-tools-qr-code-reader**: A round magnifying glass resting on a square of old woven fabric with a dense chequered pattern of small dark and light squares. The magnifying glass rim is violet. The pattern is woven cloth, not a printed code. Composition, wide landscape, the whole frame filled, no blank background: in the right half, a rectangular inset panel with a thin off-white border, a little taller than wide, shows the subject above painted in the vintage watercolour. Around and behind the panel the same world continues in the other medium, the grainy sun-faded photograph (open sky with soft clouds, or the surface or wall the subject belongs to), so the panel reads as a window into a private place. Parts of the scene may cross the panel's border. The left third is calm and soft, mostly sky or plain surface with little detail, because a heading will sit over it. Keep everything important inside the middle three fifths of the height: the top and bottom fifth will be cropped.
+
+**article-tools-file-checksum**: A rolled document tied with string and closed with a round wax seal, the brass seal stamp standing beside it. The wax seal is violet. The seal's imprint is a simple leaf, no letters. Composition, wide landscape, the whole frame filled, no blank background: in the right half, a rectangular inset panel with a thin off-white border, a little taller than wide, shows the subject above painted in the vintage watercolour. Around and behind the panel the same world continues in the other medium, the grainy sun-faded photograph (open sky with soft clouds, or the surface or wall the subject belongs to), so the panel reads as a window into a private place. Parts of the scene may cross the panel's border. The left third is calm and soft, mostly sky or plain surface with little detail, because a heading will sit over it. Keep everything important inside the middle three fifths of the height: the top and bottom fifth will be cropped.
+
+**article-tools-recovery-code-sheet**: A small framed watercolour hanging on a plaster wall, tilted slightly away from it, a folded sheet of paper tucked behind the frame and just showing at its edge. The folded paper is violet. No writing on the paper. Composition, wide landscape, the whole frame filled, no blank background: in the right half, a rectangular inset panel with a thin off-white border, a little taller than wide, shows the subject above painted in the vintage watercolour. Around and behind the panel the same world continues in the other medium, the grainy sun-faded photograph (open sky with soft clouds, or the surface or wall the subject belongs to), so the panel reads as a window into a private place. Parts of the scene may cross the panel's border. The left third is calm and soft, mostly sky or plain surface with little detail, because a heading will sit over it. Keep everything important inside the middle three fifths of the height: the top and bottom fifth will be cropped.
+
+**article-tools-shamir-split**: A round glazed pottery plate broken cleanly into five pieces lying on a table, three of them fitted back together and two lying apart. The seams of the fitted pieces are filled with violet, in the way of kintsugi. Composition, wide landscape, the whole frame filled, no blank background: in the right half, a rectangular inset panel with a thin off-white border, a little taller than wide, shows the subject above painted in the vintage watercolour. Around and behind the panel the same world continues in the other medium, the grainy sun-faded photograph (open sky with soft clouds, or the surface or wall the subject belongs to), so the panel reads as a window into a private place. Parts of the scene may cross the panel's border. The left third is calm and soft, mostly sky or plain surface with little detail, because a heading will sit over it. Keep everything important inside the middle three fifths of the height: the top and bottom fifth will be cropped.
+
+**article-tools-pin-generator**: The round dial of an old iron safe seen close and straight on, its ring marked only with plain tick marks, no numbers, the safe's worn painted door around it. The dial's knob is violet. Composition, wide landscape, the whole frame filled, no blank background: in the right half, a rectangular inset panel with a thin off-white border, a little taller than wide, shows the subject above painted in the vintage watercolour. Around and behind the panel the same world continues in the other medium, the grainy sun-faded photograph (open sky with soft clouds, or the surface or wall the subject belongs to), so the panel reads as a window into a private place. Parts of the scene may cross the panel's border. The left third is calm and soft, mostly sky or plain surface with little detail, because a heading will sit over it. Keep everything important inside the middle three fifths of the height: the top and bottom fifth will be cropped.
 
 **page-legal-terms**: A fountain pen resting across a blank folded document with a ribbon bookmark lying over it. The ribbon is violet. No writing. Composition, wide landscape, the whole frame filled, no blank background: in the right half, a rectangular inset panel with a thin off-white border, a little taller than wide, shows the subject above painted in the vintage watercolour. Around and behind the panel the same world continues in the other medium, the grainy sun-faded photograph (open sky with soft clouds, or the surface or wall the subject belongs to), so the panel reads as a window into a private place. Parts of the scene may cross the panel's border. The left third is calm and soft, mostly sky or plain surface with little detail, because a heading will sit over it. Keep everything important inside the middle three fifths of the height: the top and bottom fifth will be cropped.
 

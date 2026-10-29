@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://stillroomvault.com/sitemap-index.xml
+Sitemap: https://www.stillroomvault.com/sitemap-index.xml

@@ -1,24 +1,28 @@
 ---
 import DocLayout from '../layouts/DocLayout.astro';
 import { email, site } from '../config';
-import { hasArt, ownArt } from '../lib/art';
 ---
 
-<DocLayout picture={ownArt('page-legal-privacy', 'page-legal')}
-  banner={hasArt('page-legal-privacy')}
+<DocLayout
+  pointsTitle="The short version"
+  points={[
+    '**The app collects nothing.** It makes no network connections.',
+    '**This website sets no cookies.** It counts visits with Cloudflare Web Analytics, which can’t identify you.',
+    '**The only personal data we get** is what you send us, and what Paddle passes on when you buy.',
+  ]}
   title="Privacy Policy"
   h1="Stillroom Vault privacy policy"
   eyebrow="Legal"
-  description="Stillroom Vault collects nothing: the app makes no network connections, and this website sets no cookies and runs no analytics. What Paddle collects when you buy."
-  lead="The app collects nothing. This website sets no cookies and runs no analytics. The only personal data we ever get is what you send us, and what Paddle passes on when you buy."
-  updated="26 October 2026"
-  draft
+  description="Stillroom Vault collects nothing: the app makes no network connections, and this website sets no cookies and counts visits without identifying anyone. What Paddle collects when you buy."
+  lead="What the app collects (nothing), what this website counts, what Paddle collects when you buy, and your rights."
+  updated="29 October 2026"
   legal
 >
     <h2 id="who">Who is responsible</h2>
     <p>
       {site.seller}, an individual based in {site.sellerCountry}, is responsible for this website and for the personal
-      data described here. Contact: <a href={`mailto:${email.legal}`}>{email.legal}</a>.
+      data described here: its controller, under Kosovo’s Law on the Protection of Personal Data and, where they apply,
+      the EU and UK GDPR. Contact: <a href={`mailto:${email.legal}`}>{email.legal}</a>.
     </p>
 
     <h2 id="app">The app</h2>
@@ -40,17 +44,24 @@ import { hasArt, ownArt } from '../lib/art';
     <h2 id="website">This website</h2>
     <ul>
       <li>
-        No cookies, no analytics, no trackers, no advertising, and nothing loaded from anyone else. The one exception is the
-        checkout page: it loads Paddle’s checkout script, which may set cookies of its own when you buy.
+        No cookies, no advertising, and nothing that follows you to other sites. The checkout page also loads Paddle’s
+        checkout script, which may set cookies of its own when you buy.
+      </li>
+      <li>
+        <strong>We count visits</strong> with Cloudflare Web Analytics. We need it to know how the site runs, which pages
+        people read, and what works and what doesn’t. It records the page you’re on, the site that sent you there, your
+        country, your browser and device type, and how fast the page loaded. It sets no cookies, stores nothing in your
+        browser and doesn’t fingerprint you, so you can’t be identified from it, by us or anyone else. If your browser or
+        an ad blocker stops it, the site works just the same.
       </li>
       <li>
         It’s hosted on Cloudflare Pages. To deliver pages and protect the site from attacks, Cloudflare processes each
-        request, including your IP address, under Cloudflare’s own privacy policy.
-        We don’t add analytics to that, and we don’t use it to build a picture of visitors.
+        request, including your IP address, under Cloudflare’s own privacy policy. We see totals from that too, such as
+        page views and downloads, never who made them.
       </li>
       <li>
-        The “Seal it yourself” demo runs in your browser. What you type there is never sent anywhere; the site’s
-        security policy lets pages talk only to stillroomvault.com, and the demo doesn’t make any request at all.
+        The “Seal it yourself” demo runs in your browser. What you type there is never sent anywhere; the demo doesn’t
+        make any request at all.
       </li>
     </ul>
 
@@ -67,11 +78,20 @@ import { hasArt, ownArt } from '../lib/art';
     </p>
     <p>Paddle passes us your name, email address, country and what you bought. We use them to:</p>
     <ul>
-      <li>make and email your licence key, which carries your email address, your edition and the major version;</li>
+      <li>
+        make and email your licence key, which carries your name, email address, edition, how many people it covers, and
+        the order number and date. The server that makes it keeps none of this: it emails the key and forgets it;
+      </li>
       <li>answer you about your order, or send your key again if you lose it;</li>
       <li>tell you when a new version is out, since the app never checks for updates itself. You can ask us to stop.</li>
     </ul>
-    <p>We keep order records for as long as tax law requires, and nothing else for longer than we need it.</p>
+    <p>
+      Your name and email address are needed to make and send your licence key; without them we can’t sell you one.
+    </p>
+    <p>
+      We keep order records for as long as tax and accounting law requires, up to 10 years. We delete email
+      conversations 2 years after the last message, unless one is still needed for an open order or claim.
+    </p>
 
     <h2 id="email">When you email us</h2>
     <p>
@@ -82,15 +102,14 @@ import { hasArt, ownArt } from '../lib/art';
     <h2 id="who-else">Who else handles it</h2>
     <ul>
       <li><strong>Paddle</strong>: checkout, payment, tax, invoices and refunds, as described above.</li>
-      <li><strong>Cloudflare</strong>: hosts this website, and forwards email sent to our addresses to our mailbox.</li>
-      <li>
-        <strong>Our email provider</strong>, which holds the messages we send and receive, and the service that sends
-        licence keys once licensing is live. We’ll name both here before then.
-      </li>
+      <li><strong>Cloudflare</strong>: hosts this website, counts its visits, and forwards email sent to our addresses to our mailbox.</li>
+      <li><strong>Google</strong>: Gmail holds our mailbox, where email to our addresses is forwarded.</li>
+      <li><strong>Resend</strong>: sends your licence key, and our emails about new versions.</li>
     </ul>
     <p>
-      Some of these process data outside your country, including in the United States. We rely on their standard
-      contractual safeguards for that. We never sell personal data or share it for advertising.
+      Some of these process data outside your country, including in the United States. For that we rely on the
+      safeguards each offers, such as the European Commission’s standard contractual clauses or the EU–US Data Privacy
+      Framework. We never sell personal data or share it for advertising.
     </p>
 
     <h2 id="bases">Why we may use it</h2>
@@ -98,15 +117,34 @@ import { hasArt, ownArt } from '../lib/art';
       <li>Sending your licence key and helping with your order: to carry out our agreement with you.</li>
       <li>Telling buyers about new versions: our legitimate interest in keeping you able to update, since the app can’t check. Every such email says how to stop them.</li>
       <li>Keeping order records: what tax law requires.</li>
+      <li>Answering your email: our legitimate interest in replying to you.</li>
+      <li>Counting visits to this website: our legitimate interest in knowing how the site runs and what works.</li>
     </ul>
 
     <h2 id="rights">Your rights</h2>
     <p>
-      You can ask us what we hold about you, and ask us to correct, export or delete it, or object to how we use it, at
-      <a href={`mailto:${email.legal}`}>{email.legal}</a>. If you’re in the EU or UK, you can also complain to your data
-      protection authority.
+      You can ask us what we hold about you, and ask us to correct, export or delete it, to limit how we use it, or object
+      to how we use it, at <a href={`mailto:${email.legal}`}>{email.legal}</a>. It’s free, and we answer within one
+      month. We may ask you to write from the address in question, so we know it’s you.
+    </p>
+    <p>
+      You can also complain to a data protection authority: in Kosovo, the Information and Privacy Agency; in the EU or
+      UK, the authority where you live or work. We’d like the chance to help first.
     </p>
 
+    <h2 id="other">Children, decisions and breaches</h2>
+    <ul>
+      <li>Stillroom isn’t aimed at children under 16, and we don’t knowingly collect their data.</li>
+      <li>We make no automated decisions about you and build no profiles.</li>
+      <li>
+        If a breach ever puts your personal data at risk, we’ll tell you and the authorities, as and when the law
+        requires.
+      </li>
+    </ul>
+
     <h2 id="changes">Changes</h2>
-    <p>If this policy changes, the new version will be posted here with its date.</p>
+    <p>
+      If this policy changes, the new version will be posted here with its date. If a change matters for buyers, we’ll
+      also email them.
+    </p>
 </DocLayout>

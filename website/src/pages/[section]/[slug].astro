@@ -1,12 +1,22 @@
 ---
 // Every article in src/content/pages: /compare/cryptomator/, /guides/…, /features/decoy-password/, and so on.
-import { getCollection, getEntry } from 'astro:content';
+import { getCollection, getEntry, render } from 'astro:content';
 import DocLayout from '../../layouts/DocLayout.astro';
 import DownloadCta from '../../components/DownloadCta.astro';
 import Decoy from '../../components/home/Decoy.astro';
+import SealDemo from '../../components/home/SealDemo.astro';
+import Passphrase from '../../components/tools/Passphrase.astro';
+import Strength from '../../components/tools/Strength.astro';
+import Totp from '../../components/tools/Totp.astro';
+import QrReader from '../../components/tools/QrReader.astro';
+import Checksum from '../../components/tools/Checksum.astro';
+import RecoverySheet from '../../components/tools/RecoverySheet.astro';
+import ShamirSplit from '../../components/tools/ShamirSplit.astro';
+import Pin from '../../components/tools/Pin.astro';
+import ToolHero from '../../components/tools/ToolHero.astro';
 import { sections, type Section } from '../../lib/sections';
 import { faqJsonLd } from '../../lib/faq';
-import { hasArt, ownArt } from '../../lib/art';
+import { ownArt } from '../../lib/art';
 
 export async function getStaticPaths() {
   const pages = await getCollection('pages');
@@ -17,7 +27,12 @@ export async function getStaticPaths() {
 }
 
 const { page, section } = Astro.props;
-// The article's own print when it has one (then it opens as a banner), else its section's, shown smaller.
+// A tool page's tool (src/content/pages/tools/), shown first.
+const tools = { passphrase: Passphrase, strength: Strength, totp: Totp, qr: QrReader, checksum: Checksum, 'recovery-sheet': RecoverySheet, shamir: ShamirSplit, pin: Pin };
+const Tool = page.data.tool ? tools[page.data.tool] : undefined;
+// The first heading in the text, for the tool hero's "How it works" button.
+const first = Tool ? (await render(page)).headings.find((h) => h.depth === 2)?.slug : undefined;
+// The article's own print when it has one, else its section's, shown under the heading (no banner).
 const own = `article-${page.id.replace('/', '-')}`;
 const s = sections[section];
 const hub: [string, string] = section === 'features' ? ['Features', '/features/'] : [s.name, `/${section}/`];
@@ -36,8 +51,10 @@ const related = (
 
 <DocLayout
   page={page}
-  picture={ownArt(own, `page-${section}`)}
-  banner={hasArt(own)}
+  picture={page.data.picture && !Tool ? ownArt(own, `page-${section}`) : undefined}
+  points={page.data.points}
+  quote={page.data.quote}
+  theme={page.data.theme}
   title={page.data.title}
   h1={page.data.h1}
   eyebrow={s.eyebrow}
@@ -46,6 +63,8 @@ const related = (
   trail={[hub]}
   jsonLd={page.data.faq.length ? [faqJsonLd(page.data.faq.map((f, i) => ({ id: `q${i}`, q: f.q, a: f.a })))] : []}
 >
+  {Tool && <ToolHero slot="hero" slug={page.id.split('/')[1]!} h1={page.data.h1} lead={page.data.lead} picture={ownArt(own, `page-${section}`)} first={first} />}
+  {Tool && <Tool slot="tool" />}
   <Fragment slot="end">
     {
       page.data.faq.length > 0 && (
@@ -92,6 +111,7 @@ const related = (
   </Fragment>
   <Fragment slot="after">
     {page.id === 'features/decoy-password' && <Decoy />}
+    {page.data.demo === 'seal' && <SealDemo />}
     <DownloadCta />
   </Fragment>
 </DocLayout>

@@ -13,9 +13,11 @@ interface Props {
   exactTitle?: boolean;
   jsonLd?: Record<string, unknown>[];
   ogType?: 'website' | 'article';
+  /** night: the page on the kit's dark surface (.ink). */
+  theme?: 'paper' | 'night';
 }
 
-const { title, description = site.description, exactTitle = false, jsonLd = [], ogType = 'website' } = Astro.props;
+const { title, description = site.description, exactTitle = false, jsonLd = [], ogType = 'website', theme = 'paper' } = Astro.props;
 const fullTitle = exactTitle ? title : `${title} · Stillroom Vault`;
 const canonical = new URL(Astro.url.pathname, site.url).href;
 // The page's own link preview from scripts/make-og.mjs (public/og/<path>.jpg), or the site's.
@@ -83,8 +85,10 @@ const graph = [organization, website, ...jsonLd];
     {graph.map((g) => <script type="application/ld+json" set:html={JSON.stringify(g)} />)}
     <noscript><link rel="stylesheet" href="/noscript.css" /></noscript>
     <slot name="head" />
+    <!-- Cloudflare Web Analytics: counts visits with no cookies and nothing that identifies a visitor (/privacy/). -->
+    <script is:inline defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "f6b1e4578eac40ea978e79d2f2210995"}'></script>
   </head>
-  <body>
+  <body class:list={[{ ink: theme === 'night' }]}>
     <a class="skip-link" href="#main">Skip to content</a>
     <Header />
     <main id="main" tabindex="-1">

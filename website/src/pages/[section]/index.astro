@@ -2,7 +2,9 @@
 // A hub for each article section (/compare/, /guides/, /moving-from/, /learn/, /for/): every page in it, in order.
 import { getCollection } from 'astro:content';
 import PageLayout from '../../layouts/PageLayout.astro';
-import ArticleList from '../../components/ArticleList.astro';
+import HubCards, { type HubVariant } from '../../components/HubCards.astro';
+import ToolCards from '../../components/tools/ToolCards.astro';
+import { ownArt } from '../../lib/art';
 import { hubSections, sectionArt, sections, type Section } from '../../lib/sections';
 import { site } from '../../config';
 
@@ -15,6 +17,16 @@ const s = sections[section];
 const pages = (await getCollection('pages', (p) => p.id.startsWith(`${section}/`))).sort(
   (a, b) => a.data.order - b.data.order || a.data.name.localeCompare(b.data.name),
 );
+// Each hub lays its articles out its own way (HubCards).
+const variant: HubVariant = ({ guides: 'featured', compare: 'grid', learn: 'gallery', for: 'stories', 'moving-from': 'moves', tools: 'grid' } as const)[section as Exclude<Section, 'features'>];
+// The free tools are grouped by topic instead, after Claude Academy's use-case library (ToolCards).
+const items = pages.map((p) => ({
+  href: `/${p.id}/`,
+  name: p.data.name,
+  description: p.data.description,
+  lead: p.data.lead,
+  art: ownArt(`article-${p.id.replace('/', '-')}`, `page-${section}`),
+}));
 const list = {
   '@context': 'https://schema.org',
   '@type': 'ItemList',
@@ -28,6 +40,6 @@ const list = {
 };
 ---
 
-<PageLayout art={sectionArt[section]} picture={`page-${section}`} banner title={s.title} h1={s.h1} eyebrow={s.eyebrow} description={s.description} lead={s.lead} jsonLd={[list]}>
-  <ArticleList items={pages.map((p) => ({ href: `/${p.id}/`, name: p.data.name, description: p.data.description }))} />
+<PageLayout art={sectionArt[section]} picture={`page-${section}`} title={s.title} h1={s.h1} eyebrow={s.eyebrow} description={s.description} lead={s.lead} jsonLd={[list]}>
+  {section === 'tools' ? <ToolCards items={items} /> : <HubCards variant={variant} items={items} />}
 </PageLayout>

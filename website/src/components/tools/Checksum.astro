@@ -1,0 +1,105 @@
+---
+import ToolFrame from './ToolFrame.astro';
+import Icon from '../ui/Icon.astro';
+import { download } from '../../config';
+---
+
+<ToolFrame label="File checksum checker">
+  <label class="t-drop" data-drop>
+    <Icon name="doc" size={24} />
+    <span><strong>Drop a file here</strong>, or choose one. It’s read on this device and never uploaded.</span>
+    <input type="file" data-file />
+  </label>
+  <label class="t-field">
+    <span class="t-label">The checksum you were given, to compare (optional)</span>
+    <input class="field t-mono" type="text" autocomplete="off" spellcheck="false" placeholder="Paste a SHA-256, SHA-1 or SHA-512" data-expect />
+  </label>
+  <p class="t-note" aria-live="polite" data-msg></p>
+  <dl class="sums" data-sums hidden data-known={download.sha256} data-known-name={`Stillroom ${download.version}`}>
+    <div><dt>SHA-256</dt><dd class="t-mono" data-sum="SHA-256"></dd></div>
+    <div><dt>SHA-1</dt><dd class="t-mono" data-sum="SHA-1"></dd></div>
+    <div><dt>SHA-512</dt><dd class="t-mono" data-sum="SHA-512"></dd></div>
+  </dl>
+</ToolFrame>
+
+<script>
+  import { dropZone } from '../../scripts/tools/ui';
+
+  const root = document.querySelector<HTMLElement>('[data-tool]');
+  if (root) {
+    const $ = <T extends Element>(s: string) => root.querySelector<T>(s)!;
+    const msg = $<HTMLElement>('[data-msg]');
+    const sums = $<HTMLElement>('[data-sums]');
+    const expect = $<HTMLInputElement>('[data-expect]');
+    const cells = [...root.querySelectorAll<HTMLElement>('[data-sum]')];
+    let file: File | null = null;
+    const size = (n: number) =>
+      n < 1024 ? `${n} bytes` : n < 1024 ** 2 ? `${(n / 1024).toFixed(1)} KB` : n < 1024 ** 3 ? `${(n / 1024 ** 2).toFixed(1)} MB` : `${(n / 1024 ** 3).toFixed(2)} GB`;
+    const hex = (b: ArrayBuffer) => Array.from(new Uint8Array(b), (x) => x.toString(16).padStart(2, '0')).join('');
+
+    const compare = () => {
+      if (!file) return;
+      const want = expect.value.replace(/\s+/g, '').toLowerCase();
+      let note = `${file.name}, ${size(file.size)}.`;
+      for (const cell of cells) cell.parentElement!.dataset.match = String(!!want && cell.textContent === want);
+      const known = cells[0]!.textContent === sums.dataset.known;
+      if (known) note += ` This is ${sums.dataset.knownName}, exactly as published.`;
+      if (want) {
+        const hit = cells.find((c) => c.textContent === want);
+        note += hit
+          ? ` It matches the ${hit.dataset.sum} you pasted: the file is the one you were promised.`
+          : known
+            ? ' The checksum you pasted is a different one: check you copied it from the same download.'
+            : ' It doesn’t match the checksum you pasted. Don’t open it: download it again from the original site.';
+      }
+      msg.textContent = note;
+      msg.className = `t-note ${want ? (cells.some((c) => c.textContent === want) ? 't-good' : 't-bad') : ''}`;
+    };
+
+    dropZone($<HTMLElement>('[data-drop]'), async (f) => {
+      file = null;
+      sums.hidden = true;
+      msg.className = 't-note';
+      msg.textContent = `Reading ${f.name}…`;
+      try {
+        // ponytail: reads the whole file into memory; past about 2 GB browsers refuse, and shasum in Terminal does it.
+        const data = await f.arrayBuffer();
+        for (const cell of cells) cell.textContent = hex(await crypto.subtle.digest(cell.dataset.sum!, data));
+        file = f;
+        sums.hidden = false;
+        compare();
+      } catch {
+        msg.textContent = 'This file is too big for the browser to read at once. In Terminal, run: shasum -a 256 followed by the file’s path.';
+      }
+    });
+    expect.addEventListener('input', compare);
+  }
+</script>
+
+<style>
+  .sums {
+    display: grid;
+    gap: var(--space-2);
+    margin: 0;
+  }
+  .sums div {
+    display: grid;
+    grid-template-columns: 6rem minmax(0, 1fr);
+    gap: var(--space-4);
+    padding: var(--space-3) var(--space-4);
+    border: 1px solid var(--hairline);
+    border-radius: var(--r-field);
+    background: var(--bg);
+  }
+  .sums div[data-match='true'] {
+    border-color: var(--green);
+  }
+  .sums dt {
+    color: var(--fg-quiet);
+  }
+  .sums dd {
+    margin: 0;
+    color: var(--fg);
+    font-size: var(--text-sm);
+  }
+</style>

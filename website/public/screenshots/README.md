@@ -1,21 +1,23 @@
-# Real screenshots go here
+# Screenshots
 
-The site shows the app through illustrations drawn from its design kit and labelled as such. Nothing here is
-presented as a real screenshot until a real one exists.
-
-When there are real screenshots, put them in this folder:
+Real screenshots of the app, shown in the home page's "Inside the app" tabs (`src/components/home/Showcase.astro`).
+Each is the capture itself, never resized (`<name>.webp`, 2880×1440, lossless), and a 1440-pixel lossless copy (`<name>-1440.webp`) for phones and 1x screens. Resizing or lossy compression blurs the text, with the window's own see-through corners
+(the page draws the shadow).
 
 | File | What it shows |
 |---|---|
-| `vault.png` | the vault window, All Files, a demo vault with made-up files |
-| `lock.png` | the lock screen |
-| `twofactor.png` | a login secret with a live two-factor code |
-| `settings.png` | Settings, Access tab |
+| `vault` | the Documents list |
+| `preview` | a tax return open in the preview card |
+| `lock` | the lock screen, a password half typed |
+| `twofactor` | a Google login with its live code |
+| `settings` | Settings, Access tab |
 
-How to take them:
-- Take them from a demo copy, never a real vault (the README's Building section says how).
-- Stillroom hides its windows from capture. Turn on **Show in screenshots & screen sharing** in that demo vault first.
-- Use 2× PNGs at the app's default window size (1180×760 points), cropped to the window.
+Everything in them is invented: "Elena Marsh" and her files, notes and logins. Never take them from a real vault.
 
-Then swap the matching illustration in `src/components/home/Showcase.astro` and `src/pages/features.astro` for an
-`<img>`, with alt text that says what's on screen.
+To take them again:
+1. Write the demo vault: from `macos/`, `STILLROOM_DEMO_DIR=<scratch>/home/Library/Application\ Support/Stillroom swift test --filter writesDemoVault`
+   (`Tests/StillroomTests/DemoVaultTests.swift`; the password is in `password.txt` beside the vault).
+2. Run a renamed demo copy of a debug build with `CFFIXED_USER_HOME=<scratch>/home STILLROOM_SHOW_IN_CAPTURE=1`, in
+   light appearance, with the window set to 1440×720 points (wide and short, so it fits the page):
+   `osascript -e 'tell application "System Events" to tell (first process whose unix id is <pid>) to set size of window 1 to {1440, 720}'`.
+3. `screencapture -o -l <window id>` each screen, then save each as lossless WebP here, as captured and at 1440 pixels.

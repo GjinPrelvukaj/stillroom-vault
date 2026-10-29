@@ -1,0 +1,170 @@
+---
+import ToolFrame from './ToolFrame.astro';
+import Icon from '../ui/Icon.astro';
+---
+
+<ToolFrame label="Printable recovery code sheet">
+  <div class="t-row inputs">
+    <label class="t-field"><span class="t-label">Site or app</span>
+      <input class="field" type="text" autocomplete="off" placeholder="GitHub" data-site /></label>
+    <label class="t-field"><span class="t-label">Account (optional)</span>
+      <input class="field" type="text" autocomplete="off" placeholder="the email or username you sign in with" data-account /></label>
+  </div>
+  <label class="t-field">
+    <span class="t-label">Backup codes, one per line</span>
+    <textarea class="field t-mono" rows="6" autocomplete="off" spellcheck="false" placeholder={'4f2a-9c1e\n7b3d-02aa\n…'} data-codes></textarea>
+  </label>
+  <div class="t-row">
+    <button class="btn primary" type="button" data-print><Icon name="doc" size={16} /> <span>Print the sheet</span></button>
+    <button class="btn" type="button" data-clear><Icon name="trash" size={16} /> <span>Clear</span></button>
+  </div>
+  <p class="t-note">The preview below is what prints. Nothing is saved: closing the page forgets it.</p>
+
+  <article class="sheet" aria-label="The sheet, as it will print">
+    <header>
+      <p class="kicker">Backup codes</p>
+      <h2 data-out-site>Your site or app</h2>
+      <p data-out-account></p>
+    </header>
+    <ol class="codes" data-out-codes></ol>
+    <footer>
+      <p>Printed <span data-out-date></span>. Each code works once: tick it off when you use it.</p>
+      <p>Keep this with your passport or other papers, away from your computer. Anyone holding it and your password can sign in.</p>
+    </footer>
+  </article>
+</ToolFrame>
+
+<script>
+  const root = document.querySelector<HTMLElement>('[data-tool]');
+  if (root) {
+    const $ = <T extends Element>(s: string) => root.querySelector<T>(s)!;
+    const site = $<HTMLInputElement>('[data-site]');
+    const account = $<HTMLInputElement>('[data-account]');
+    const codes = $<HTMLTextAreaElement>('[data-codes]');
+    const outSite = $<HTMLElement>('[data-out-site]');
+    const outAccount = $<HTMLElement>('[data-out-account]');
+    const outCodes = $<HTMLElement>('[data-out-codes]');
+    $<HTMLElement>('[data-out-date]').textContent = new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' });
+
+    const draw = () => {
+      outSite.textContent = site.value.trim() || 'Your site or app';
+      outAccount.textContent = account.value.trim();
+      const list = codes.value
+        .split('\n')
+        .map((c) => c.trim())
+        .filter(Boolean)
+        .slice(0, 40);
+      outCodes.replaceChildren(
+        ...(list.length ? list : ['xxxx-xxxx', 'xxxx-xxxx', 'xxxx-xxxx', 'xxxx-xxxx']).map((c) =>
+          Object.assign(document.createElement('li'), { textContent: c, className: list.length ? '' : 'ghost' }),
+        ),
+      );
+    };
+    for (const el of [site, account, codes]) el.addEventListener('input', draw);
+    $<HTMLButtonElement>('[data-print]').addEventListener('click', () => window.print());
+    $<HTMLButtonElement>('[data-clear]').addEventListener('click', () => {
+      site.value = account.value = codes.value = '';
+      draw();
+    });
+    draw();
+  }
+</script>
+
+<style>
+  .inputs .t-field {
+    flex: 1 1 220px;
+  }
+  /* The sheet is a printed page: fixed black on white, whatever the site's theme. */
+  .sheet {
+    display: grid;
+    gap: var(--space-6);
+    padding: var(--space-10) var(--space-8);
+    border-radius: var(--r-field);
+    background: #fff;
+    color: #111;
+    box-shadow: 0 1px 0 rgb(0 0 0 / 0.04), 0 12px 30px -18px rgb(0 0 0 / 0.35);
+  }
+  .kicker {
+    color: #555;
+    font-size: var(--text-sm);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .sheet h2 {
+    margin: var(--space-1) 0 0;
+    color: #111;
+    font-family: var(--font-serif);
+    font-size: var(--text-3xl);
+    font-weight: 400;
+  }
+  .sheet header p:last-child {
+    color: #444;
+  }
+  .codes {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-3) var(--space-8);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    counter-reset: code;
+  }
+  .codes :global(li) {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding-bottom: var(--space-2);
+    border-bottom: 1px solid #ddd;
+    color: #111;
+    font-family: var(--font-mono);
+    font-size: var(--text-lg);
+  }
+  /* A box to tick by hand. */
+  .codes :global(li)::before {
+    content: '';
+    flex: none;
+    width: 14px;
+    height: 14px;
+    border: 1.5px solid #333;
+    border-radius: 3px;
+  }
+  .codes :global(li.ghost) {
+    color: #bbb;
+  }
+  .sheet footer {
+    display: grid;
+    gap: var(--space-2);
+    color: #444;
+    font-size: var(--text-sm);
+  }
+  @media (max-width: 560px) {
+    .codes {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<style is:global>
+  /* Only the sheet prints. This component is only on its own page, so the rule touches nothing else. */
+  @media print {
+    body * {
+      visibility: hidden;
+    }
+    .sheet,
+    .sheet * {
+      visibility: visible;
+    }
+    html,
+    body {
+      background: #fff !important;
+    }
+    /* Fixed, not absolute: the tool's frame is positioned, and the sheet must start at the page's corner. */
+    .sheet {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      box-shadow: none !important;
+    }
+  }
+</style>

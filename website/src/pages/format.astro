@@ -3,9 +3,9 @@ import DocLayout from '../layouts/DocLayout.astro';
 import OpenWithoutUs from '../components/home/OpenWithoutUs.astro';
 ---
 
-<DocLayout picture="page-format"
-  banner
+<DocLayout
   doc="format"
+  theme="night"
   title="Open File Format: Read a Vault Without Us"
   h1="The Stillroom Vault file format"
   eyebrow="Format 4 · public"
@@ -13,6 +13,37 @@ import OpenWithoutUs from '../components/home/OpenWithoutUs.astro';
   lead="Every file in a vault, exactly enough to read one without the app. Nothing here is secret: a vault opens with its password, its recovery key or enough kit pieces, and with nothing else."
   deep
 >
+  <!-- The vault folder, drawn: the same layout as the block under "The pieces" in docs/FORMAT.md. -->
+  <Fragment slot="before">
+    <figure class="container tree" aria-labelledby="tree-cap">
+      <div class="store">
+        <p class="dir">Store/</p>
+        <div class="slots">
+          {['a/', 'b/'].map((slot) => (
+            <div class="slot">
+              <p class="dir">{slot}</p>
+              <ul>
+                {['password.key', 'recovery.key', 'kit.key', 'cover.key', 'list', 'search'].map((file) => <li>{file}</li>)}
+              </ul>
+            </div>
+          ))}
+        </div>
+        <div class="shared">
+          <p class="dir">Files/</p>
+          <p>both slots’ items, one sealed file per item and per version</p>
+        </div>
+        <ul class="extras">
+          <li><code>intruder.pub</code> both slots’ intruder public keys</li>
+          <li><code>intruder/</code> the intruder log</li>
+          <li><code>touchid.key</code> when Touch ID is on</li>
+          <li><code>mac.key</code> when Lock to this Mac is on</li>
+        </ul>
+      </div>
+      <figcaption id="tree-cap">
+        One folder holds a whole vault: two slots built exactly alike, and one shared folder of sealed items.
+      </figcaption>
+    </figure>
+  </Fragment>
   <Fragment slot="after">
     <OpenWithoutUs />
   </Fragment>
@@ -23,6 +54,82 @@ import OpenWithoutUs from '../components/home/OpenWithoutUs.astro';
 </script>
 
 <style>
+  .tree {
+    margin-bottom: var(--space-16);
+  }
+  .store {
+    display: grid;
+    gap: var(--space-4);
+    max-width: 980px;
+    margin-inline: auto;
+    padding: var(--space-6);
+    border: 1px solid var(--hairline);
+    border-radius: var(--r-panel);
+    background: var(--glass);
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+  }
+  .dir {
+    color: var(--vault);
+    font-weight: 600;
+  }
+  .slots {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-4);
+  }
+  .slot,
+  .shared {
+    padding: var(--space-4) var(--space-6);
+    border: 1px solid var(--hairline);
+    border-radius: var(--r-card);
+    background: var(--glass-strong);
+  }
+  .slot ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin: var(--space-3) 0 0;
+    padding: 0;
+    list-style: none;
+    color: var(--fg-2);
+  }
+  .slot li {
+    padding: 2px 10px;
+    border-radius: var(--r-pill);
+    background: var(--glass);
+  }
+  .shared {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2) var(--space-6);
+    color: var(--fg-2);
+  }
+  .extras {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-2) var(--space-6);
+    margin: 0;
+    padding: var(--space-2) var(--space-2) 0;
+    list-style: none;
+    color: var(--fg-quiet);
+  }
+  .extras code {
+    color: var(--fg);
+    margin-right: var(--space-2);
+  }
+  .tree figcaption {
+    margin-top: var(--space-4);
+    color: var(--fg-quiet);
+    font-size: var(--text-sm);
+    text-align: center;
+  }
+  @media (max-width: 700px) {
+    .slots,
+    .extras {
+      grid-template-columns: 1fr;
+    }
+  }
   /* The glossary terms scripts/terms.ts wraps, and their tip (after Skiper UI's #101, custom tooltip). */
   :global(.prose .term) {
     padding: 0;

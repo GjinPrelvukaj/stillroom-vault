@@ -3,11 +3,13 @@
 The website for Stillroom Vault: an [Astro](https://astro.build) static site, deployed on Cloudflare Pages.
 
 It practises what the app preaches:
-- **Nothing third-party.** No analytics, cookies, trackers, web fonts, CDNs or embeds; every byte comes from
-  stillroomvault.com.
-  - `scripts/check-offline.mjs` runs after every build and fails it on any URL to another host.
-  - `public/_headers` sets a strict Content-Security-Policy: no inline scripts or styles, and connections only back
-    to this site.
+- **Almost nothing third-party.** No cookies, trackers, web fonts, CDNs or embeds. The one outside script is Cloudflare
+  Web Analytics' beacon (in `Base.astro`), which counts visits without cookies and can't identify anyone; the privacy
+  page says so. Checkout loads Paddle, on `/checkout/` only.
+  - `scripts/check-offline.mjs` runs after every build and fails it on any URL to a host outside its list
+    (stillroomvault.com, paddle.com, github.com, cloudflareinsights.com).
+  - `public/_headers` sets a strict Content-Security-Policy: no inline styles, scripts only from this site and the
+    analytics beacon, and connections only back to this site and Cloudflare's analytics.
 - **No drift.** These pages are rendered from the repository's own files at build time, never copied by hand:
   - the security page, from `docs/SECURITY.md`; its threat-model panel is parsed out of the same file
   - the format page, from `docs/FORMAT.md`
@@ -55,9 +57,9 @@ it, so `npm i --no-save playwright` first if it's missing. `add-art.py` needs Pi
 The last three watch paths are added on purpose: the licence page renders `LICENSE.md`, the features page reads
 `README.md`, and the site serves `tools/stillroom-open.py`.
 
-In the Cloudflare dashboard, keep off everything that injects code into pages. Each one would break the CSP and the
-"0 third-party requests" promise:
-- Web Analytics, and Rocket Loader
+In the Cloudflare dashboard, keep off everything that injects code into pages. Each one would break the CSP:
+- Web Analytics' automatic injection (the beacon is already in `Base.astro`; a second copy would count twice), and
+  Rocket Loader
 - Email Address Obfuscation (Scrape Shield). It rewrites `mailto:` links and adds a script.
 - Automatic HTTPS Rewrites can stay on. Zaraz, and any "Speed" setting that edits HTML, stay off.
 
@@ -68,13 +70,20 @@ In the Cloudflare dashboard, keep off everything that injects code into pages. E
 - `src/styles/tokens.css` holds the design as web tokens: colours, radii, type, spacing, the page widths (content runs
   up to 1760px between 48px and 80px margins), and the app's three springs (SwiftUI response and damping) sampled into
   CSS `linear()` curves. `src/scripts/gsap.ts` has the same springs as GSAP eases.
-- `src/components/app/` redraws the app's screens from its SwiftUI views. They're illustrations and are labelled
-  that way. Real screenshots go in `public/screenshots/` (see its README).
+- Real screenshots of the app go in `public/screenshots/` (see its README), made from the demo vault.
 - The look is paper and ink: warm paper (`#f7f6f2`), near-black ink, one violet (`#6043ca`) for what is sealed. Every
-  h1 and h2 is in the system serif, everything else in the system sans; there are no web fonts and no glows. `.ink`
-  (in `tokens.css`) is the one dark surface, kept for the menu, the footer and the app's window (charcoal, since the
-  app is dark); everything inside it reads the dark token values. Panels, demos and code blocks are raised paper.
-- Pictures are two-ink risograph prints in `public/art/`, one slot each (`src/components/Art.astro`, `src/lib/art.ts`).
+  h1 and h2 is in the system serif, everything else in the system sans; there are no web fonts. `.ink` (in
+  `tokens.css`) is the dark surface: the menu, the footer, the app's window, and whole pages given `theme="night"`
+  (the format page and About). Everything inside it reads the dark token values. Panels, demos and code blocks are
+  raised paper.
+- Corners: rounded boxes, cards, fields and pictures use `corner-shape: squircle` (Apple's continuous corners) where
+  the browser draws it, which is Chromium today; elsewhere they stay round. The radii grow a little inside that
+  `@supports` block, and pills and circles are listed there to keep their round ends (`global.css`, "Squircle
+  corners"). Add a new pill's class to that list.
+- The fade at the foot of the screen (`.bottom-fade` in `Header.astro`) takes the page's own `--bg`, so it's paper on
+  paper pages and ink on dark ones.
+- Pictures are collages in one series (a vintage watercolour inside a framed panel, a sun-faded photograph around it)
+  in `public/art/`, one slot each (`src/components/Art.astro`, `src/lib/art.ts`).
   Framed ones (the home plate, Learn more, the cards, the pricing tiers, the menu) keep their printed paper on a
   rounded plate; the rest sit loose beside text on the page's own paper. `ART.md` has the look, every slot and its
   prompt.
@@ -83,27 +92,36 @@ In the Cloudflare dashboard, keep off everything that injects code into pages. E
   for a week.
 - The header (`Header.astro`, `scripts/header.ts`) stays put; away from the top the wordmark folds into "S" and the
   ring, letter by letter. Its menu is a full-screen ink panel that drops in as a curtain and lifts on close.
-- A page whose picture is its own (security, format, the changelog, features, the section pages, and every article
-  or legal page once its own print exists; ART.md, "Per page") opens with it as a banner (`BannerHero`): the print edge to
-  edge, the heading on its paper-faded left side.
+- Where pictures sit: section hubs show theirs beside the heading (`PageLayout`); articles show their own print
+  framed under the heading; tool pages show it large beside the heading (`ToolHero`); About opens with it wide across
+  a dark band. Security, format, the changelog and the legal pages show none on the page, but their prints still
+  make their link previews (ART.md, "Per page").
+- Link previews (`scripts/make-og.mjs`): a page with a picture gets that picture full-bleed, with the wordmark and its
+  heading over a soft fade; it finds it by the classes `hero-picture`, `cover` or `og-picture`, or falls back to the
+  page's print from the `prints` table in the script. A page with neither gets a paper card with its eyebrow and
+  heading. Run it after any new picture, then build again.
 - Layouts: `PageLayout` (a heading with its picture beside it, then the page) and `DocLayout` (articles, the
   repository's documents and the legal pages, which are written in their page files and passed in, their headings
   read out for the contents: a centred heading, then numbered contents, the text under its picture, and a column with when the page
   was checked, its section and more like it; a bar under the header names the chapter being read, a violet thread
   runs down the text's margin through its chapters, and faint paper washes lie behind it, placed differently on
-  every page; see ART.md, "Paper washes").
+  every page; see ART.md, "Paper washes"). `DocLayout` takes an optional `hero` slot (a tool page's `ToolHero`) and a
+  `tool` slot shown first in the text column; the hero slot counts only if it renders something, since an empty
+  conditional slot still reports as present (that once dropped every article's heading).
+- `src/pages/about.astro` is About, on the dark surface: the masks picture, then each section in a layout of its own.
+  Every claim on it is one the site or `docs/SECURITY.md` already makes, except the story, which is the owners' words.
 - The home page runs: hero and plate, three start-here cards, the app, what it does, the seal demo, never goes
   online, pricing (plain cards: the prints are saved for Learn more), questions, Learn more, download. Each idea is said once; the detail lives on its own page.
 - `src/scripts/` holds the motion and the live parts:
   - the file names under the home picture turning to ciphertext as you reach it (`home-plate.ts`)
   - the footer's groups easing open and shut in every browser (`disclosure.ts`, on any `<details data-glide>`)
   - the in-browser AES-256-GCM demo (`seal.ts`)
-  - the two-factor code, real RFC 6238 TOTP from a public demo key (`app-demos.ts`)
   - the decoy guess (`decoy.ts`)
   - the live count of files from other sites, from the browser's own Resource Timing record (`netpanel.ts`)
   - the format page's terminal and the Argon2 ring (`terminal.ts`, `argon.ts`)
   - the header and menu (`header.ts`), and the contents lists and chapter bar (`toc.ts`)
-  - the features page's card stack, pinned and sliding one card over the last on big screens (`feature-stack.ts`)
+  - the features page's tabs, through the shared `.segments` tab control in `site.ts`
+  - the free tools, one script per tool in its component, with their logic in `src/scripts/tools/` (below)
   - site search, opened by the header's button, `/` or ⌘K, over `/search.json` built at build time (`search.ts`)
   - the menu's letter roll (`text-roll.ts`), the home app tabs (`xtabs.ts`), the seal demo's caret (`caret.ts`)
     and the never-online heading's words closing up (`converge.ts`)
@@ -111,7 +129,6 @@ In the Cloudflare dashboard, keep off everything that injects code into pages. E
   numbered as on that site:
   - everywhere: the blur under the header (41), scroll fades (87), the text link hover (40), the menu letter roll
     (58), search (92), the questions' bouncy accordion (103, all CSS)
-  - features: the card stack (17)
   - home: the app tabs (96), Learn more widening on hover (52), the seal demo's caret (106), the never-online
     heading (31), the start-here cards arriving (104), the row icons' motions (99)
   - articles and documents: the thread drawn down the margin through the chapters, or the security page's rules
@@ -120,25 +137,30 @@ In the Cloudflare dashboard, keep off everything that injects code into pages. E
   - format: term definitions on hover or focus (101, `terms.ts`, words in `src/lib/glossary.ts`)
   - changelog: the versions as a timeline (74, `timeline.ts`)
 - `src/content/pages/<section>/<slug>.md` are the site's articles, served at `/<section>/<slug>/`: `compare`, `guides`,
-  `features` (listed on /features/), `moving-from`, `learn` and `for`. Each section's hub is built from
+  `features` (listed on /features/), `moving-from`, `learn`, `for` and `tools`. Each section's hub is built from
   `src/lib/sections.ts`, and every page lands in the sitemap by itself. The frontmatter (title, description, related
   pages, FAQ, sources) is checked by the schema in `src/content.config.ts`. Claims about Stillroom must match
   `docs/SECURITY.md`; claims about other products need an official page in `sources`, and the page's `updated` date
   says when they were checked. `scripts/check-copy.mjs` fails the build on an em or en dash in them.
+- The free tools (`/tools/`): each is an article in `src/content/pages/tools/` whose frontmatter names its `tool`, drawn
+  by a component in `src/components/tools/` inside `ToolFrame` (a small app window) under `ToolHero`. The hub groups
+  them by topic from `src/lib/tools.ts` (`ToolCards`); a tool missing from a group fails the build. Their logic is
+  pure and tested by hand against published vectors: `otp.ts` (RFC 6238 and 4226, Google Authenticator exports),
+  `strength.ts` (a line-for-line copy of the app's `PasswordStrength.swift`, 50 bits and 12 characters; keep them in
+  step), `shamir.ts`, `pin.ts`, `random.ts` (no modulo bias) and the EFF long word list (`eff-words.ts`, CC BY 3.0).
+  The QR reader uses jsQR, bundled. Nothing a tool is given leaves the page.
 - `src/content.config.ts` is the loader that renders the repository's markdown. It rewrites the documents' relative
   links to this site's pages, or to GitHub.
 
-## Placeholders
+## Releases and checkout
 
-- **Download** (`src/config.ts`, `download`). The button points at `/download/Stillroom-1.0.zip`, which doesn't exist
-  yet. When the notarized 1.0 zip is ready:
-  - upload it, for example as a Cloudflare R2 public bucket on `downloads.stillroomvault.com`, or into `public/`
-    (Pages allows up to 25 MiB per file)
-  - set `url`, `sha256` and `placeholder: false`
+- **Download** (`src/config.ts`, `download`). The zip is served from `public/download/`. For a new version, put the zip
+  there under its new name and set `url`, `file`, `version` and `sha256` (what `make-dist.sh` printed); every
+  download button and the checksum tool follow.
 - **Checkout.** Every buy button reads "Coming soon" until these are set as Cloudflare Pages environment variables:
   `PUBLIC_PADDLE_CLIENT_TOKEN`, `PUBLIC_PADDLE_PRICE_PERSONAL` and `PUBLIC_PADDLE_PRICE_FAMILY` (and
   `PUBLIC_PADDLE_ENV=sandbox` for testing). See "Turning on checkout" below.
-- **Structured data** (`src/lib/schema.ts`). Offers are `PreOrder`; change them to `InStock` at launch.
+- **Structured data** (`src/lib/schema.ts`): the app, its offers (`InStock`) and the public repository (`sameAs`).
 
 ### Turning on checkout
 
@@ -147,13 +169,13 @@ form inline, beside our own order summary filled from the totals Paddle sends (P
 frame with its footer, and a refund-policy link), and a thank-you once paid. It works once `PUBLIC_PADDLE_CLIENT_TOKEN`
 and the price ids are set (Cloudflare Pages variables, read at build time). `public/_headers` gives `/checkout/` alone
 the CSP, Permissions-Policy and opener policy Paddle's checkout needs. Paddle's default payment link is
-`https://stillroomvault.com/checkout/` (Checkout › Checkout configuration); without one, every checkout opens on
+`https://www.stillroomvault.com/checkout/` (Checkout › Checkout configuration); without one, every checkout opens on
 "Something went wrong".
 
 ### The licence signer
 
 `functions/api/paddle-webhook.ts` is a Cloudflare Pages Function, deployed with the site at
-`https://stillroomvault.com/api/paddle-webhook`. The work is in `server/` (`webhook.ts`, `licence.ts`, `email.ts`),
+`https://www.stillroomvault.com/api/paddle-webhook`. The work is in `server/` (`webhook.ts`, `licence.ts`, `email.ts`),
 outside `src/`, so nothing of it reaches the built pages; `public/_routes.json` runs Functions on `/api/*` only, so
 every page is still served as a plain file. On `transaction.completed` it checks Paddle's signature (at most five
 minutes old), skips an event id it has handled, looks the customer up in Paddle's API, signs a licence with Ed25519
@@ -184,7 +206,7 @@ To switch it on (Pages project › Settings):
    edition.
 4. **KV:** create a namespace (Storage › KV, for example `stillroom-paddle-events`) and bind it to the project as
    `PADDLE_EVENTS` (Settings › Bindings). It holds handled event ids for a week, nothing else.
-5. **Paddle:** Developer Tools › Notifications › New destination: URL `https://stillroomvault.com/api/paddle-webhook`,
+5. **Paddle:** Developer Tools › Notifications › New destination: URL `https://www.stillroomvault.com/api/paddle-webhook`,
    type webhook, event `transaction.completed`. Copy its secret key into `PADDLE_WEBHOOK_SECRET`, redeploy, then buy
    once in the sandbox and paste the key into a demo copy of the app.
 

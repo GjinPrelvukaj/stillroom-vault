@@ -6,6 +6,7 @@ lead: 'The cipher that seals every file, note and secret in Stillroom Vault, and
 name: 'AES-256-GCM'
 updated: '27 October 2026'
 order: 10
+demo: 'seal'
 related: ['/learn/argon2id/', '/learn/secure-enclave/', '/guides/encrypt-files-on-mac/', '/features/view-without-decrypting/']
 faq:
   - q: 'Can AES-256 be broken?'

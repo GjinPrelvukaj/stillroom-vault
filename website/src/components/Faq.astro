@@ -4,12 +4,14 @@ import type { QA } from '../lib/faq';
 interface Props {
   items: QA[];
   headingLevel?: 'h3' | 'h4';
+  /** One column however many questions there are, for a centred list. */
+  single?: boolean;
 }
-const { items, headingLevel = 'h3' } = Astro.props;
+const { items, headingLevel = 'h3', single = false } = Astro.props;
 const H = headingLevel;
 // Five or more questions run in two columns, the first half on the left: each column opens on its own, so an answer
 // never pushes the other column about, and reading order stays the same when they stack on phones.
-const columns = items.length >= 5 ? [items.slice(0, Math.ceil(items.length / 2)), items.slice(Math.ceil(items.length / 2))] : [items];
+const columns = !single && items.length >= 5 ? [items.slice(0, Math.ceil(items.length / 2)), items.slice(Math.ceil(items.length / 2))] : [items];
 ---
 
 <div class:list={['faq', { split: columns.length > 1 }]}>

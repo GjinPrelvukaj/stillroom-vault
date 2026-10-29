@@ -1,0 +1,9 @@
+# Issues are for bugs in the app, the format reader or the website. Everything else goes somewhere private.
+blank_issues_enabled: false
+contact_links:
+  - name: Report a security problem (privately)
+    url: https://github.com/GjinPrelvukaj/stillroom-vault/security/advisories/new
+    about: Never in a public issue. Report it privately here, or write to security@stillroomvault.com.
+  - name: Help with Stillroom, a licence or a purchase
+    url: https://www.stillroomvault.com/support/
+    about: Answers to common questions, and support@stillroomvault.com for anything else.

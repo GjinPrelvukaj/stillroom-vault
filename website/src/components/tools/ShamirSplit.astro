@@ -1,0 +1,106 @@
+---
+import ToolFrame from './ToolFrame.astro';
+import Icon from '../ui/Icon.astro';
+---
+
+<ToolFrame label="Shamir secret sharing demo">
+  <div class="segments" role="tablist" aria-label="Split or join">
+    <span class="pill" aria-hidden="true"></span>
+    <button type="button" role="tab" id="tab-split" aria-controls="shamir-split" aria-selected="true" tabindex="0">Split a secret</button>
+    <button type="button" role="tab" id="tab-join" aria-controls="shamir-join" aria-selected="false" tabindex="-1">Join pieces</button>
+  </div>
+
+  <div id="shamir-split" role="tabpanel" aria-labelledby="tab-split" data-tabpanel class="pane">
+    <label class="t-field">
+      <span class="t-label">The secret</span>
+      <textarea class="field" rows="3" autocomplete="off" spellcheck="false" data-secret>The spare key is under the blue pot.</textarea>
+    </label>
+    <div class="t-row">
+      <label class="t-field"><span class="t-label">Pieces to make</span>
+        <select class="field" data-n>{[2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => <option selected={n === 5}>{n}</option>)}</select></label>
+      <label class="t-field"><span class="t-label">Pieces needed to open</span>
+        <select class="field" data-k>{[2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => <option selected={n === 3}>{n}</option>)}</select></label>
+      <button class="btn primary" type="button" data-split><Icon name="pieces" size={16} /> <span>Split it</span></button>
+    </div>
+    <p class="t-note" aria-live="polite" data-split-msg></p>
+    <ol class="t-list pieces" data-pieces></ol>
+  </div>
+
+  <div id="shamir-join" role="tabpanel" aria-labelledby="tab-join" data-tabpanel class="pane" hidden>
+    <label class="t-field">
+      <span class="t-label">Pieces, one per line</span>
+      <textarea class="field t-mono" rows="5" autocomplete="off" spellcheck="false" placeholder="3-1-…" data-join-in></textarea>
+    </label>
+    <div class="t-row">
+      <button class="btn primary" type="button" data-join><Icon name="key" size={16} /> <span>Join them</span></button>
+    </div>
+    <p class="t-note" aria-live="polite" data-join-msg></p>
+    <div class="t-out" data-join-out hidden></div>
+  </div>
+</ToolFrame>
+
+<script>
+  import { join, split } from '../../scripts/tools/shamir';
+  import { copyButton } from '../../scripts/tools/ui';
+
+  const root = document.querySelector<HTMLElement>('[data-tool]');
+  if (root) {
+    const $ = <T extends Element>(s: string) => root.querySelector<T>(s)!;
+    const secret = $<HTMLTextAreaElement>('[data-secret]');
+    const n = $<HTMLSelectElement>('[data-n]');
+    const k = $<HTMLSelectElement>('[data-k]');
+    const splitMsg = $<HTMLElement>('[data-split-msg]');
+    const pieces = $<HTMLElement>('[data-pieces]');
+    const joinIn = $<HTMLTextAreaElement>('[data-join-in]');
+    const joinMsg = $<HTMLElement>('[data-join-msg]');
+    const joinOut = $<HTMLElement>('[data-join-out]');
+
+    $<HTMLButtonElement>('[data-split]').addEventListener('click', async () => {
+      pieces.replaceChildren();
+      const [total, need] = [Number(n.value), Number(k.value)];
+      if (!secret.value) return void (splitMsg.textContent = 'Type a secret to split first.');
+      if (need > total) return void (splitMsg.textContent = 'You can’t need more pieces than you make.');
+      const made = await split(secret.value, total, need);
+      splitMsg.textContent = `${total} pieces. Any ${need} of them give the secret back; ${need - 1} or fewer show nothing about it. Make it again and every piece changes.`;
+      for (const p of made) {
+        const li = document.createElement('li');
+        const code = Object.assign(document.createElement('span'), { className: 't-mono', textContent: p });
+        const btn = Object.assign(document.createElement('button'), { type: 'button', className: 'btn', innerHTML: '<span>Copy</span>' });
+        copyButton(btn, () => p);
+        li.append(code, btn);
+        pieces.append(li);
+      }
+      // Hand the pieces to the Join side, as a ready-made test: all but the extras.
+      joinIn.value = made.slice(0, need).join('\n');
+    });
+
+    $<HTMLButtonElement>('[data-join]').addEventListener('click', async () => {
+      joinOut.hidden = true;
+      try {
+        joinOut.textContent = await join(joinIn.value);
+        joinOut.hidden = false;
+        joinMsg.textContent = 'The pieces fit together:';
+      } catch (e) {
+        joinMsg.textContent = (e as Error).message;
+      }
+    });
+  }
+</script>
+
+<style>
+  .segments {
+    justify-self: start;
+  }
+  .pane {
+    display: grid;
+    gap: var(--space-4);
+  }
+  /* Long hex: smaller, and broken anywhere rather than after the "3-1-" in front. */
+  :global(.tool) .pieces :global(.t-mono) {
+    font-size: var(--text-sm);
+    word-break: break-all;
+  }
+  .pieces:empty {
+    display: none;
+  }
+</style>

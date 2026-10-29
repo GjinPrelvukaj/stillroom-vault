@@ -890,3 +890,47 @@ textarea.field {
   mask-image: radial-gradient(ellipse 45% 75% at 28% 40%, #000 25%, transparent 80%);
   pointer-events: none;
 }
+
+/* ---------- Squircle corners ---------- */
+/* Apple's continuous corners (a superellipse rather than a quarter circle) on every rounded box, card, field and
+   picture, where the browser can draw them (Chromium today). Elsewhere corners stay round, exactly as before.
+   A squircle at the same radius reads tighter, so the radii grow to keep the same softness. Pills and circles keep
+   their round ends; pseudo-elements (the contents dots, the timeline dots) aren't touched. */
+@supports (corner-shape: squircle) {
+  :root {
+    --r-field: 14px;
+    --r-card: 18px;
+    --r-panel: 32px;
+  }
+  * {
+    corner-shape: squircle;
+  }
+  .btn,
+  .pill,
+  .chip,
+  .tag,
+  .segments,
+  .segments button,
+  .skip-link,
+  .plus,
+  .yours,
+  .term-bar i,
+  .seg,
+  .xtabs,
+  .xtabs button,
+  .parts li,
+  .topics a,
+  .dots i,
+  .chips li,
+  .latest,
+  .plan,
+  .plans,
+  .seal,
+  .steps span,
+  .slot li,
+  .star-border > .star,
+  .based,
+  input[type='range'] {
+    corner-shape: round;
+  }
+}

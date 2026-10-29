@@ -8,17 +8,39 @@ import { faqJsonLd, type QA } from '../lib/faq';
 import { softwareJsonLd } from '../lib/schema';
 
 const configured = Boolean(paddle.clientToken);
-const rows: [string, string, string, string, string][] = [
-  ['Items', `Up to ${pricing.freeItems}`, 'Unlimited', 'Unlimited', 'Unlimited'],
-  ['People', '1', '1, on all their Macs', 'Up to 5', 'Per seat'],
-  ['AES-256-GCM, a key per item', '✓', '✓', '✓', '✓'],
-  ['Password, recovery key, emergency kit', '✓', '✓', '✓', '✓'],
-  ['Touch ID and Lock to this Mac', '✓', '✓', '✓', '✓'],
-  ['Decoy password', '✓', '✓', '✓', '✓'],
-  ['Intruder log', '✓', '✓', '✓', '✓'],
-  ['Backups, restore and export', '✓', '✓', '✓', '✓'],
-  ['Opening and exporting, always', '✓', '✓', '✓', '✓'],
-  ['Updates', 'All 1.x', 'All 1.x', 'All 1.x', 'All 1.x'],
+// The comparison, in groups (after the grouped tables on most pricing pages). Every protection is in every tier.
+type Row = [string, string, string, string, string];
+const groups: { title: string; rows: Row[] }[] = [
+  {
+    title: 'What you get',
+    rows: [
+      ['Items', `Up to ${pricing.freeItems}`, 'Unlimited', 'Unlimited', 'Unlimited'],
+      ['People', '1', '1, on all their Macs', 'Up to 5', 'Per seat'],
+      ['Updates', 'All 1.x', 'All 1.x', 'All 1.x', 'All 1.x'],
+    ],
+  },
+  {
+    title: 'Protection',
+    rows: [
+      ['AES-256-GCM, a key per item', '✓', '✓', '✓', '✓'],
+      ['Decoy password', '✓', '✓', '✓', '✓'],
+      ['Intruder log', '✓', '✓', '✓', '✓'],
+    ],
+  },
+  {
+    title: 'Ways in',
+    rows: [
+      ['Password, recovery key, emergency kit', '✓', '✓', '✓', '✓'],
+      ['Touch ID and Lock to this Mac', '✓', '✓', '✓', '✓'],
+    ],
+  },
+  {
+    title: 'Your files',
+    rows: [
+      ['Backups, restore and export', '✓', '✓', '✓', '✓'],
+      ['Opening and exporting, always', '✓', '✓', '✓', '✓'],
+    ],
+  },
 ];
 const faq: QA[] = [
   {
@@ -54,7 +76,8 @@ const faq: QA[] = [
 ];
 ---
 
-<PageLayout picture="page-pricing"
+<PageLayout
+  centered
   title="Pricing: Free, or $39 Once for Mac"
   h1="Stillroom Vault pricing"
   eyebrow="Pricing"
@@ -82,6 +105,7 @@ const faq: QA[] = [
 
   <section class="compare" aria-labelledby="compare-title">
     <h2 id="compare-title" class="section-title rise">Compare, row by row</h2>
+    <p class="lead sub">Every protection is in every tier. They differ in how much you keep and for how many people.</p>
     <div class="table-wrap glass panel" tabindex="0" role="region" aria-label="Comparison table, scrolls sideways on small screens">
       <table>
         <thead>
@@ -93,9 +117,13 @@ const faq: QA[] = [
             <th scope="col">Teams</th>
           </tr>
         </thead>
-        <tbody>
-          {
-            rows.map(([label, ...cells]) => (
+        {
+          groups.map((g) => (
+            <tbody>
+              <tr class="group">
+                <th scope="colgroup" colspan="5">{g.title}</th>
+              </tr>
+              {g.rows.map(([label, ...cells]) => (
               <tr>
                 <th scope="row">{label}</th>
                 {cells.map((c, i) =>
@@ -108,8 +136,11 @@ const faq: QA[] = [
                   ),
                 )}
               </tr>
-            ))
-          }
+              ))}
+            </tbody>
+          ))
+        }
+        <tbody>
           <tr class="price-row">
             <th scope="row">Price</th>
             <td>$0</td>
@@ -124,13 +155,14 @@ const faq: QA[] = [
 
   <section class="pfaq" aria-labelledby="pfaq-title">
     <h2 id="pfaq-title" class="section-title rise">Buying questions</h2>
-    <Faq items={faq} />
+    <Faq items={faq} single />
   </section>
 </PageLayout>
 
 <style>
   .promises {
     display: flex;
+    justify-content: center;
     flex-wrap: wrap;
     gap: 12px 24px;
     margin: 0 0 40px;
@@ -154,6 +186,32 @@ const faq: QA[] = [
     display: grid;
     gap: 24px;
     margin-top: calc(var(--section-y) * 2);
+  }
+  .compare > h2,
+  .pfaq > h2,
+  .sub {
+    text-align: center;
+  }
+  .sub {
+    max-width: 640px;
+    margin: -8px auto 8px;
+    color: var(--fg-2);
+  }
+  .pfaq {
+    max-width: 820px;
+    margin-inline: auto;
+  }
+  /* A group's label: a quiet row across the table. */
+  .group th {
+    padding-top: 28px;
+    color: var(--fg);
+    font-family: var(--font-serif);
+    font-size: var(--text-xl);
+    font-weight: 500;
+    text-align: left;
+  }
+  tbody:first-of-type .group th {
+    padding-top: 16px;
   }
   .table-wrap {
     overflow-x: auto;

@@ -1,0 +1,162 @@
+---
+import ToolFrame from './ToolFrame.astro';
+import Icon from '../ui/Icon.astro';
+---
+
+<ToolFrame label="Two-factor QR code reader">
+  <label class="t-drop" data-drop>
+    <Icon name="photo" size={24} />
+    <span><strong>Drop a screenshot of the QR code</strong>, choose one, or paste it with ⌘V.</span>
+    <span class="t-note">A Google Authenticator “Export accounts” code works too.</span>
+    <input type="file" accept="image/*" data-file />
+  </label>
+  <p class="t-note" aria-live="polite" data-msg></p>
+  <ul class="accounts" data-accounts></ul>
+  <template data-account>
+    <li class="account">
+      <p class="who"></p>
+      <dl>
+        <div><dt>Setup key</dt><dd class="t-mono" data-f="key"></dd></div>
+        <div><dt>Code now</dt><dd class="t-mono code" data-f="code"></dd></div>
+        <div><dt>Details</dt><dd data-f="details"></dd></div>
+      </dl>
+      <div class="t-row">
+        <button class="btn" type="button" data-f="copy-key"><Icon name="copy" size={16} /> <span>Copy setup key</span></button>
+        <button class="btn" type="button" data-f="copy-link"><Icon name="copy" size={16} /> <span>Copy otpauth link</span></button>
+      </div>
+    </li>
+  </template>
+  <p class="t-note text" data-text hidden></p>
+</ToolFrame>
+
+<script>
+  import jsQR from 'jsqr';
+  import { parse, parseMigration, toBase32, toLink, totp, type Account } from '../../scripts/tools/otp';
+  import { copyButton, dropZone } from '../../scripts/tools/ui';
+
+  const root = document.querySelector<HTMLElement>('[data-tool]');
+  if (root) {
+    const $ = <T extends Element>(s: string) => root.querySelector<T>(s)!;
+    const msg = $<HTMLElement>('[data-msg]');
+    const list = $<HTMLElement>('[data-accounts]');
+    const template = $<HTMLTemplateElement>('[data-account]');
+    const text = $<HTMLElement>('[data-text]');
+    let shown: { account: Account; code: HTMLElement }[] = [];
+
+    /** The QR code's text, from an image file, or null when there isn't one. */
+    const decode = async (file: File) => {
+      const bitmap = await createImageBitmap(file);
+      // Big screenshots are scaled to at most 2,400 points a side: enough for a QR code, and quick to search.
+      const scale = Math.min(1, 2400 / Math.max(bitmap.width, bitmap.height));
+      const canvas = new OffscreenCanvas(Math.round(bitmap.width * scale), Math.round(bitmap.height * scale));
+      const ctx = canvas.getContext('2d')!;
+      ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+      const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      return jsQR(img.data, img.width, img.height, { inversionAttempts: 'attemptBoth' })?.data ?? null;
+    };
+
+    const show = (accounts: Account[]) => {
+      shown = accounts.map((account) => {
+        const li = template.content.firstElementChild!.cloneNode(true) as HTMLElement;
+        const f = (name: string) => li.querySelector<HTMLElement>(`[data-f="${name}"]`)!;
+        li.querySelector('.who')!.textContent = [account.issuer, account.name].filter(Boolean).join(' · ') || 'An account';
+        const key = toBase32(account.secret);
+        f('key').textContent = key.replace(/(.{4})/g, '$1 ').trim();
+        f('details').textContent =
+          account.type === 'hotp'
+            ? `Counter-based (HOTP), ${account.digits} digits, ${account.algorithm}`
+            : `${account.digits} digits, every ${account.period} seconds, ${account.algorithm}`;
+        if (account.type === 'hotp') f('code').closest('div')!.remove();
+        copyButton(f('copy-key') as HTMLButtonElement, () => key);
+        copyButton(f('copy-link') as HTMLButtonElement, () => toLink(account));
+        list.append(li);
+        return { account, code: f('code') };
+      });
+      tick();
+    };
+
+    const tick = async () => {
+      for (const { account, code } of shown) if (account.type === 'totp') code.textContent = await totp(account);
+    };
+    setInterval(tick, 1000);
+
+    dropZone(
+      $<HTMLElement>('[data-drop]'),
+      async (file) => {
+        list.replaceChildren();
+        shown = [];
+        text.hidden = true;
+        msg.textContent = 'Reading…';
+        try {
+          const data = await decode(file);
+          if (!data) return void (msg.textContent = 'No QR code found in that picture. Try a closer, sharper screenshot of just the code.');
+          if (/^otpauth-migration:/i.test(data)) {
+            const accounts = parseMigration(data);
+            msg.textContent = `A Google Authenticator export with ${accounts.length} account${accounts.length === 1 ? '' : 's'}:`;
+            show(accounts);
+          } else if (/^otpauth:/i.test(data)) {
+            msg.textContent = 'A two-factor setup code:';
+            show([parse(data)]);
+          } else {
+            msg.textContent = 'This QR code holds something other than a two-factor setup. Its text:';
+            text.textContent = data;
+            text.hidden = false;
+          }
+        } catch (e) {
+          msg.textContent = (e as Error).message || 'That picture couldn’t be read.';
+        }
+      },
+      { paste: true },
+    );
+  }
+</script>
+
+<style>
+  .accounts {
+    display: grid;
+    gap: var(--space-4);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .accounts:empty {
+    display: none;
+  }
+  .accounts :global(.account) {
+    display: grid;
+    gap: var(--space-3);
+    padding: var(--space-6);
+    border: 1px solid var(--hairline);
+    border-radius: var(--r-field);
+    background: var(--bg);
+  }
+  .accounts :global(.who) {
+    color: var(--fg);
+    font-weight: 600;
+  }
+  .accounts :global(dl) {
+    display: grid;
+    gap: var(--space-2);
+    margin: 0;
+  }
+  .accounts :global(dl div) {
+    display: grid;
+    grid-template-columns: 7rem minmax(0, 1fr);
+    gap: var(--space-4);
+  }
+  .accounts :global(dt) {
+    color: var(--fg-quiet);
+  }
+  .accounts :global(dd) {
+    margin: 0;
+    color: var(--fg);
+  }
+  .accounts :global(.code) {
+    font-size: var(--text-xl);
+    letter-spacing: 0.08em;
+  }
+  .text {
+    font-family: var(--font-mono);
+    overflow-wrap: anywhere;
+  }
+</style>

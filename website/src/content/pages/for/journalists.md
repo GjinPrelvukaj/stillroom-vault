@@ -6,6 +6,7 @@ lead: 'Leaked documents, interview recordings and the notes that name a source. 
 name: 'Journalists'
 updated: '27 October 2026'
 order: 30
+quote: 'If your Mac may be compromised, no app on it is a safe place.'
 related: ['/learn/plausible-deniability/', '/features/view-without-decrypting/', '/features/lock-to-this-mac/', '/guides/if-your-mac-is-stolen/']
 faq:
   - q: 'Will Stillroom Vault protect my sources from a government?'

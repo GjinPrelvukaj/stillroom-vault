@@ -1,0 +1,678 @@
+---
+// About Stillroom, after Anthropic's company page, on the dark surface like the format page. The masks lead, then
+// every section has a shape of its own, so the page doesn't read as one long grid: the story set large, the four
+// reasons as a row of icons, what it is and isn't as two halves, what we believe as titled rows, how it's built
+// beside a picture, what we won't do as a lit band of statements, who makes it as two names beside the facts, and
+// how it's paid for as a receipt. Every claim is one the site (or docs/SECURITY.md) already makes, except the story, which
+// is the owners' own words.
+import Base from '../layouts/Base.astro';
+import Art from '../components/Art.astro';
+import DownloadCta from '../components/DownloadCta.astro';
+import Icon from '../components/ui/Icon.astro';
+import type { IconName } from '../lib/icons';
+import { email, pricing, site } from '../config';
+import { breadcrumbJsonLd } from '../lib/schema';
+
+const reasons: [IconName, string, string][] = [
+  ['laptop', 'A vault on our own Mac', 'One place for the private things, kept on our own device instead of on someone else’s server.'],
+  ['user-off', 'No login to our own files', 'Opening your own vault shouldn’t need an account, a server, or a company that’s still around.'],
+  ['eye', 'Source anyone can read', 'Security you have to take on trust isn’t worth much. The source is there to read, check and build.'],
+  ['sparkle', 'Easy, and good to look at', 'Protection that’s a chore gets switched off. We wanted a vault people enjoy coming back to.'],
+];
+const is = [
+  'An encrypted vault for files of any kind, notes, and secrets with fields.',
+  'Live two-factor codes, built-in viewers, and Edit in Place from a RAM disk.',
+  'One folder on your Mac, sealed with AES-256-GCM under keys only you hold.',
+  'Four ways in (password, recovery key, emergency kit and Touch ID), plus an optional lock to this Mac.',
+];
+const isNot = [
+  'A cloud service. There is no server, so nothing syncs between devices.',
+  'A browser password manager. It doesn’t fill in logins on websites.',
+  'A way around a lost password. If the password, recovery key and kit are all gone, nobody can open it, us included.',
+  'Protection against everything. The security page lists what it doesn’t stop.',
+];
+const values = [
+  ['Stay offline.', 'The app never goes online: no account, no server, no sync, not even a check for updates. It works the same on a Mac that never touches the internet.'],
+  ['Sell the app, never the person.', 'You pay once, and that’s the whole business. The app collects nothing and shows no ads, so there is nothing about you to sell.'],
+  ['The same protection for everyone.', 'Free, Stillroom Vault and Family differ in how many items and people they cover, never in how well they protect them.'],
+  ['Never lock anyone in.', 'Export everything as plain files whenever you like. The format is public, and a short script opens a vault without the app, or us.'],
+  ['Say what it can’t do.', 'The security page lists what Stillroom doesn’t protect against as plainly as what it does. The decoy stops thieves and abusers, not police, and we say so.'],
+  ['Make the safe way the easy way.', 'Every extra step is a reason to give up. So the careful choices are the defaults, and the app looks after the details.'],
+];
+const built: [IconName, string, string][] = [
+  ['cloud-off', 'Checked for the internet on every build.', 'A script fails every build of the app that links networking code, so going online can’t slip in by accident.'],
+  ['key', 'Reference cryptography, unchanged.', 'Passwords are stretched by the Argon2 reference code, copied in untouched, and checked against a second, independent implementation in the tests.'],
+  ['doc', 'A format anyone can read.', 'Every file in a vault is written down byte by byte, and a short, MIT-licensed Python script opens one without the app. It’s tested against vaults the app writes.'],
+  ['shield', 'Eleven rules, in public.', 'The security design rests on eleven written rules, each with what it guards against. Changes to the app are held to them.'],
+  ['mail', 'Email that can’t phone home.', 'The email viewer blocks every network request, and a test loads a hostile email aimed at a local server to prove it.'],
+  ['fingerprint', 'A copy that checks itself.', 'Stillroom is signed and notarized, checks its own signature each time it opens, and says so on the lock screen if it was changed.'],
+];
+const never = [
+  'Add an account, or a server your vault has to talk to.',
+  'Hold a key that opens your vault. No admin key, no back door, on any tier.',
+  'Collect, sell or share anything about you or your files.',
+  'Weaken the protection on a cheaper tier.',
+  'Make your data hard to take with you.',
+];
+const about = {
+  '@context': 'https://schema.org',
+  '@type': 'AboutPage',
+  name: 'About Stillroom',
+  url: new URL('/about/', site.url).href,
+  about: {
+    '@type': 'Organization',
+    name: site.name,
+    url: site.url,
+    founder: site.owners.map((name) => ({ '@type': 'Person', name })),
+    email: email.hello,
+  },
+};
+---
+
+<Base
+  title="About Stillroom: Why We Made It"
+  description="Why Stillroom Vault exists: a vault on your own Mac with no login, source anyone can read, and a business that sells the app, never the person using it."
+  theme="night"
+  jsonLd={[about, breadcrumbJsonLd([['About', '/about/']])]}
+>
+  <!-- The picture leads, wide, then the heading and the mission beside it, centred on each other. -->
+  <header class="opening">
+    <div class="container">
+      <Art name="page-about" ratio="16 / 9" eager plate class="lead-pic og-picture enter enter-1" sizes="(max-width: 1240px) 92vw, 1280px" />
+    </div>
+    <div class="hero container">
+      <p class="eyebrow lit enter enter-1">About Stillroom</p>
+      <h1 class="page-title enter enter-2">Your files stay yours. So do you.</h1>
+      <div class="hero-side enter enter-3">
+        <p class="statement">
+          Stillroom Vault is an encrypted vault for files, notes and secrets that lives on your Mac and never goes
+          online. No login, no server, source anyone can read. We make money one way: you buy the app, once.
+        </p>
+        <div class="btn-row">
+          <a class="btn primary" href="/download/">Download for Mac</a>
+          <a class="btn" href={site.repo}>Read the source <Icon name="external" size={14} /></a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- 1. The story: a label on the left, two large paragraphs. -->
+  <section class="container story reveal" aria-labelledby="story-title">
+    <p id="story-title" class="eyebrow">Why we made it</p>
+    <div class="story-text">
+      <p class="big">
+        It started with a plain want: a vault on our own device that doesn’t ask us to log in, whose source anyone can
+        read, and that’s easy and pleasant to use.
+      </p>
+      <p class="big quiet-big">
+        We also don’t trust the internet much. Working in software, you see a lot of greed: products that sell you the
+        app, and then sell you. We didn’t want to make another one.
+      </p>
+    </div>
+  </section>
+
+  <!-- 2. The four wants: a centred row, each under a lit icon. -->
+  <section class="container wants reveal" aria-label="What we wanted">
+    <ul>
+      {
+        reasons.map(([icon, title, text]) => (
+          <li>
+            <span class="icon"><Icon name={icon} size={22} /></span>
+            <h3>{title}</h3>
+            <p>{text}</p>
+          </li>
+        ))
+      }
+    </ul>
+  </section>
+
+  <!-- 3. What it is and isn't: a centred heading, then two halves split by a line. -->
+  <section class="container halves" aria-labelledby="is-title">
+    <div class="centred-head reveal">
+      <h2 id="is-title">What it is, and what it isn’t</h2>
+      <p>A vault does one job. Being clear about the edges is part of doing it well.</p>
+    </div>
+    <div class="split-two reveal">
+      <div class="half">
+        <h3 class="yes"><Icon name="check" size={18} /> It is</h3>
+        <ul>{is.map((x) => <li>{x}</li>)}</ul>
+      </div>
+      <div class="half">
+        <h3 class="no"><Icon name="eye-off" size={18} /> It isn’t</h3>
+        <ul>{isNot.map((x) => <li>{x}</li>)}</ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. What we believe: one row per rule, the rule large on the left and why on the right. -->
+  <section class="container beliefs" aria-labelledby="values-title">
+    <div class="beliefs-head reveal">
+      <p class="eyebrow">What we believe, and how we act</p>
+      <h2 id="values-title">Six rules, each one already true of the app.</h2>
+    </div>
+    <ol class="rows reveal">
+      {
+        values.map(([title, text]) => (
+          <li>
+            <h3>{title}</h3>
+            <p>{text}</p>
+          </li>
+        ))
+      }
+    </ol>
+  </section>
+
+  <!-- 5. How we build it: a picture on one side, the checks beside it. -->
+  <section class="container build" aria-labelledby="built-title">
+    <div class="build-pic reveal">
+      <Art name="page-format" ratio="4 / 5" plate sizes="(max-width: 900px) 92vw, 480px" />
+    </div>
+    <div class="build-text reveal">
+      <h2 id="built-title">How we build it</h2>
+      <p class="intro">
+        Trust should come from things you can check. The details are on the <a href="/security/">security</a> and
+        <a href="/format/">file format</a> pages.
+      </p>
+      <ul>
+        {
+          built.map(([icon, title, text]) => (
+            <li>
+              <Icon name={icon} size={18} />
+              <div>
+                <h3>{title}</h3>
+                <p>{text}</p>
+              </div>
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+  </section>
+
+  <!-- 6. What we won't do: a lit band, the promises set large and centred. -->
+  <section class="never-band" aria-labelledby="never-title">
+    <div class="container never reveal">
+      <p id="never-title" class="eyebrow lit">What we won’t do</p>
+      <ul>{never.map((x) => <li>{x}</li>)}</ul>
+      <p class="foot">For every version, and every tier.</p>
+    </div>
+  </section>
+
+  <!-- 7. Who makes it: the two names large and stacked on the left, the rest beside them. -->
+  <section class="container makers" aria-labelledby="team-title">
+    <div class="names reveal">
+      <p id="team-title" class="eyebrow">Who makes it</p>
+      {
+        site.owners.map((name, i) => (
+          <div class="person">
+            <p class="name">{name}</p>
+            <p>{i === 0 ? 'Co-owner, and the seller you buy from' : 'Co-owner'}</p>
+          </div>
+        ))
+      }
+    </div>
+    <dl class="facts reveal">
+      <div>
+        <dt><Icon name="key" size={16} /> Where we’re based</dt>
+        <dd>Inside the vault. We’ve lost the key.</dd>
+      </div>
+      <div>
+        <dt><Icon name="users" size={16} /> Who owns it</dt>
+        <dd>The two of us, jointly, by written agreement.</dd>
+      </div>
+      <div>
+        <dt><Icon name="windows" size={16} /> What’s next</dt>
+        <dd>A Windows version, in progress. It ships when it’s as careful as the Mac app.</dd>
+      </div>
+    </dl>
+  </section>
+
+  <!-- 8. How it's paid for: the why on the left, the prices on the right like a receipt. -->
+  <section class="container paid" aria-labelledby="paid-title">
+    <div class="paid-text reveal">
+      <h2 id="paid-title">How it’s paid for</h2>
+      <p>
+        By people buying the app, and nothing else. Licences are bought once, through Paddle, which acts as Merchant of
+        Record and handles payment, tax and refunds. Every 1.x update is included.
+      </p>
+      <p class="mail">
+        Questions? <a href={`mailto:${email.hello}`}>{email.hello}</a>. Found a security problem?
+        <a href={`mailto:${email.security}`}>{email.security}</a>.
+      </p>
+    </div>
+    <ul class="receipt reveal">
+      {
+        pricing.tiers.map((t) => (
+          <li>
+            <span class="tier">{t.name}</span>
+            <span class="price">{t.id === 'free' ? `${pricing.freeItems} items` : t.price}</span>
+            <span class="what">{t.blurb}</span>
+          </li>
+        ))
+      }
+      <li class="total"><span class="tier">Ads or tracking in the app</span><span class="price">None</span></li>
+    </ul>
+  </section>
+
+  <DownloadCta />
+</Base>
+
+<style>
+  /* The opening: the picture wide under the header, the candle's glow behind it. */
+  .opening {
+    padding: var(--space-8) 0 var(--space-20);
+    background: radial-gradient(55% 60% at 25% 20%, rgb(255 170 90 / 0.06), transparent 70%);
+  }
+  .opening :global(.lead-pic) {
+    aspect-ratio: 21 / 9;
+    border-radius: var(--r-panel);
+    box-shadow: 0 40px 80px -40px rgb(0 0 0 / 0.8);
+  }
+  /* The label across the top, then the heading and the mission side by side, their first lines level, as on
+     Anthropic's company page. The buttons sit under the mission, flush with its text. */
+  .hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+    align-items: start;
+    gap: var(--space-4) var(--space-16);
+    padding-top: var(--space-12);
+  }
+  .hero > .eyebrow {
+    grid-column: 1 / -1;
+  }
+  .hero h1 {
+    max-width: 12ch;
+  }
+  .hero-side {
+    display: grid;
+    gap: var(--space-8);
+    padding-top: 0.6em;
+  }
+  .hero-side .btn-row {
+    justify-content: flex-start;
+  }
+  .statement {
+    color: var(--fg);
+    font-family: var(--font-serif);
+    font-size: var(--text-2xl);
+    line-height: 1.35;
+  }
+
+  h2 {
+    color: var(--fg);
+    font-family: var(--font-serif);
+    font-size: var(--text-4xl);
+    font-weight: 400;
+    line-height: 1.15;
+  }
+  h3 {
+    color: var(--fg);
+    font-size: var(--text-lg);
+    font-weight: 600;
+  }
+  ul,
+  ol {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  a {
+    color: var(--vault);
+  }
+
+  /* 1. The story. */
+  .story {
+    display: grid;
+    grid-template-columns: minmax(0, 0.35fr) minmax(0, 1fr);
+    gap: var(--space-12);
+    padding: var(--space-20) 0;
+    border-top: 1px solid var(--hairline);
+  }
+  .story-text {
+    display: grid;
+    gap: var(--space-8);
+  }
+  .big {
+    color: var(--fg);
+    font-family: var(--font-serif);
+    font-size: clamp(1.6rem, 1.1rem + 1.6vw, 2.4rem);
+    line-height: 1.25;
+    letter-spacing: -0.01em;
+  }
+  .quiet-big {
+    color: var(--fg-2);
+  }
+
+  /* 2. The four wants: centred, under a lit icon. */
+  .wants {
+    padding: var(--space-12) 0 var(--space-24);
+  }
+  .wants ul {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: var(--space-10);
+    text-align: center;
+  }
+  .wants li {
+    display: grid;
+    justify-items: center;
+    gap: var(--space-3);
+  }
+  .icon {
+    display: grid;
+    place-items: center;
+    width: 52px;
+    height: 52px;
+    margin-bottom: var(--space-2);
+    border-radius: 50%;
+    border: 1px solid var(--hairline);
+    color: var(--vault);
+  }
+  .wants p {
+    max-width: 30ch;
+    color: var(--fg-2);
+    font-size: var(--text-sm);
+    line-height: 1.6;
+  }
+
+  /* 3. What it is and isn't: centred heading, two halves split by a line. */
+  .halves {
+    padding: var(--space-24) 0;
+    border-top: 1px solid var(--hairline);
+  }
+  .centred-head {
+    display: grid;
+    justify-items: center;
+    gap: var(--space-4);
+    margin-bottom: var(--space-16);
+    color: var(--fg-2);
+    text-align: center;
+  }
+  .split-two {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .half {
+    padding: 0 var(--space-12);
+  }
+  .half + .half {
+    border-left: 1px solid var(--hairline);
+  }
+  .half h3 {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin-bottom: var(--space-6);
+    font-family: var(--font-serif);
+    font-size: var(--text-2xl);
+    font-weight: 400;
+  }
+  .yes {
+    color: var(--green) !important;
+  }
+  .no {
+    color: var(--fg-2) !important;
+  }
+  .half li {
+    padding: var(--space-4) 0;
+    color: var(--fg-2);
+    font-size: var(--text-lg);
+    line-height: 1.5;
+  }
+  .half li + li {
+    border-top: 1px solid var(--divider);
+  }
+
+  /* 4. What we believe: titled rows, the rule large on the left. */
+  .beliefs {
+    padding: var(--space-24) 0;
+    border-top: 1px solid var(--hairline);
+  }
+  .beliefs-head {
+    display: grid;
+    gap: var(--space-4);
+    max-width: 720px;
+    margin-bottom: var(--space-12);
+  }
+  .rows li {
+    display: grid;
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+    gap: var(--space-12);
+    align-items: baseline;
+    padding: var(--space-8) 0;
+    border-top: 1px solid var(--hairline);
+    transition: background-color var(--hover);
+  }
+  .rows h3 {
+    font-family: var(--font-serif);
+    font-size: var(--text-3xl);
+    font-weight: 400;
+    line-height: 1.2;
+  }
+  .rows p {
+    color: var(--fg-2);
+    font-size: var(--text-lg);
+    line-height: 1.55;
+  }
+
+  /* 5. How we build it: a tall picture beside the checks. */
+  .build {
+    display: grid;
+    grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+    gap: var(--space-16);
+    align-items: stretch;
+    padding: var(--space-24) 0;
+    border-top: 1px solid var(--hairline);
+  }
+  /* The picture stands exactly as tall as the list beside it, cropped to fit. */
+  .build-pic {
+    display: grid;
+  }
+  .build-pic :global(.art) {
+    aspect-ratio: auto;
+    height: 100%;
+  }
+  .build-text {
+    display: grid;
+    gap: var(--space-4);
+  }
+  .intro {
+    margin-bottom: var(--space-6);
+    color: var(--fg-2);
+  }
+  .build-text li {
+    display: grid;
+    grid-template-columns: 28px minmax(0, 1fr);
+    gap: var(--space-4);
+    padding: var(--space-6) 0;
+    border-top: 1px solid var(--divider);
+    color: var(--vault);
+  }
+  .build-text li :global(svg) {
+    margin-top: 3px;
+  }
+  .build-text li p {
+    margin-top: var(--space-1);
+    color: var(--fg-2);
+    font-size: var(--text-sm);
+    line-height: 1.6;
+  }
+
+  /* 6. What we won't do: a full-width band lit violet from below, the promises centred. */
+  .never-band {
+    padding: var(--space-24) 0;
+    /* A soft violet glow in the middle that is gone well before the edges, so the band has no seam. */
+    background: radial-gradient(42% 44% at 50% 50%, rgb(var(--vault-rgb) / 0.13), rgb(var(--vault-rgb) / 0.04) 60%, transparent 100%);
+  }
+  .never {
+    display: grid;
+    justify-items: center;
+    gap: var(--space-8);
+    text-align: center;
+  }
+  .never ul {
+    display: grid;
+    gap: var(--space-4);
+  }
+  .never li {
+    color: var(--fg);
+    font-family: var(--font-serif);
+    font-size: clamp(1.4rem, 1rem + 1.4vw, 2.1rem);
+    line-height: 1.25;
+  }
+  .never li:nth-child(even) {
+    color: var(--fg-2);
+  }
+  .foot {
+    color: var(--fg-quiet);
+    font-size: var(--text-sm);
+  }
+
+  /* 7. Who makes it: names stacked large on the left, facts on the right. */
+  .makers {
+    display: grid;
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+    gap: var(--space-16);
+    align-items: end;
+    padding: var(--space-24) 0;
+  }
+  .names {
+    display: grid;
+    gap: var(--space-8);
+  }
+  .person {
+    display: grid;
+    gap: var(--space-2);
+    color: var(--fg-2);
+  }
+  .name {
+    color: var(--fg);
+    font-family: var(--font-serif);
+    font-size: clamp(2.4rem, 1.6rem + 3vw, 4.4rem);
+    line-height: 1;
+    letter-spacing: -0.01em;
+  }
+  .facts {
+    display: grid;
+    gap: var(--space-6);
+    margin: 0;
+  }
+  .facts div {
+    display: grid;
+    gap: var(--space-1);
+    padding-left: var(--space-6);
+    border-left: 1px solid var(--hairline);
+  }
+  .facts dt {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    color: var(--fg-quiet);
+    font-size: var(--text-sm);
+  }
+  .facts dt :global(svg) {
+    color: var(--vault);
+  }
+  .facts dd {
+    margin: 0;
+    color: var(--fg);
+    font-size: var(--text-lg);
+  }
+
+  /* 8. How it's paid for: text on the left, a receipt of prices on the right. */
+  .paid {
+    display: grid;
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+    gap: var(--space-16);
+    align-items: start;
+    padding: var(--space-24) 0;
+    border-top: 1px solid var(--hairline);
+  }
+  .paid-text {
+    display: grid;
+    gap: var(--space-4);
+    color: var(--fg-2);
+  }
+  .paid-text h2 {
+    font-size: var(--text-3xl);
+  }
+  .mail {
+    color: var(--fg-quiet);
+    font-size: var(--text-sm);
+  }
+  .receipt li {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: var(--space-1) var(--space-6);
+    padding: var(--space-4) 0;
+    border-bottom: 1px dashed var(--hairline);
+  }
+  .receipt li:first-child {
+    border-top: 1px solid var(--hairline);
+  }
+  .tier {
+    color: var(--fg);
+    font-weight: 600;
+  }
+  .price {
+    color: var(--fg);
+    font-family: var(--font-serif);
+    font-size: var(--text-xl);
+    text-align: right;
+  }
+  .what {
+    grid-column: 1 / -1;
+    color: var(--fg-quiet);
+    font-size: var(--text-sm);
+  }
+  .receipt .total {
+    border-bottom: 1px solid var(--hairline);
+  }
+  .receipt .total .price {
+    color: var(--vault);
+  }
+
+  @media (max-width: 1100px) {
+    .wants ul {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+  @media (max-width: 900px) {
+    .hero,
+    .story,
+    .build,
+    .makers,
+    .paid,
+    .rows li {
+      grid-template-columns: 1fr;
+    }
+    .rows li {
+      gap: var(--space-3);
+    }
+    .split-two {
+      grid-template-columns: 1fr;
+      gap: var(--space-12);
+    }
+    .half {
+      padding: 0;
+    }
+    .half + .half {
+      border-left: 0;
+    }
+    .build-pic :global(.art) {
+      aspect-ratio: 4 / 5;
+    }
+    .story,
+    .halves,
+    .beliefs,
+    .build,
+    .never-band {
+      padding-block: var(--space-16);
+    }
+  }
+  @media (max-width: 560px) {
+    .wants ul {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

@@ -6,7 +6,7 @@ lead: 'Export your logins from 1Password as a CSV file, bring them into Stillroo
 name: '1Password'
 updated: '27 October 2026'
 order: 50
-related: ['/compare/1password/', '/moving-from/bitwarden/', '/guides/store-two-factor-backup-codes/']
+related: ['/tools/qr-code-reader/', '/compare/1password/', '/moving-from/bitwarden/', '/guides/store-two-factor-backup-codes/']
 faq:
   - q: 'Should I choose CSV or 1PUX when exporting from 1Password?'
     a: 'Choose CSV. Stillroom reads CSV password exports and does not read 1PUX files.'

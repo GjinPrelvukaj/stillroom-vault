@@ -2,7 +2,7 @@
   <img src="macos/Resources/AppIcon.png" width="128" height="128" alt="Stillroom icon">
 </p>
 
-<h1 align="center">Stillroom</h1>
+<h1 align="center">Stillroom Vault</h1>
 
 <p align="center">
   <strong>The encrypted vault for your Mac that never goes online.</strong><br>
@@ -19,11 +19,35 @@
   <img alt="License: FSL-1.1-ALv2" src="https://img.shields.io/badge/license-FSL--1.1--ALv2-555">
 </p>
 
+<p align="center">
+  <a href="https://www.stillroomvault.com/download/"><strong>Download for Mac</strong></a> ·
+  <a href="https://www.stillroomvault.com">Website</a> ·
+  <a href="https://www.stillroomvault.com/tools/">Free tools</a> ·
+  <a href="docs/SECURITY.md">Security model</a> ·
+  <a href="docs/FORMAT.md">File format</a>
+</p>
+
+<p align="center">
+  <img src="website/public/screenshots/vault-1440.webp" width="880" alt="Stillroom's window: the Documents list with tax returns, medical reports and a will, each with its folder, kind, size and date.">
+</p>
+
 ---
 
 Stillroom keeps what you'd lock in a drawer: scans of documents, contracts, photos, passwords, two-factor setups, private notes. Everything is sealed with AES-256-GCM under keys only you hold, in one folder on your Mac. It makes no network connections: a build check fails any binary that links networking code, and a test proves even the email viewer loads nothing remote.
 
 If you forget your password and lose your recovery key and kit, no one can open it, not even its maker. That's the point.
+
+**At a glance**
+
+| | |
+|---|---|
+| **Never online** | No server, no account, no sync, no update checks. A build check fails any binary that links networking code. |
+| **Keys only you hold** | AES-256-GCM with a fresh key for every item; your password stretched with Argon2id (512 MB, 3 passes). |
+| **Ways back in** | A recovery key, a printed emergency kit (Shamir pieces), Touch ID, and an optional lock to this Mac. |
+| **Never locked in** | Export plain files any time. The format is public, and [`tools/stillroom-open.py`](tools/stillroom-open.py) opens a vault without the app. |
+| **Fair pricing** | Free for 25 items with every feature; $39 once for one person, $129 once for a family of five. |
+
+Stillroom is made by Gjin Prelvukaj and Lis Shala. Questions: hello@stillroomvault.com. Security problems: report them [privately](https://github.com/GjinPrelvukaj/stillroom-vault/security/advisories/new) or to security@stillroomvault.com, never in a public issue.
 
 ## Contents
 
@@ -183,7 +207,7 @@ docs/                security rules and the file format
 
 ## Status and roadmap
 
-**1.0.0 is out** (28 October 2026): download it from [stillroomvault.com](https://stillroomvault.com/download/). Format 4 is the 1.0 format, and every later version must open a vault 1.0 wrote (`OneZeroFixtureTests`). An independent, named security review is next.
+**1.0.0 is out** (28 October 2026): download it from [stillroomvault.com](https://www.stillroomvault.com/download/). Format 4 is the 1.0 format, and every later version must open a vault 1.0 wrote (`OneZeroFixtureTests`). An independent, named security review is next.
 
 - **1.0:** sold directly for $39 one-time (Family $129 for five people, Teams upon request) with an offline-signed license key, plus a free tier of 25 items that never blocks opening, exporting or backing up.
 - **1.x:** key rotation; a kit id in emergency-kit pieces.

@@ -1,0 +1,151 @@
+---
+import ToolFrame from './ToolFrame.astro';
+import Icon from '../ui/Icon.astro';
+---
+
+<ToolFrame label="Two-factor code generator">
+  <label class="t-field">
+    <span class="t-label">Setup key, or an otpauth:// link</span>
+    <input class="field t-mono" type="text" autocomplete="off" spellcheck="false" placeholder="JBSW Y3DP EHPK 3PXP" data-key />
+  </label>
+  <details class="more">
+    <summary class="t-label">Settings, for a key that isn’t the usual kind</summary>
+    <div class="t-row">
+      <label class="t-field"><span class="t-label">Digits</span>
+        <select class="field" data-digits><option>6</option><option>7</option><option>8</option></select></label>
+      <label class="t-field"><span class="t-label">Every</span>
+        <select class="field" data-period><option value="30">30 seconds</option><option value="60">60 seconds</option></select></label>
+      <label class="t-field"><span class="t-label">Hash</span>
+        <select class="field" data-alg><option>SHA-1</option><option>SHA-256</option><option>SHA-512</option></select></label>
+    </div>
+    <p class="t-note">An otpauth link sets these itself. Almost every site uses 6 digits, 30 seconds and SHA-1.</p>
+  </details>
+  <p class="t-note" aria-live="polite" data-msg>Paste the key a site shows under “can’t scan the QR code?”, or a whole otpauth link.</p>
+  <div class="codes" data-codes hidden>
+    <div class="now">
+      <p class="t-label" data-who>Code now</p>
+      <div class="t-row">
+        <span class="t-big t-mono" data-now></span>
+        <button class="btn" type="button" data-copy><Icon name="copy" size={16} /> <span>Copy</span></button>
+      </div>
+      <div class="clock" aria-hidden="true"><span data-clock></span></div>
+      <p class="t-note" data-left></p>
+    </div>
+    <p class="t-note">Next: <span class="t-mono" data-next></span></p>
+  </div>
+</ToolFrame>
+
+<script>
+  import { parse, totp, type Account } from '../../scripts/tools/otp';
+  import { copyButton } from '../../scripts/tools/ui';
+
+  const root = document.querySelector<HTMLElement>('[data-tool]');
+  if (root) {
+    const $ = <T extends Element>(s: string) => root.querySelector<T>(s)!;
+    const key = $<HTMLInputElement>('[data-key]');
+    const digits = $<HTMLSelectElement>('[data-digits]');
+    const period = $<HTMLSelectElement>('[data-period]');
+    const alg = $<HTMLSelectElement>('[data-alg]');
+    const msg = $<HTMLElement>('[data-msg]');
+    const codes = $<HTMLElement>('[data-codes]');
+    const now = $<HTMLElement>('[data-now]');
+    const next = $<HTMLElement>('[data-next]');
+    const left = $<HTMLElement>('[data-left]');
+    const clock = $<HTMLElement>('[data-clock]');
+    const who = $<HTMLElement>('[data-who]');
+    const hint = msg.textContent;
+    let account: Account | null = null;
+    // Settings a link filled in; a plain key pasted after it starts again from the usual ones.
+    let setByLink = false;
+    // Codes show in two halves, as authenticator apps do: 492 039.
+    const spaced = (c: string) => (c.length === 6 ? `${c.slice(0, 3)} ${c.slice(3)}` : c);
+
+    const read = () => {
+      account = null;
+      codes.hidden = true;
+      if (!key.value.trim()) return void (msg.textContent = hint);
+      try {
+        account = parse(key.value);
+        if (account.type === 'hotp') {
+          account = null;
+          return void (msg.textContent = 'This link makes counter-based codes (HOTP), which this tool doesn’t do. Almost every site uses time-based ones.');
+        }
+        if (/^otpauth:/i.test(key.value.trim())) {
+          digits.value = String(account.digits);
+          period.value = String(account.period);
+          alg.value = account.algorithm;
+          setByLink = true;
+        } else {
+          if (setByLink) {
+            [digits.value, period.value, alg.value] = ['6', '30', 'SHA-1'];
+            setByLink = false;
+          }
+          account.digits = Number(digits.value);
+          account.period = Number(period.value);
+          account.algorithm = alg.value as Account['algorithm'];
+        }
+        who.textContent = account.issuer || account.name ? `Code now for ${[account.issuer, account.name].filter(Boolean).join(', ')}` : 'Code now';
+        msg.textContent = '';
+        codes.hidden = false;
+        tick();
+      } catch (e) {
+        msg.textContent = (e as Error).message;
+      }
+    };
+
+    const tick = async () => {
+      if (!account) return;
+      const t = Date.now() / 1000;
+      const remaining = account.period - (t % account.period);
+      now.textContent = spaced(await totp(account, t));
+      next.textContent = spaced(await totp(account, t + account.period));
+      left.textContent = `Changes in ${Math.ceil(remaining)} seconds`;
+      clock.style.width = `${(remaining / account.period) * 100}%`;
+    };
+
+    key.addEventListener('input', read);
+    for (const el of [digits, period, alg])
+      el.addEventListener('change', () => {
+        setByLink = false;
+        read();
+      });
+    copyButton($<HTMLButtonElement>('[data-copy]'), () => now.textContent!.replace(/\s/g, ''));
+    setInterval(tick, 250);
+  }
+</script>
+
+<style>
+  .more summary {
+    cursor: pointer;
+  }
+  .more[open] summary {
+    margin-bottom: var(--space-4);
+  }
+  .more .t-note {
+    margin-top: var(--space-3);
+  }
+  .codes {
+    display: grid;
+    gap: var(--space-3);
+  }
+  .now {
+    display: grid;
+    gap: var(--space-3);
+    padding: var(--space-6);
+    border: 1px solid var(--hairline);
+    border-radius: var(--r-field);
+    background: var(--bg);
+  }
+  .clock {
+    height: 4px;
+    border-radius: 2px;
+    background: var(--hairline);
+    overflow: hidden;
+  }
+  .clock span {
+    display: block;
+    height: 100%;
+    background: var(--vault);
+    transition: width 250ms linear;
+  }
+</style>

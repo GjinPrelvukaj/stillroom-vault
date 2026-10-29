@@ -1,0 +1,177 @@
+---
+// A section hub's articles, laid out its own way so the hubs don't all look alike (ART.md, "Article pieces"):
+// - featured: the first three as picture cards, then the rest as the journal index (Guides)
+// - grid: every article as an even card with its picture (Comparisons)
+// - gallery: pictures in two sizes, staggered (Learn)
+// - stories: tall pictures, two to a row, with each article's lead (Who it's for)
+// - moves: one row per app, "from" it to Stillroom (Moving to Stillroom)
+import Art from './Art.astro';
+import ArticleList from './ArticleList.astro';
+import Icon from './ui/Icon.astro';
+
+export type HubVariant = 'featured' | 'grid' | 'gallery' | 'stories' | 'moves';
+interface Props {
+  variant: HubVariant;
+  items: { href: string; name: string; description: string; lead: string; art: string }[];
+}
+const { variant, items } = Astro.props;
+const top = variant === 'featured' ? items.slice(0, 3) : items;
+const rest = variant === 'featured' ? items.slice(3) : [];
+const ratio = variant === 'stories' ? '4 / 5' : '3 / 2';
+---
+
+{
+  variant === 'moves' ? (
+    <ul class="moves">
+      {items.map((item) => (
+        <li>
+          <a href={item.href}>
+            <span class="from">
+              <span class="eyebrow">From</span>
+              <span class="name">{item.name}</span>
+            </span>
+            <span class="arrow" aria-hidden="true"><Icon name="arrow" size={20} /></span>
+            <span class="what">{item.description}</span>
+          </a>
+        </li>
+      ))}
+    </ul>
+  ) : (
+    <ul class:list={['cards', variant]}>
+      {top.map((item, i) => (
+        <li class:list={[variant === 'gallery' && (i % 3 === 0 ? 'big' : 'small')]}>
+          <a href={item.href}>
+            <Art name={item.art} ratio={ratio} plate sizes="(max-width: 900px) 92vw, 600px" />
+            <span class="name">{item.name}</span>
+            <span class="what">{variant === 'stories' ? item.lead : item.description}</span>
+          </a>
+        </li>
+      ))}
+    </ul>
+  )
+}
+{rest.length > 0 && <div class="rest"><ArticleList items={rest} /></div>}
+
+<style>
+  ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+  .cards {
+    display: grid;
+    gap: var(--space-12) var(--space-8);
+  }
+  .cards a {
+    display: grid;
+    gap: var(--space-3);
+  }
+  .cards :global(.art) {
+    margin-bottom: var(--space-2);
+    transition: transform var(--hover);
+  }
+  .cards a:hover :global(.art) {
+    transform: translateY(-3px);
+  }
+  .name {
+    color: var(--fg);
+    font-family: var(--font-serif);
+    font-size: var(--text-2xl);
+    line-height: 1.2;
+  }
+  .cards a:hover .name {
+    color: var(--vault);
+  }
+  .what {
+    color: var(--fg-2);
+    font-size: var(--text-base);
+    line-height: 1.55;
+  }
+  .rest {
+    margin-top: var(--space-16);
+  }
+
+  @media (min-width: 768px) {
+    .featured,
+    .grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .stories {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: var(--space-16) var(--space-12);
+    }
+    .stories .name {
+      font-size: var(--text-3xl);
+    }
+    .stories .what {
+      font-size: var(--text-lg);
+    }
+    /* Two sizes in a 12-column grid: a big one, then two small, the small ones dropped a little to stagger. */
+    .gallery {
+      grid-template-columns: repeat(12, minmax(0, 1fr));
+      align-items: start;
+    }
+    .gallery .big {
+      grid-column: span 7;
+    }
+    .gallery .small {
+      grid-column: span 5;
+      margin-top: var(--space-16);
+    }
+    .gallery .small + .small {
+      grid-column: 2 / span 5;
+      margin-top: 0;
+    }
+  }
+  @media (min-width: 1100px) {
+    .featured,
+    .grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+    .featured .name {
+      font-size: var(--text-3xl);
+    }
+  }
+
+  /* Moving: a row per app, its name large, an arrow, and what the page covers. */
+  .moves {
+    border-top: 1px solid var(--divider);
+  }
+  .moves li {
+    border-bottom: 1px solid var(--divider);
+  }
+  .moves a {
+    display: grid;
+    gap: var(--space-3);
+    padding: var(--space-8) 0;
+  }
+  .from {
+    display: grid;
+    gap: var(--space-1);
+  }
+  .moves .name {
+    font-size: var(--text-4xl);
+    transition: color var(--hover);
+  }
+  .moves a:hover .name {
+    color: var(--vault);
+  }
+  .arrow {
+    color: var(--vault);
+    transition: transform var(--hover);
+  }
+  .moves a:hover .arrow {
+    transform: translateX(4px);
+  }
+  @media (min-width: 900px) {
+    .moves a {
+      grid-template-columns: minmax(0, 1fr) auto minmax(0, 1.4fr);
+      align-items: center;
+      gap: var(--space-12);
+    }
+  }
+</style>

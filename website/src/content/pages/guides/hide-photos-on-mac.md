@@ -10,6 +10,8 @@ related: ['/guides/secure-a-shared-mac/', '/features/view-without-decrypting/', 
 faq:
   - q: 'Where is the Hidden album on a Mac?'
     a: 'In Photos, click Library in the sidebar and choose View > Show Hidden Photo Album. Hidden then appears in the sidebar under Utilities. By default the album is hidden and locked.'
+  - q: 'How do I hide other files on a Mac, not just photos?'
+    a: 'Finder can hide a file, but anyone can show hidden files again with Command Shift period, so hiding is not locking. To keep files private, put them in an encrypted disk image, or in a vault app such as Stillroom Vault.'
   - q: 'Are hidden photos deleted?'
     a: 'No. Apple says hidden photos disappear from view but stay in your library. You can unhide them at any time.'
   - q: 'If I hide a photo on my Mac, is it hidden on my iPhone too?'

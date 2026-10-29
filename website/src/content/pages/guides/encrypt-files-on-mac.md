@@ -6,7 +6,11 @@ lead: 'Your Mac already has three ways to encrypt files, each for a different jo
 name: 'Encrypt files on a Mac'
 updated: '27 October 2026'
 order: 20
-related: ['/guides/password-protect-a-folder-on-mac/', '/compare/encrypted-disk-image/', '/learn/aes-256-gcm/', '/compare/cryptomator/']
+points:
+  - '**FileVault** protects the whole disk while you''re logged out. Turn it on first.'
+  - '**An encrypted disk image** locks a set of files behind their own password, until you open it.'
+  - '**A password-protected PDF** is for sending one document, not for storing many.'
+related: ['/tools/passphrase-generator/', '/guides/password-protect-a-folder-on-mac/', '/compare/encrypted-disk-image/', '/learn/aes-256-gcm/', '/compare/cryptomator/']
 faq:
   - q: 'Are files on a Mac encrypted by default?'
     a: 'On Macs with Apple silicon or a T2 chip, Apple says data on the disk is already encrypted. FileVault adds the requirement for your login password before it can be decrypted, which is what protects it if the Mac is stolen.'

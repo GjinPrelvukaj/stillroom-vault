@@ -10,6 +10,8 @@ related: ['/guides/encrypt-files-on-mac/', '/compare/encrypted-disk-image/', '/g
 faq:
   - q: 'Can I put a password on a folder in Finder?'
     a: 'No. Finder can change who may read a folder, but it has no password lock. The built-in way to put a password on a folder is to turn it into an encrypted disk image with Disk Utility.'
+  - q: 'Can I lock or hide files on a Mac without an app?'
+    a: 'Not in a way that keeps people out. Ticking Locked in a file''s Get Info window only stops it being changed or deleted by accident; anyone can still open it. Hidden files show again with Command Shift period in Finder. To lock files so they can''t be read, put them in an encrypted disk image.'
   - q: 'Is FileVault enough to protect a folder?'
     a: 'FileVault protects everything on the disk while the Mac is off or no one is logged in. Once you log in, every file in your account is readable by anyone at your keyboard, so it does not protect one folder from someone using your Mac.'
   - q: 'What happens if I forget the disk image password?'

@@ -1,10 +1,13 @@
 ---
 import DocLayout from '../layouts/DocLayout.astro';
-import { hasArt, ownArt } from '../lib/art';
 ---
 
-<DocLayout legal picture={ownArt('page-legal-security-policy', 'page-legal')}
-  banner={hasArt('page-legal-security-policy')}
+<DocLayout legal pointsTitle="The short version"
+  points={[
+    '**Email security@stillroomvault.com** with what you found and how to reproduce it.',
+    '**We reply within 7 days,** and fix it or explain why it isn\'t a problem within 90.',
+    '**No bug bounty,** but a CVE with your name on it, public credit and our thanks.',
+  ]}
   doc="security-policy"
   title="Report a Security Problem"
   h1="Report a security problem in Stillroom Vault"

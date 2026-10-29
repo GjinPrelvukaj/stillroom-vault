@@ -1,5 +1,6 @@
 ---
-// The home page's opening: one statement in the serif (the claim in full ink, the rest quieter), the two buttons, then the plate: the home
+// The home page's opening, centered on the picture's own middle (left-aligned on phones): one statement in the serif,
+// a line of what it holds, the two buttons with the price under them, then the plate: the home
 // picture, left whole, and under it the names of the files it holds. As you scroll down to it, the names seal into
 // violet ciphertext one after another (scripts/home-plate.ts). Without scripts or with reduced motion they stay plain.
 // Without the picture's file (public/art/home-plate.webp), a few tinted paper slips stand in.
@@ -9,7 +10,7 @@ import { pricing } from '../../config';
 import { vaultRows } from '../../lib/sample';
 
 const plateImage = hasArt('home-plate');
-// Made-up files, nobody's real ones: the same ones the app's window shows further down (lib/sample.ts).
+// Made-up files, nobody's real ones (lib/sample.ts).
 const row = (name: string) => vaultRows.find((r) => r.name === name)!;
 const tiles = [
   { file: row('Passport photo page.heic') },
@@ -97,15 +98,31 @@ const tiles = [
     font-size: var(--text-xl);
     line-height: 1.5;
   }
+  /* The buttons, and the price and requirements under them as a quiet footnote. */
   .actions {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: var(--space-4) var(--space-6);
+    display: grid;
+    justify-items: start;
+    gap: var(--space-4);
     margin-top: var(--space-8);
   }
   .actions .btn-row {
     justify-content: flex-start;
+  }
+  /* Centered on the picture below it, whose light falls straight down the middle. */
+  @media (min-width: 601px) {
+    .home-hero > .container:first-child {
+      text-align: center;
+    }
+    .statement,
+    .hero-lead {
+      margin-inline: auto;
+    }
+    .actions {
+      justify-items: center;
+    }
+    .actions .btn-row {
+      justify-content: center;
+    }
   }
   .proof {
     color: var(--fg-quiet);

@@ -1,0 +1,162 @@
+---
+import ToolFrame from './ToolFrame.astro';
+import Icon from '../ui/Icon.astro';
+---
+
+<ToolFrame label="Password strength checker">
+  <label class="t-field">
+    <span class="t-label">A password to check</span>
+    <div class="pw">
+      <input class="field t-mono" type="password" autocomplete="off" spellcheck="false" data-pw />
+      <button class="btn" type="button" aria-pressed="false" data-show><Icon name="eye" size={16} /> <span>Show</span></button>
+    </div>
+  </label>
+  <div class="meter" aria-hidden="true"><span data-bar></span></div>
+  <p class="verdict" aria-live="polite" data-verdict>Type a password. It’s checked here, as you type, and never sent.</p>
+  <dl class="times" data-times hidden>
+    <div><dt>Against Stillroom</dt><dd data-slow></dd><dd class="t-note">Argon2id, up to 30 guesses a second per high-end graphics card</dd></div>
+    <div><dt>Against a fast hash</dt><dd data-fast></dd><dd class="t-note">An old site’s leaked database, 10 billion guesses a second</dd></div>
+  </dl>
+  <div data-parts-wrap hidden>
+    <p class="t-label">What a guesser sees</p>
+    <ul class="parts" data-parts></ul>
+  </div>
+</ToolFrame>
+
+<script>
+  import { ENOUGH, SHORTEST, parts, timeToGuess } from '../../scripts/tools/strength';
+
+  const root = document.querySelector<HTMLElement>('[data-tool]');
+  if (root) {
+    const $ = <T extends Element>(s: string) => root.querySelector<T>(s)!;
+    const pw = $<HTMLInputElement>('[data-pw]');
+    const show = $<HTMLButtonElement>('[data-show]');
+    const bar = $<HTMLElement>('[data-bar]');
+    const verdict = $<HTMLElement>('[data-verdict]');
+    const times = $<HTMLElement>('[data-times]');
+    const partsWrap = $<HTMLElement>('[data-parts-wrap]');
+    const list = $<HTMLElement>('[data-parts]');
+    const names = { word: 'a common word', run: 'a run or repeat', year: 'a year', char: '' } as const;
+
+    const check = () => {
+      const p = parts(pw.value);
+      const bits = p.reduce((s, x) => s + x.bits, 0);
+      const empty = !pw.value;
+      times.hidden = partsWrap.hidden = empty;
+      bar.style.width = `${Math.min(100, (bits / 100) * 100)}%`;
+      const long = Array.from(pw.value).length >= SHORTEST;
+      bar.dataset.ok = String(bits >= ENOUGH && long);
+      if (empty) {
+        verdict.textContent = 'Type a password. It’s checked here, as you type, and never sent.';
+        return;
+      }
+      // Only numbers go into this HTML, never what was typed.
+      verdict.innerHTML =
+        bits >= ENOUGH && long
+          ? `<strong class="t-good">Strong enough for Stillroom</strong>: about ${Math.round(bits)} bits, past the app’s bar of ${ENOUGH}.`
+          : bits >= ENOUGH
+            ? `<strong class="t-bad">Too short for Stillroom</strong>: about ${Math.round(bits)} bits, but the app also wants at least ${SHORTEST} characters.`
+            : `<strong class="t-bad">Too easy to guess</strong>: about ${Math.round(bits)} bits, short of the app’s bar of ${ENOUGH}. Skip common words, years and runs like 1234; a few random words work well.`;
+      $<HTMLElement>('[data-slow]').textContent = timeToGuess(bits, 30);
+      $<HTMLElement>('[data-fast]').textContent = timeToGuess(bits, 1e10);
+      // Patterns are named; plain characters are summed into one line, so nothing typed is echoed back in full.
+      const found = p.filter((x) => x.kind !== 'char');
+      const plain = p.filter((x) => x.kind === 'char');
+      list.replaceChildren(
+        ...found.map((x) => {
+          const li = document.createElement('li');
+          li.textContent = `${names[x.kind]}: ${x.bits} bits`;
+          return li;
+        }),
+        ...(plain.length
+          ? [Object.assign(document.createElement('li'), { textContent: `${plain.length} other character${plain.length === 1 ? '' : 's'}: ${Math.round(plain.reduce((s, x) => s + x.bits, 0))} bits` })]
+          : []),
+      );
+    };
+    pw.addEventListener('input', check);
+    show.addEventListener('click', () => {
+      const on = pw.type === 'password';
+      pw.type = on ? 'text' : 'password';
+      show.setAttribute('aria-pressed', String(on));
+      show.querySelector('span')!.textContent = on ? 'Hide' : 'Show';
+    });
+  }
+</script>
+
+<style>
+  .pw {
+    display: flex;
+    gap: var(--space-2);
+  }
+  .pw .field {
+    flex: 1;
+    font-size: var(--text-lg);
+  }
+  .meter {
+    height: 6px;
+    border-radius: 3px;
+    background: var(--hairline);
+    overflow: hidden;
+  }
+  .meter span {
+    display: block;
+    width: 0;
+    height: 100%;
+    background: var(--red);
+    transition:
+      width var(--change),
+      background-color var(--change);
+  }
+  .meter span[data-ok='true'] {
+    background: var(--green);
+  }
+  .verdict {
+    color: var(--fg-2);
+  }
+  .times {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-4);
+    margin: 0;
+  }
+  .times div {
+    display: grid;
+    gap: var(--space-1);
+    padding: var(--space-4);
+    border: 1px solid var(--hairline);
+    border-radius: var(--r-field);
+    background: var(--bg);
+  }
+  .times dt {
+    color: var(--fg-quiet);
+    font-size: var(--text-sm);
+  }
+  .times dd {
+    margin: 0;
+    color: var(--fg);
+    font-size: var(--text-xl);
+  }
+  .times dd.t-note {
+    font-size: var(--text-sm);
+  }
+  .parts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin: var(--space-2) 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  .parts :global(li) {
+    padding: 4px 12px;
+    border-radius: var(--r-pill);
+    background: rgb(var(--vault-rgb) / 0.1);
+    color: var(--vault);
+    font-size: var(--text-sm);
+  }
+  @media (max-width: 560px) {
+    .times {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

@@ -72,6 +72,6 @@ The first complete build, notarized and used daily by its author.
 - Public file format (`docs/FORMAT.md`) and an independent Python reader.
 - Developer ID signing, notarization and stapling (`Scripts/make-dist.sh`).
 
-[Unreleased]: https://github.com/GjinPrelvukaj/Stillroom/compare/v1.0.0...main
-[1.0.0]: https://github.com/GjinPrelvukaj/Stillroom/releases/tag/v1.0.0
-[0.1.0]: https://github.com/GjinPrelvukaj/Stillroom/releases/tag/v0.1.0
+[Unreleased]: https://github.com/GjinPrelvukaj/stillroom-vault/compare/v1.0.0...main
+[1.0.0]: https://github.com/GjinPrelvukaj/stillroom-vault/releases/tag/v1.0.0
+[0.1.0]: https://www.stillroomvault.com/changelog/#010---2026-10-24

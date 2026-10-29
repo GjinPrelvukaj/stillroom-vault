@@ -1,12 +1,12 @@
 ---
-title: 'Stillroom Vault vs 1Password'
-description: '1Password is a cross-platform password manager with browser autofill and sharing. Stillroom Vault is an offline Mac vault. When each one fits.'
+title: 'Offline 1Password Alternative for Mac'
+description: 'Looking for a 1Password alternative? Stillroom Vault is an offline Mac vault with no subscription and no cloud. How it compares, and when each one fits.'
 h1: 'Stillroom Vault vs 1Password'
 lead: '1Password is a password manager that follows you everywhere. Stillroom Vault is a vault that stays on one Mac and never goes online. They overlap less than you might think.'
 name: '1Password'
 updated: '27 October 2026'
 order: 50
-related: ['/moving-from/1password/', '/compare/bitwarden/', '/guides/store-two-factor-backup-codes/', '/compare/keepassxc/']
+related: ['/moving-from/1password/', '/compare/1password-vs-bitwarden/', '/compare/bitwarden/', '/guides/store-two-factor-backup-codes/', '/compare/keepassxc/']
 faq:
   - q: 'Can Stillroom Vault fill passwords in my browser like 1Password?'
     a: 'No. Stillroom has no browser extension and no autofill. You copy a password from Stillroom, and it clears from the clipboard after 30 seconds if nothing else was copied since.'

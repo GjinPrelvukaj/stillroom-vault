@@ -41,11 +41,6 @@ await page.click('[data-open]');
 await page.waitForTimeout(300);
 const refused = await page.locator('[data-status]').textContent();
 await page.locator('.demo').screenshot({ path: `${out}/live-seal.png` });
-// The network panel, on the home page
-await page.locator('[data-netpanel]').scrollIntoViewIfNeeded();
-await page.waitForTimeout(500);
-const foreign = await page.locator('[data-foreign]').textContent();
-await page.locator('[data-netpanel]').screenshot({ path: `${out}/live-net.png` });
 // Decoy
 await page.goto(base + '/features/decoy-password/', { waitUntil: 'networkidle' });
 await page.locator('[data-decoy]').scrollIntoViewIfNeeded();
@@ -66,6 +61,6 @@ await page.locator('[data-argon]').first().scrollIntoViewIfNeeded();
 await page.mouse.wheel(0, 200);
 await page.waitForTimeout(800);
 await page.screenshot({ path: `${out}/live-argon.png` });
-console.log({ code, opened, refused, answer, foreignRequests: foreign });
+console.log({ code, opened, refused, answer });
 console.log(problems.length ? problems.join('\n') : 'no errors or CSP violations');
 await browser.close();

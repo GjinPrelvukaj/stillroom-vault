@@ -6,7 +6,7 @@ lead: 'Why a vault turns your password into a key slowly on purpose, and what th
 name: 'Argon2id'
 updated: '27 October 2026'
 order: 20
-related: ['/learn/aes-256-gcm/', '/features/recovery-key/', '/features/emergency-kit/', '/learn/shamir-secret-sharing/']
+related: ['/tools/password-strength/', '/tools/passphrase-generator/', '/learn/aes-256-gcm/', '/features/recovery-key/', '/features/emergency-kit/', '/learn/shamir-secret-sharing/']
 faq:
   - q: 'Is Argon2id better than PBKDF2 or bcrypt?'
     a: 'For new designs it is generally preferred because it is memory-hard: each guess needs a large block of memory, which makes cheap parallel guessing on graphics cards and custom chips much more expensive. RFC 9106 recommends Argon2id as the default variant.'
@@ -70,7 +70,7 @@ Every way in to a Stillroom vault that you type (the password, the recovery key 
 
 **The settings.** New vaults use Argon2id version 0x13 with **512 MB of memory, 3 passes and 4 lanes**, a 16-byte random salt and a 32-byte output. For comparison, RFC 9106 offers two general recommendations: 2 GiB with 1 pass, or 64 MiB with 3 passes, both with 4 lanes. Stillroom's setting sits between them. The settings and salt are stored in each key file's header, so a reader always knows how to repeat the work.
 
-**What a guess costs.** Each guess costs the full stretch: about 280 ms on an Apple silicon Mac. A black-box test of Stillroom in October 2026 estimated roughly 10 to 30 guesses a second per high-end graphics card. That is strong but ordinary, so your password's own strength is the real boundary. That's why Stillroom's strength check refuses guessable passwords, rather than relying on the stretch to make them safe.
+**What a guess costs.** Each guess costs the full stretch: about 280 ms on an Apple silicon Mac. A black-box test of Stillroom in October 2026 estimated roughly 10 to 30 guesses a second per high-end graphics card. That is strong but ordinary, so your password's own strength is the real boundary. That's why Stillroom's strength check refuses guessable passwords, rather than relying on the stretch to make them safe. You can run the same check in your browser with the [password strength checker](/tools/password-strength/).
 
 **The reference code.** Stillroom runs the Argon2 reference implementation (P-H-C/phc-winner-argon2, release 20190702), copied unchanged into the app. Anyone checking Stillroom can see it uses the same code everyone else checks. An earlier Swift implementation stays in the tests as an independent second implementation: the tests compare the two on 80 parameter combinations, against the RFC 9106 test vector, and against three answers from libargon2.
 

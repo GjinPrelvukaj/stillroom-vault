@@ -1,0 +1,81 @@
+---
+import ToolFrame from './ToolFrame.astro';
+import Icon from '../ui/Icon.astro';
+---
+
+<ToolFrame label="Passphrase generator">
+  <div class="t-out t-phrase" aria-live="polite" data-phrase>&nbsp;</div>
+  <div class="t-row">
+    <button class="btn primary" type="button" data-again><Icon name="dice" size={16} /> <span>Make another</span></button>
+    <button class="btn" type="button" data-copy><Icon name="copy" size={16} /> <span>Copy</span></button>
+  </div>
+  <div class="t-row">
+    <label class="t-field">
+      <span class="t-label">Words: <output data-count-out>6</output></span>
+      <input type="range" min="4" max="10" value="6" data-count />
+    </label>
+    <label class="t-field">
+      <span class="t-label">Between words</span>
+      <select class="field" data-sep>
+        <option value=" ">Space</option>
+        <option value="-" selected>Hyphen</option>
+        <option value=".">Full stop</option>
+        <option value="">Nothing</option>
+      </select>
+    </label>
+    <label class="t-check"><input type="checkbox" data-caps /> Capital first letters</label>
+    <label class="t-check"><input type="checkbox" data-digit /> Add a digit</label>
+  </div>
+  <p class="t-note" data-strength></p>
+</ToolFrame>
+
+<script>
+  import { words } from '../../scripts/tools/eff-words';
+  import { below } from '../../scripts/tools/random';
+  import { timeToGuess } from '../../scripts/tools/strength';
+  import { copyButton } from '../../scripts/tools/ui';
+
+  const root = document.querySelector<HTMLElement>('[data-tool]');
+  if (root) {
+    const $ = <T extends Element>(s: string) => root.querySelector<T>(s)!;
+    const out = $<HTMLElement>('[data-phrase]');
+    const count = $<HTMLInputElement>('[data-count]');
+    const countOut = $<HTMLOutputElement>('[data-count-out]');
+    const sep = $<HTMLSelectElement>('[data-sep]');
+    const caps = $<HTMLInputElement>('[data-caps]');
+    const digit = $<HTMLInputElement>('[data-digit]');
+    const strength = $<HTMLElement>('[data-strength]');
+    const copy = $<HTMLButtonElement>('[data-copy]');
+
+    const make = () => {
+      const n = Number(count.value);
+      countOut.value = String(n);
+      const picked = Array.from({ length: n }, () => words[below(words.length)]!).map((w) =>
+        caps.checked ? w[0]!.toUpperCase() + w.slice(1) : w,
+      );
+      let bits = n * Math.log2(words.length);
+      if (digit.checked) {
+        // A digit on the end of one word, picked at random: ten digits times n places.
+        const at = below(n);
+        picked[at] += String(below(10));
+        bits += Math.log2(10 * n);
+      }
+      out.textContent = picked.join(sep.value);
+      strength.textContent =
+        `${n} words from ${words.length.toLocaleString('en')}: about ${Math.round(bits)} bits. ` +
+        `Against Stillroom’s Argon2id, at up to 30 guesses a second per high-end graphics card, ` +
+        `guessing it would take ${timeToGuess(bits, 30)} on average.`;
+    };
+    for (const el of [count, sep, caps, digit]) el.addEventListener('input', make);
+    $<HTMLButtonElement>('[data-again]').addEventListener('click', make);
+    copyButton(copy, () => out.textContent ?? '');
+    make();
+  }
+</script>
+
+<style>
+  .t-phrase {
+    min-height: 3.2em;
+    font-size: var(--text-2xl);
+  }
+</style>

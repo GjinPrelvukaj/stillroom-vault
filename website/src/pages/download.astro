@@ -6,7 +6,8 @@ import { download, pricing } from '../config';
 import { softwareJsonLd } from '../lib/schema';
 ---
 
-<PageLayout picture="page-download"
+<PageLayout
+  centered
   pattern
   title="Download for Mac (Apple Silicon)"
   h1="Download Stillroom Vault"
@@ -15,83 +16,133 @@ import { softwareJsonLd } from '../lib/schema';
   lead={`Free for ${pricing.freeItems} items with every feature. Buy a licence key any time to remove the limit; nothing to reinstall.`}
   jsonLd={[softwareJsonLd()]}
 >
-  <div class="dl-grid">
-    <section class="dl card reveal" aria-labelledby="mac-title">
-      <div class="ring" aria-hidden="true">
-        <DotRing size={132} dot={4.4} lit={1} />
-        <img src="/app-icon-256.webp" width="84" height="84" alt="" />
-      </div>
-      <h2 id="mac-title" class="dl-title">Stillroom Vault for Mac</h2>
-      <p class="quiet">Version {download.version} · {download.requires}</p>
-      {
-        download.placeholder ? (
-          <>
-            <a class="btn primary large" href={download.url} aria-describedby="dl-soon">
-              <Icon name="apple" size={18} /> Download for Mac
-            </a>
-            <p id="dl-soon" class="soon">The 1.0 download isn’t up yet: this button points at where it will be.</p>
-          </>
-        ) : (
-          <a class="btn primary large" href={download.url} download>
+  <!-- One button first, then labelled rows: the label on the left, what it holds on the right. -->
+  <div class="get reveal">
+    <div class="ring" aria-hidden="true">
+      <DotRing size={132} dot={4.4} lit={1} />
+      <img src="/app-icon-256.webp" width="84" height="84" alt="" />
+    </div>
+    {
+      download.placeholder ? (
+        <>
+          <a class="btn primary large" href={download.url} aria-describedby="dl-soon">
             <Icon name="apple" size={18} /> Download for Mac
           </a>
-        )
-      }
+          <p id="dl-soon" class="soon">The 1.0 download isn’t up yet: this button points at where it will be.</p>
+        </>
+      ) : (
+        <a class="btn primary large" href={download.url} download>
+          <Icon name="apple" size={18} /> Download for Mac
+        </a>
+      )
+    }
+    <p class="quiet">Version {download.version} · {download.requires}</p>
+  </div>
+
+  <section class="row reveal" aria-labelledby="platforms-title">
+    <div class="label">
+      <h2 id="platforms-title" class="row-title">Platforms</h2>
+      <p class="quiet">Where Stillroom runs today, and what’s coming.</p>
+    </div>
+    <ul class="card list">
+      <li>
+        <span><strong>Mac</strong> <span class="quiet">Apple silicon, macOS 26 or later</span></span>
+        <a class="btn" href={download.url} download={download.placeholder ? undefined : ''}>Download</a>
+      </li>
+      <li>
+        <span><strong>Windows</strong> <span class="quiet">In progress, and going well. No date promised: it ships when it’s as careful as the Mac app.</span></span>
+        <span class="tag">In progress</span>
+      </li>
+      <li>
+        <span><strong>Release notes</strong> <span class="quiet">What changed in each version</span></span>
+        <a class="btn" href="/changelog/">Read</a>
+      </li>
+      <li>
+        <span><strong>Releases feed</strong> <span class="quiet">Follow new versions in any feed reader</span></span>
+        <a class="btn" href="/changelog.xml">Follow</a>
+      </li>
+    </ul>
+  </section>
+
+  <section class="row reveal" aria-labelledby="needs-title">
+    <div class="label">
+      <h2 id="needs-title" class="row-title">What you need</h2>
+      <p class="quiet">A Mac, and nothing else.</p>
+    </div>
+    <ul class="card list">
+      <li><span><strong>A Mac with Apple silicon</strong> <span class="quiet">M1 or later. Intel Macs aren’t supported.</span></span></li>
+      <li><span><strong>macOS 26 or later</strong> <span class="quiet">Earlier versions of macOS can’t run it.</span></span></li>
+      <li><span><strong>No account, no internet</strong> <span class="quiet">Nothing to sign up for. The app never goes online, so it works on a Mac that never does.</span></span></li>
+      <li><span><strong>About 2.5 MB to download</strong> <span class="quiet">One zip, with nothing else to install.</span></span></li>
+    </ul>
+  </section>
+
+  <section class="row reveal" aria-labelledby="check-title">
+    <div class="label">
+      <h2 id="check-title" class="row-title">Verify your copy</h2>
+      <p class="quiet">Make sure the file you have is the one we published.</p>
+    </div>
+    <div class="card">
       <dl class="meta">
         <div><dt>File</dt><dd class="mono">{download.file}</dd></div>
         <div><dt>SHA-256</dt><dd class="mono">{download.sha256}</dd></div>
       </dl>
       <p class="quiet">
         To check the download is the real one, run <code>shasum -a 256 ~/Downloads/{download.file}</code> in Terminal: it
-        should print the number above. Stillroom also checks its own signature each time it opens, and says so on the lock
-        screen if the copy has been changed.
+        should print the number above. No Terminal? Drop the zip on the <a href="/tools/file-checksum/">file checksum
+        checker</a>, which recognises it. Stillroom also checks its own signature each time it opens, and says so on the
+        lock screen if the copy has been changed.
       </p>
-    </section>
+    </div>
+  </section>
 
-    <section class="side reveal" aria-labelledby="install-title">
-      <h2 id="install-title" class="side-title">Install in a minute</h2>
-      <ol class="steps">
-        <li><span>1</span><div><strong>Open the zip</strong> and drag Stillroom to Applications.</div></li>
-        <li><span>2</span><div><strong>Open it.</strong> It’s signed with a Developer ID and notarized by Apple, so macOS opens it without a warning.</div></li>
-        <li><span>3</span><div><strong>Make your vault.</strong> Pick a password you won’t forget, then write down the recovery key it shows you, on paper.</div></li>
-        <li><span>4</span><div><strong>Drop files in.</strong> They’re encrypted the moment they land.</div></li>
-      </ol>
+  <section class="row reveal" aria-labelledby="install-title">
+    <div class="label">
+      <h2 id="install-title" class="row-title">Install in a minute</h2>
+      <p class="quiet">Four steps, then your files are sealed.</p>
+    </div>
+    <ol class="card steps">
+      <li><span>1</span><div><strong>Open the zip</strong> and drag Stillroom to Applications.</div></li>
+      <li><span>2</span><div><strong>Open it.</strong> It’s signed with a Developer ID and notarized by Apple, so macOS opens it without a warning.</div></li>
+      <li><span>3</span><div><strong>Make your vault.</strong> Pick a password you won’t forget, then write down the recovery key it shows you, on paper.</div></li>
+      <li><span>4</span><div><strong>Drop files in.</strong> They’re encrypted the moment they land.</div></li>
+    </ol>
+  </section>
 
-      <div class="win glass">
-        <Icon name="windows" size={20} />
-        <div>
-          <strong>Windows</strong>
-          <p class="quiet">In progress, and going well. No date promised: it ships when it’s as careful as the Mac app.</p>
-        </div>
-      </div>
-      <div class="win glass">
-        <Icon name="history" size={20} />
-        <div>
-          <strong>Updates</strong>
-          <p class="quiet">
-            Stillroom never checks for updates, because it never goes online. New versions appear here with
-            <a href="/changelog/">release notes</a>, buyers get an email, and anyone can follow
-            <a href="/changelog.xml">the releases feed</a>. In the app, Settings › Data › Check for Updates opens the
-            notes in your browser and says whether yours is the newest.
-          </p>
-        </div>
-      </div>
-    </section>
-  </div>
+  <section class="row reveal" aria-labelledby="updates-title">
+    <div class="label">
+      <h2 id="updates-title" class="row-title">Updates</h2>
+      <p class="quiet">Manual, because the app never goes online.</p>
+    </div>
+    <div class="card">
+      <p class="quiet">
+        Stillroom never checks for updates, because it never goes online. New versions appear here with
+        <a href="/changelog/">release notes</a>, buyers get an email, and anyone can follow
+        <a href="/changelog.xml">the releases feed</a>. In the app, Settings › Data › Check for Updates opens the notes in
+        your browser and says whether yours is the newest.
+      </p>
+    </div>
+  </section>
+
+  <section class="row reveal" aria-labelledby="move-title">
+    <div class="label">
+      <h2 id="move-title" class="row-title">Moving to a new Mac</h2>
+      <p class="quiet">Your vault goes with you as one file.</p>
+    </div>
+    <ol class="card steps">
+      <li><span>1</span><div><strong>Make a backup</strong> on the old Mac in Settings › Data. It’s one file, and it stays encrypted.</div></li>
+      <li><span>2</span><div><strong>Copy it across</strong> any way you like: a USB drive, AirDrop, a cloud folder. It stays sealed on the way.</div></li>
+      <li><span>3</span><div><strong>Restore it</strong> on the new Mac: choose Restore from a Backup when Stillroom first opens. If the vault was locked to the old Mac, open it with your recovery key. Touch ID and your licence key don’t travel, so turn on and paste them again.</div></li>
+    </ol>
+  </section>
 </PageLayout>
 
 <style>
-  .dl-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 24px;
-    align-items: stretch; /* the install column is as tall as the download card */
-  }
-  .dl {
+  .get {
     display: grid;
     justify-items: center;
-    gap: 16px;
-    padding: 48px 32px 64px;
+    gap: var(--space-4);
+    margin-bottom: var(--space-20);
     text-align: center;
   }
   .ring {
@@ -104,98 +155,123 @@ import { softwareJsonLd } from '../lib/schema';
   .ring img {
     position: absolute;
   }
-  .dl-title {
-    font-size: var(--text-2xl);
-  }
   .soon {
-    max-width: 340px;
+    max-width: 44ch;
     color: var(--fg-quiet);
+    font-size: var(--text-sm);
+  }
+  /* A labelled row: its title on the left, a card of what it holds on the right. */
+  .row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+    gap: var(--space-8) var(--space-16);
+    padding-block: var(--space-12);
+    border-top: 1px solid var(--divider);
+  }
+  .label {
+    display: grid;
+    align-content: start;
+    gap: var(--space-2);
+  }
+  .row-title {
+    font-size: var(--text-3xl);
+  }
+  .card {
+    margin: 0;
+    padding: var(--space-6) var(--space-8);
+    border: 1px solid var(--hairline);
+    border-radius: var(--r-panel);
+    background: var(--bg-raised);
+  }
+  .list {
+    padding-block: var(--space-2);
+    list-style: none;
+  }
+  .list li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-6);
+    padding: var(--space-4) 0;
+    border-bottom: 1px solid var(--divider);
+  }
+  .list li:last-child {
+    border-bottom: 0;
+  }
+  .list li > span:first-child {
+    display: grid;
+    gap: 2px;
+  }
+  .list strong {
+    color: var(--fg);
+    font-weight: 600;
+  }
+  .list .btn {
+    flex: none;
+  }
+  .tag {
+    flex: none;
+    padding: 4px 12px;
+    border-radius: var(--r-pill);
+    background: rgb(var(--vault-rgb) / 0.1);
+    color: var(--vault);
     font-size: var(--text-sm);
   }
   .meta {
     display: grid;
-    gap: 8px;
-    width: 100%;
-    max-width: 420px;
-    margin: 8px 0 0;
-    padding: 16px 16px;
-    border: 1px solid var(--glass-border);
-    border-radius: var(--r-card);
-    background: var(--glass);
-    text-align: left;
+    gap: var(--space-3);
+    margin: 0 0 var(--space-4);
   }
   .meta div {
     display: grid;
-    grid-template-columns: 80px 1fr;
-    gap: 12px;
-    font-size: var(--text-sm);
+    grid-template-columns: 6rem minmax(0, 1fr);
+    gap: var(--space-4);
   }
   .meta dt {
-    color: var(--fg-2);
+    color: var(--fg-quiet);
   }
   .meta dd {
     margin: 0;
-    color: var(--fg-2);
+    color: var(--fg);
     overflow-wrap: anywhere;
   }
-  .side {
-    display: grid;
-    grid-template-rows: auto auto 1fr 1fr; /* title, steps, then the two notes share what's left */
-    gap: 16px;
-  }
-  .side-title {
-    font-size: var(--text-2xl);
+  .card a {
+    color: var(--vault);
   }
   .steps {
     display: grid;
-    gap: 12px;
-    margin: 0;
-    padding: 0;
+    gap: var(--space-4);
     list-style: none;
   }
   .steps li {
-    display: flex;
-    gap: 16px;
+    display: grid;
+    grid-template-columns: 28px minmax(0, 1fr);
+    gap: var(--space-4);
     color: var(--fg-2);
   }
-  .steps li > span {
+  .steps span {
     display: grid;
-    flex: none;
     place-items: center;
     width: 28px;
     height: 28px;
     border-radius: 50%;
-    background: var(--primary-fill);
-    color: #fff;
+    background: var(--ink);
+    color: var(--paper);
     font-size: var(--text-sm);
     font-weight: 600;
   }
   .steps strong {
     color: var(--fg);
   }
-  .win {
-    display: grid;
-    grid-template-columns: auto 1fr;
-    align-content: center; /* stretched to share the column, the note sits in the middle, icon level with its title */
-    align-items: start;
-    gap: 16px;
-    padding: var(--space-6);
-    border-radius: var(--r-panel);
-  }
-  .win :global(svg) {
-    flex: none;
-    margin-top: 2px;
-    color: var(--vault);
-  }
-  .win p {
-    margin-top: 4px;
-  }
-  @media (max-width: 860px) {
-    .side {
-      grid-template-rows: none;
-    }
-    .dl-grid {
+  @media (max-width: 800px) {
+    .row {
       grid-template-columns: 1fr;
+    }
+    .card {
+      padding: var(--space-4) var(--space-6);
+    }
+    .list li {
+      flex-wrap: wrap;
     }
   }
 </style>

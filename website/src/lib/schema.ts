@@ -26,6 +26,7 @@ export function softwareJsonLd() {
     softwareRequirements: download.requires,
     url: site.url,
     downloadUrl: `${site.url}/download/`,
+    sameAs: [site.repo],
     image: `${site.url}/icon-512.png`,
     publisher: { '@id': `${site.url}/#maker` },
     author: site.owners.map((name) => ({ '@type': 'Person', name })),

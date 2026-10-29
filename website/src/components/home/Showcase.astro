@@ -1,18 +1,44 @@
 ---
-import AppWindow from '../app/AppWindow.astro';
-import VaultUI from '../app/VaultUI.astro';
-import LockUI from '../app/LockUI.astro';
-import SecretUI from '../app/SecretUI.astro';
-import SettingsUI from '../app/SettingsUI.astro';
 import Icon from '../ui/Icon.astro';
 import type { IconName } from '../../lib/icons';
-import { vaultRows } from '../../lib/sample';
 
-const tabs: { id: string; icon: IconName; label: string; caption: string }[] = [
-  { id: 'vault', icon: 'folder', label: 'Vault', caption: 'Everything in one list: files, notes and secrets, with folders, tags and versions.' },
-  { id: 'lock', icon: 'lock', label: 'Lock screen', caption: 'The ring lights a few random dots per key, so it never shows how long your password is.' },
-  { id: 'twofactor', icon: 'clock', label: 'Two-factor', caption: 'Two-factor codes, live beside the login. This one is real, from a public demo key.' },
-  { id: 'settings', icon: 'gear', label: 'Settings', caption: 'Every way in on one page, in plain words, the same in both vaults.' },
+// Real screenshots of the app (public/screenshots/, made from a demo vault of invented files: see its README).
+const tabs: { id: string; icon: IconName; label: string; caption: string; alt: string }[] = [
+  {
+    id: 'vault',
+    icon: 'folder',
+    label: 'Vault',
+    caption: 'Everything in one list: files, notes and secrets, with folders, tags and versions.',
+    alt: 'Stillroom’s window in light mode: the Documents list with tax returns, a W-2, medical reports, a will and a separation agreement, each with its folder, kind, size and date.',
+  },
+  {
+    id: 'preview',
+    icon: 'doc',
+    label: 'Preview',
+    caption: 'Read PDFs, pictures, notes and email right inside, without a copy left on the disk.',
+    alt: 'A preview card over the blurred list, showing a 2025 tax return, with buttons to save a copy or edit it in place.',
+  },
+  {
+    id: 'lock',
+    icon: 'lock',
+    label: 'Lock screen',
+    caption: 'The ring lights a few random dots per key, so it never shows how long your password is.',
+    alt: 'The lock screen: “Stillroom is locked”, a password being typed and the dotted ring around the lock lit in violet.',
+  },
+  {
+    id: 'twofactor',
+    icon: 'clock',
+    label: 'Two-factor',
+    caption: 'Two-factor codes, live beside the login, with the password kept hidden until you ask.',
+    alt: 'A Google login: website, username, a hidden password and a two-factor code with its countdown.',
+  },
+  {
+    id: 'settings',
+    icon: 'gear',
+    label: 'Settings',
+    caption: 'Every way in on one page, in plain words, the same in both vaults.',
+    alt: 'Settings, Access tab: password, Touch ID, Lock to this Mac, recovery key, emergency kit and decoy password, each explained.',
+  },
 ];
 ---
 
@@ -50,12 +76,17 @@ const tabs: { id: string; icon: IconName; label: string; caption: string }[] = [
       {
         tabs.map((t, i) => (
           <div class="screen" role="tabpanel" id={`panel-${t.id}`} aria-labelledby={`tab-${t.id}`} hidden={i !== 0} data-tabpanel>
-            <AppWindow class="shot" label={`Illustration of Stillroom Vault’s ${t.label.toLowerCase()} screen`}>
-              {t.id === 'vault' && <VaultUI rows={vaultRows} count={248} />}
-              {t.id === 'lock' && <LockUI />}
-              {t.id === 'twofactor' && <SecretUI />}
-              {t.id === 'settings' && <SettingsUI />}
-            </AppWindow>
+            <img
+              class="shot"
+              src={`/screenshots/${t.id}.webp?v=4`}
+              srcset={`/screenshots/${t.id}-1440.webp?v=4 1440w, /screenshots/${t.id}.webp?v=4 2880w`}
+              sizes="(max-width: 1240px) 92vw, 1180px"
+              width="2880"
+              height="1440"
+              alt={t.alt}
+              loading={i === 0 ? 'eager' : 'lazy'}
+              decoding="async"
+            />
             <p class="caption">{t.caption}</p>
           </div>
         ))
@@ -65,7 +96,6 @@ const tabs: { id: string; icon: IconName; label: string; caption: string }[] = [
 </section>
 
 <script>
-  import '../../scripts/app-demos';
   import '../../scripts/xtabs';
 </script>
 
@@ -146,6 +176,18 @@ const tabs: { id: string; icon: IconName; label: string; caption: string }[] = [
     position: absolute;
     inset: 0 0 auto;
     pointer-events: none;
+  }
+  /* The window was taken at 1440×720 points, wide and short, so it fills the content width and still shows whole. */
+  .shot {
+    display: block;
+    width: 100%;
+    height: auto;
+    /* The window's 22-point corners at its 1440×720 size, as fractions of width and height, so a plain shadow can
+       follow them. Not a CSS filter: Safari draws filtered images at lower resolution, which blurs the text. */
+    border-radius: 1.528% / 3.056%;
+    box-shadow:
+      0 24px 40px -8px rgb(22 21 26 / 0.18),
+      0 2px 6px rgb(22 21 26 / 0.08);
   }
   .caption {
     margin-top: 16px;

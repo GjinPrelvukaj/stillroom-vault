@@ -6,7 +6,7 @@ lead: 'How a secret can be split into pieces so that any agreed number of them r
 name: 'Shamir secret sharing'
 updated: '27 October 2026'
 order: 30
-related: ['/features/emergency-kit/', '/features/recovery-key/', '/learn/argon2id/', '/guides/if-your-mac-is-stolen/']
+related: ['/tools/shamir-split/', '/features/emergency-kit/', '/features/recovery-key/', '/learn/argon2id/', '/guides/if-your-mac-is-stolen/']
 faq:
   - q: 'Can one piece of a Shamir split reveal part of the secret?'
     a: 'No. With fewer pieces than the threshold, every possible secret is equally likely, so the pieces show nothing about it. This holds however much computing power someone has.'
@@ -50,7 +50,7 @@ Any two people can put their points together, draw the line, and read off where 
 
 For a higher threshold you use a curve instead of a line. Three points fix a parabola, so a 3 of 5 split uses a random parabola and hands out five points. In general a threshold of k uses a polynomial of degree k minus 1, and rebuilding it from k points is called **Lagrange interpolation**.
 
-The analogy is accurate with one adjustment. On paper, coordinates are ordinary numbers. In practice the arithmetic is done in a **finite field**, a small number system that wraps around, so every value fits in a fixed size and no piece leaks information through how big or precise its numbers are.
+The analogy is accurate with one adjustment. On paper, coordinates are ordinary numbers. In practice the arithmetic is done in a **finite field**, a small number system that wraps around, so every value fits in a fixed size and no piece leaks information through how big or precise its numbers are. The [Shamir split demo](/tools/shamir-split/) does all of this in your browser: split a secret, then join the pieces back.
 
 ## What it does not do
 

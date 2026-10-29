@@ -1,6 +1,7 @@
 // The website's own offline check, run by `npm run build` (like macos/Scripts/check-offline.sh for the app).
 // It fails the build if anything in dist/ names a host other than the ones below:
-//   - stillroomvault.com, paddle.com and github.com (and their subdomains), allowed anywhere;
+//   - stillroomvault.com, paddle.com, github.com and cloudflareinsights.com (Cloudflare Web Analytics, see /privacy/),
+//     and their subdomains, allowed anywhere;
 //   - any address that is a plain link's href in a page (the articles cite their sources, the repository's documents
 //     link out): following a link is the reader's choice, and nothing is loaded from it;
 //   - identifiers that are never fetched: XML/SVG namespaces (www.w3.org) and the schema.org vocabulary in
@@ -11,7 +12,7 @@ import { extname, join, relative } from 'node:path';
 
 const dist = fileURLToPath(new URL('../dist/', import.meta.url));
 
-const allowed = ['stillroomvault.com', 'paddle.com', 'github.com'];
+const allowed = ['stillroomvault.com', 'paddle.com', 'github.com', 'cloudflareinsights.com'];
 
 /** Exact strings that look like addresses but are only text, each with its reason. */
 const textOnly = [

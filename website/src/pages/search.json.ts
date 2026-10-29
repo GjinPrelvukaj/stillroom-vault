@@ -52,7 +52,7 @@ export const GET: APIRoute = async () => {
   const legal: Entry[] = [
     { t: 'Terms and EULA', u: '/terms/', g: 'Legal', d: 'What a licence covers, and the limits of our liability.' },
     { t: 'Refund policy', u: '/refunds/', g: 'Legal', d: 'A full refund within 14 days, for any reason.' },
-    { t: 'Privacy policy', u: '/privacy/', g: 'Legal', d: 'The app collects nothing, and this site sets no cookies.' },
+    { t: 'Privacy policy', u: '/privacy/', g: 'Legal', d: 'The app collects nothing. This site sets no cookies and counts visits without identifying anyone.' },
     { t: 'Source licence', u: '/license/', g: 'Legal', d: 'FSL-1.1-ALv2: read, audit and build it for your own use.', h: docs['license'] },
     { t: 'Report a security problem', u: '/security-policy/', g: 'Legal', d: 'What to include, response times and safe harbour.' },
   ];

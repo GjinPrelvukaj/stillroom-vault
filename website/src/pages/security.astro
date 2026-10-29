@@ -4,10 +4,16 @@ import ThreatModel from '../components/ThreatModel.astro';
 import ArgonRing from '../components/ArgonRing.astro';
 import Icon from '../components/ui/Icon.astro';
 import { email } from '../config';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+
+// The eleven rules' titles, read from the document itself (its "**1. …**" lines), for the index before the full text.
+const rules = [...readFileSync(resolve(process.cwd(), '../docs/SECURITY.md'), 'utf8').matchAll(/^\*\*(\d+)\. (.+?)\*\*$/gm)].map(
+  (m) => ({ n: m[1]!.padStart(2, '0'), text: m[2]!.replace(/`/g, '') }),
+);
 ---
 
-<DocLayout picture="page-security"
-  banner
+<DocLayout
   doc="security"
   title="Security Model: What It Protects Against"
   h1="How Stillroom Vault keeps your files safe"
@@ -30,12 +36,23 @@ import { email } from '../config';
         </div>
       </div>
     </section>
-    <section class="section argon-section" aria-label="Argon2id">
+    <section class="section argon-section ink" aria-label="Argon2id">
       <div class="container"><ArgonRing heading="h2" /></div>
     </section>
-    <div class="container">
-      <p class="eyebrow lit rules-eyebrow">The rules, in full</p>
-    </div>
+    <section class="section rules-index" aria-labelledby="ri-title">
+      <div class="container">
+        <p class="eyebrow lit">The eleven rules</p>
+        <h2 id="ri-title" class="section-title">What the design rests on</h2>
+        <ol class="ri">
+          {rules.map((r) => (
+            <li>
+              <a href="#rules"><span class="n">{r.n}</span><span class="t">{r.text}</span></a>
+            </li>
+          ))}
+        </ol>
+        <p class="eyebrow lit rules-eyebrow">The rules, in full</p>
+      </div>
+    </section>
   </Fragment>
 </DocLayout>
 
@@ -59,8 +76,47 @@ import { email } from '../config';
   .status strong {
     color: var(--fg);
   }
+  .argon-section {
+    margin-block: var(--section-y);
+  }
+  .ri {
+    display: grid;
+    gap: 0 var(--space-12);
+    margin: var(--head-gap) 0 0;
+    padding: 0;
+    list-style: none;
+    border-top: 1px solid var(--divider);
+  }
+  @media (min-width: 900px) {
+    .ri {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+  .ri li {
+    border-bottom: 1px solid var(--divider);
+  }
+  .ri a {
+    display: grid;
+    grid-template-columns: 2.5em minmax(0, 1fr);
+    gap: var(--space-4);
+    padding: var(--space-4) 0;
+    color: var(--fg);
+    text-decoration: none;
+  }
+  .ri a:hover .t {
+    color: var(--vault);
+  }
+  .ri .n {
+    color: var(--vault);
+    font-variant-numeric: tabular-nums;
+  }
+  .ri .t {
+    font-family: var(--font-serif);
+    font-size: var(--text-xl);
+    line-height: 1.35;
+    transition: color var(--hover);
+  }
   .rules-eyebrow {
     padding-top: var(--section-y);
-    margin-bottom: var(--space-6);
   }
 </style>

@@ -7,7 +7,7 @@ import { readFile } from 'node:fs/promises';
 import { posix, resolve } from 'node:path';
 
 const repoRoot = resolve(process.cwd(), '..');
-const repoUrl = 'https://github.com/GjinPrelvukaj/Stillroom/blob/main/';
+const repoUrl = 'https://github.com/GjinPrelvukaj/stillroom-vault/blob/main/';
 
 /** Repository files this site shows, and the page each one becomes. */
 export const docPages: Record<string, { id: string; page: string }> = {
@@ -93,6 +93,21 @@ export const collections = {
       faq: z.array(z.object({ q: z.string(), a: z.string() })).default([]),
       /** Where the facts about other products came from. */
       sources: z.array(z.object({ label: z.string(), url: z.url() })).default([]),
+      /** Optional pieces, so articles don't all look alike (ART.md, "Article pieces"). */
+      /** "In short": three or so points in a box under the picture. */
+      points: z.array(z.string()).optional(),
+      /** One line from the article, set large before its second chapter. */
+      quote: z.string().optional(),
+      /** false: no picture, for a short page that reads better plain. */
+      picture: z.boolean().default(true),
+      /** night: the whole page on the dark surface (the kit's .ink). */
+      theme: z.enum(['paper', 'night']).default('paper'),
+      /** A live demo after the article: the home page's seal. */
+      demo: z.enum(['seal']).optional(),
+      /** A tool page's tool, shown first, above the picture (src/components/tools/). */
+      tool: z
+        .enum(['passphrase', 'strength', 'totp', 'qr', 'checksum', 'recovery-sheet', 'shamir', 'pin'])
+        .optional(),
     }),
   }),
 };

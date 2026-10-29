@@ -1,0 +1,91 @@
+---
+// A tool page's heading: the trail back up, the title, the lead and one quiet line of facts on the left, the tool's
+// picture large on the right, on the page's own paper. The tool itself follows right under it.
+import Art from '../Art.astro';
+import Icon from '../ui/Icon.astro';
+import { toolKind } from '../../lib/tools';
+
+interface Props {
+  slug: string;
+  h1: string;
+  lead: string;
+  picture: string;
+  /** The first heading in the text, for the "How it works" button. */
+  first?: string | undefined;
+}
+const { slug, h1, lead, picture, first } = Astro.props;
+const facts = [toolKind[slug] ?? 'Tool', 'Runs in your browser', 'Nothing sent', 'Free'];
+---
+
+<header class="tool-hero container">
+  <div class="text">
+    <nav class="trail enter enter-1" aria-label="Breadcrumb">
+      <a href="/tools/"><Icon name="arrow-left" size={14} /> Free tools</a>
+    </nav>
+    <h1 class="page-title enter enter-2">{h1}</h1>
+    <p class="lead enter enter-3">{lead}</p>
+    <ul class="facts enter enter-3" aria-label="About this tool">
+      {facts.map((f) => <li>{f}</li>)}
+    </ul>
+    <div class="btn-row enter enter-4">
+      <a class="btn primary" href="#tool">Use it now <Icon name="arrow" size={14} /></a>
+      {first && <a class="btn" href={`#${first}`}>How it works</a>}
+    </div>
+  </div>
+  <Art name={picture} ratio="3 / 2" eager plate class="og-picture enter enter-3" sizes="(max-width: 900px) 92vw, 600px" />
+</header>
+
+<style>
+  .tool-hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: center;
+    gap: var(--space-16);
+    padding: var(--page-top) 0 var(--space-16);
+  }
+  .text {
+    display: grid;
+    justify-items: start;
+    gap: var(--space-6);
+  }
+  .trail a {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    color: var(--fg-quiet);
+    font-size: var(--text-sm);
+    text-decoration: none;
+    transition: color var(--hover);
+  }
+  .trail a:hover {
+    color: var(--vault);
+  }
+  /* One quiet line of facts, separated by dots. */
+  .facts {
+    display: flex;
+    flex-wrap: wrap;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    color: var(--fg-quiet);
+    font-size: var(--text-sm);
+  }
+  .facts li + li::before {
+    content: '·';
+    margin: 0 var(--space-2);
+  }
+  .btn-row {
+    justify-content: flex-start;
+    margin-top: var(--space-2);
+  }
+  @media (max-width: 900px) {
+    .tool-hero {
+      grid-template-columns: 1fr;
+      gap: var(--space-10);
+      padding-bottom: var(--space-10);
+    }
+    .tool-hero :global(.art) {
+      order: -1;
+    }
+  }
+</style>

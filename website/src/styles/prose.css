@@ -163,3 +163,43 @@
 .token.punctuation {
   color: var(--fg-quiet);
 }
+
+/* An article's table, set as a figure: a tinted panel a little wider than the text (DocLayout). */
+.prose figure.panel {
+  margin: 2em 0 0;
+  padding: var(--space-4);
+  border-radius: var(--r-panel);
+  background: var(--bg-raised);
+}
+@media (min-width: 900px) {
+  .prose figure.panel {
+    margin-inline: calc(-1 * var(--space-8));
+    padding: var(--space-6) var(--space-8);
+  }
+}
+.prose figure.panel table {
+  font-size: var(--text-base);
+}
+.prose figure.panel th {
+  background: none;
+  border-bottom-color: var(--hairline);
+}
+.prose figure.panel tr:last-child td {
+  border-bottom: 0;
+}
+
+/* A pull quote: one line from the article, set large in the serif, with no box. */
+.prose blockquote.pull {
+  margin: 2.4em 0 0;
+  padding: 0 0 0 var(--space-6);
+  border-left: 2px solid var(--vault);
+  border-radius: 0;
+  background: none;
+}
+.prose blockquote.pull p {
+  color: var(--fg);
+  font-family: var(--font-serif);
+  font-size: var(--text-3xl);
+  line-height: 1.25;
+  text-wrap: balance;
+}

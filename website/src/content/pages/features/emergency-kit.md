@@ -6,7 +6,7 @@ lead: 'Printed pieces for people you trust. Any agreed number of them together o
 name: 'Emergency kit'
 updated: '27 October 2026'
 order: 20
-related: ['/learn/shamir-secret-sharing/', '/features/recovery-key/', '/guides/keep-id-scans-safe/']
+related: ['/tools/shamir-split/', '/learn/shamir-secret-sharing/', '/features/recovery-key/', '/guides/keep-id-scans-safe/']
 faq:
   - q: 'Can one person with one piece open my vault?'
     a: 'No. A piece on its own opens nothing and shows nothing about the key. Only the number of pieces you chose, put together, rebuilds it.'

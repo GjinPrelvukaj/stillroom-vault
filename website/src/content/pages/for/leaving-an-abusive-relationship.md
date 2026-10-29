@@ -6,6 +6,7 @@ lead: 'Your safety matters more than any app. This page starts with what special
 name: 'Leaving an abusive relationship'
 updated: '27 October 2026'
 order: 50
+quote: 'There is no app that can make you safe on its own.'
 related: ['/features/decoy-password/', '/features/intruder-log/', '/features/hidden-from-capture/', '/guides/secure-a-shared-mac/']
 faq:
   - q: 'Could installing Stillroom Vault make things more dangerous?'

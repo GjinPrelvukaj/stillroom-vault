@@ -1,6 +1,6 @@
 ---
-title: 'Stillroom Vault vs Cryptomator'
-description: 'Cryptomator encrypts files in your cloud folder across every platform. Stillroom Vault keeps files and passwords sealed on one Mac. Which fits you.'
+title: 'Cryptomator Alternative for Mac, With No Cloud'
+description: 'A Cryptomator alternative for Mac: Cryptomator encrypts your cloud folder, Stillroom Vault keeps files and passwords sealed on one Mac. Which fits you.'
 h1: 'Stillroom Vault vs Cryptomator'
 lead: 'Both encrypt your files on your own device. Cryptomator is built for the cloud folder you already sync; Stillroom Vault is built for a Mac that never sends anything anywhere.'
 name: 'Cryptomator'

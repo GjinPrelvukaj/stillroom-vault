@@ -1,7 +1,6 @@
 ---
-// Never goes online, in plain words: three short facts, and one live number from the browser's own record of what
-// this page has fetched from other sites (scripts/netpanel.ts). How the app is checked, and its one exception, are
-// on /security/, not here.
+// Never goes online, in plain words: three short facts. How the app is checked, and its one exception, are on
+// /security/, not here.
 import Icon from '../ui/Icon.astro';
 ---
 
@@ -32,18 +31,10 @@ import Icon from '../ui/Icon.astro';
         <p>Updates are downloads from this site, when you choose.</p>
       </article>
     </div>
-    <p class="live reveal" data-netpanel>
-      <span class="dot" aria-hidden="true"></span>
-      <span>
-        This page has loaded <strong class="count" data-foreign>0</strong> files from other sites since you opened it.
-        <span class="quiet">Your browser’s own count: no analytics, no cookies.</span>
-      </span>
-    </p>
   </div>
 </section>
 
 <script>
-  import '../../scripts/netpanel';
   import '../../scripts/converge';
 </script>
 
@@ -84,43 +75,6 @@ import Icon from '../ui/Icon.astro';
   @keyframes icon-blink {
     50% {
       opacity: 0;
-    }
-  }
-  .live {
-    display: flex;
-    align-items: baseline;
-    gap: var(--space-3);
-    margin-top: var(--space-12);
-    padding: var(--space-6) var(--space-8);
-    border-radius: var(--r-panel);
-    background: var(--bg-raised);
-    font-size: var(--text-lg);
-  }
-  .live .quiet {
-    display: block;
-    margin-top: var(--space-1);
-    font-size: var(--text-sm);
-  }
-  .count {
-    color: var(--green);
-    font-family: var(--font-mono);
-  }
-  .dot {
-    flex: none;
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: var(--green);
-    translate: 0 -2px;
-  }
-  @media (prefers-reduced-motion: no-preference) {
-    .dot {
-      animation: pulse 2s ease-in-out infinite;
-    }
-  }
-  @keyframes pulse {
-    50% {
-      opacity: 0.35;
     }
   }
   @media (max-width: 900px) {

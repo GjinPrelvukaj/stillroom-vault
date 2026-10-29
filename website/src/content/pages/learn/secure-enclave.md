@@ -6,6 +6,7 @@ lead: 'A small, separate computer inside your Mac that holds keys and never hand
 name: 'Secure Enclave'
 updated: '27 October 2026'
 order: 40
+theme: 'night'
 related: ['/features/touch-id/', '/features/lock-to-this-mac/', '/learn/aes-256-gcm/', '/guides/if-your-mac-is-stolen/']
 faq:
   - q: 'Does every Mac have a Secure Enclave?'

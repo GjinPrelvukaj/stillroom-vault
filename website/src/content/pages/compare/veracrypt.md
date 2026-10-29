@@ -1,5 +1,5 @@
 ---
-title: 'Stillroom Vault vs VeraCrypt'
+title: 'VeraCrypt for Mac: How It Compares'
 description: 'VeraCrypt encrypts volumes, partitions and drives on Windows, macOS and Linux. Stillroom Vault is a Mac app for files and passwords. How they differ.'
 h1: 'Stillroom Vault vs VeraCrypt'
 lead: 'VeraCrypt encrypts whole volumes and drives, on almost any computer. Stillroom Vault is a Mac app that seals each item on its own and opens it in built-in viewers.'

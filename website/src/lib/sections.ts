@@ -54,9 +54,18 @@ export const sections = {
       'How lawyers, medical practices, journalists, travellers and people leaving an abusive relationship can keep files private on a Mac with Stillroom Vault, and its limits.',
     lead: 'For people whose files would hurt someone if they got out, with what it protects against and what it doesn’t.',
   },
+  tools: {
+    name: 'Free tools',
+    eyebrow: 'Free tools',
+    title: 'Free Privacy Tools: Passphrases, 2FA Codes, Checksums',
+    h1: 'Free tools that never leave your browser',
+    description:
+      'Free tools for passwords, passphrases, PINs, two-factor codes, QR codes, file checksums and Shamir secret sharing. They run in your browser and send nothing.',
+    lead: 'Small tools for the jobs around passwords and two-factor codes. Each one runs in your browser, on your device: nothing you type or drop on these pages is sent anywhere.',
+  },
 } as const;
 
 export type Section = keyof typeof sections;
 /** The faint artwork beside each section's headings. */
-export const sectionArt = { compare: 'pair', guides: 'path', features: 'ring', 'moving-from': 'arrive', learn: 'lit', for: 'ring' } as const;
+export const sectionArt = { compare: 'pair', guides: 'path', features: 'ring', 'moving-from': 'arrive', learn: 'lit', for: 'ring', tools: 'lit' } as const;
 export const hubSections = (Object.keys(sections) as Section[]).filter((s) => s !== 'features');

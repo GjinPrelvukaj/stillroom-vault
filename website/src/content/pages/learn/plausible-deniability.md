@@ -6,6 +6,7 @@ lead: 'What a decoy can and can’t hide, who it’s meant to protect you from, 
 name: 'Plausible deniability'
 updated: '27 October 2026'
 order: 50
+quote: 'Protection against thieves and abusers, not police.'
 related: ['/features/decoy-password/', '/for/leaving-an-abusive-relationship/', '/learn/secure-enclave/', '/guides/secure-a-shared-mac/']
 faq:
   - q: 'Is a decoy password the same as a hidden volume?'

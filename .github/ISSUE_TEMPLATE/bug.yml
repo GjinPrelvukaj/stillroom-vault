@@ -1,0 +1,49 @@
+name: Bug report
+description: Something in Stillroom, stillroom-open.py or the website doesn't work as it should.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time. **Never paste a password, recovery key, kit piece, license key or any file from your vault here**: issues are public. If the bug could let someone read a vault, report it privately instead (Security tab, or security@stillroomvault.com).
+  - type: dropdown
+    id: where
+    attributes:
+      label: Where
+      options:
+        - The Mac app
+        - stillroom-open.py
+        - The website
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Stillroom version
+      description: Stillroom menu › About Stillroom shows it.
+      placeholder: 1.0.0
+  - type: input
+    id: system
+    attributes:
+      label: macOS version and Mac
+      placeholder: macOS 26.1, MacBook Air M2
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what you expected
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to make it happen again
+      placeholder: |
+        1.
+        2.
+        3.
+  - type: textarea
+    id: log
+    attributes:
+      label: Activity log (optional)
+      description: The lines around the problem from ~/Library/Logs/Stillroom/. The log never records what you typed, file names or contents.
+      render: text

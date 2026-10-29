@@ -3,7 +3,7 @@
 
 export const site = {
   name: 'Stillroom Vault',
-  url: 'https://stillroomvault.com',
+  url: 'https://www.stillroomvault.com',
   tagline: 'The encrypted vault for your Mac that never goes online.',
   description:
     'Stillroom Vault keeps files, notes, passwords and two-factor codes sealed with AES-256-GCM on your Mac. No server, no account, no sync. $39 once, or free for 25 items.',
@@ -13,7 +13,7 @@ export const site = {
   sellerCountry: 'Kosovo',
   year: 2026,
   version: '1.0',
-  repo: 'https://github.com/GjinPrelvukaj/Stillroom',
+  repo: 'https://github.com/GjinPrelvukaj/stillroom-vault',
 } as const;
 
 export const email = {

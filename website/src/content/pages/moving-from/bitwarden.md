@@ -6,7 +6,7 @@ lead: 'Export your Bitwarden vault as a .csv file, import the logins into Stillr
 name: 'Bitwarden'
 updated: '27 October 2026'
 order: 40
-related: ['/compare/bitwarden/', '/moving-from/1password/', '/guides/store-two-factor-backup-codes/']
+related: ['/tools/qr-code-reader/', '/compare/bitwarden/', '/moving-from/1password/', '/guides/store-two-factor-backup-codes/']
 faq:
   - q: 'Which Bitwarden export format should I choose?'
     a: 'Choose .csv. Stillroom reads password exports in CSV form, and not Bitwarden .json files, encrypted exports or .zip files with attachments.'
