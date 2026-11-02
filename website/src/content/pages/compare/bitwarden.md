@@ -6,7 +6,7 @@ lead: 'Bitwarden is an open source password manager that syncs to every device, 
 name: 'Bitwarden'
 updated: '27 October 2026'
 order: 60
-related: ['/moving-from/bitwarden/', '/compare/1password-vs-bitwarden/', '/compare/1password/', '/compare/keepassxc/', '/guides/store-two-factor-backup-codes/']
+related: ['/moving-from/bitwarden/', '/compare/1password-vs-bitwarden/', '/compare/1password/', '/compare/keepassxc/', '/guides/store-two-factor-backup-codes/', '/compare/offline-password-manager-mac/']
 faq:
   - q: 'Is Bitwarden free?'
     a: 'Bitwarden has a free plan with no limit on passwords or devices. Premium adds features such as the built-in authenticator, emergency access and encrypted file storage, and a Families plan covers up to six people.'
@@ -42,7 +42,7 @@ It suits almost anyone who needs a password manager across several devices, espe
 | Where data lives | Your devices, plus Bitwarden's cloud or your own server | One folder on your Mac |
 | Encryption | End-to-end, AES-256 with HMAC; PBKDF2 or Argon2id | AES-256-GCM, a fresh key per item; Argon2id (512 MB) |
 | Platforms | Windows, macOS, Linux, iOS, Android, web, browser extensions, CLI | Apple silicon Macs, macOS 26 or later |
-| Price | Free plan; paid Premium and Families plans | Free for 25 items; $39 once; Family $129 once for 5 people |
+| Price | Free plan; paid Premium and Families plans | Free for 25 items; $39 once; Family $79 once for 5 people |
 | Source | Open source | Source available (FSL); the reader script is MIT |
 | Cloud and sync | Built in, or self-hosted | None; it never goes online |
 | Scope | Password manager, with file storage on paid plans | File vault that also holds passwords and two-factor codes |
@@ -59,7 +59,7 @@ It suits almost anyone who needs a password manager across several devices, espe
 
 - **Documents are the point.** Stillroom holds files of any kind, with folders, tags, earlier versions and a sealed search index. PDFs, images, text, sketches and email open in built-in viewers, and audio and video play straight from the sealed file, without writing a decrypted copy to disk. Other previews go to a RAM disk.
 - **No server, not even your own.** Self-hosting moves Bitwarden's server to you; Stillroom has none. It makes no network connections, and a build check fails any version that links networking code.
-- **Pay once.** $39 for all of one person's Macs, or $129 for a family of five, with every 1.x update included. The free tier never blocks opening, exporting or backing up.
+- **Pay once.** $39 for all of one person's Macs, or $79 for a family of five, with every 1.x update included. The free tier never blocks opening, exporting or backing up.
 - **More ways back in, held by you.** A [recovery key](/features/recovery-key/), a printable [emergency kit](/features/emergency-kit/) split among people you trust, [Touch ID](/features/touch-id/), and optional [Lock to this Mac](/features/lock-to-this-mac/). Nobody, us included, can recover a forgotten password.
 - **Protection at the keyboard.** A [decoy password](/features/decoy-password/), an [intruder log](/features/intruder-log/), and windows [hidden from screen capture](/features/hidden-from-capture/). The decoy protects against thieves and abusers, not police, and doesn't fool someone who has one password and a copy of the vault folder ([rule 2](/security/#rules)).
 - **A heavier password stretch.** Stillroom always uses Argon2id with 512 MB of memory, 3 passes and 4 lanes. That slows guessing, but your password's strength is still what matters most, and Stillroom refuses guessable ones.

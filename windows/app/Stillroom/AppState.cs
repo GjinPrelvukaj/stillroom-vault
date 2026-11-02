@@ -36,14 +36,20 @@ internal sealed class AppState : IDisposable
     private AppState(Store store, string root) => (Store, StoreRoot) = (store, root);
 
     /// <summary>The usual vault folder (%APPDATA%\Stillroom\Store). Development builds can be pointed elsewhere with
-    /// STILLROOM_STORE_DIR, so trying the app never touches a real vault.</summary>
+    /// STILLROOM_STORE_DIR, so trying the app never touches a real vault (nor the real licence beside it), and made to
+    /// trust licences from a test key pair with STILLROOM_LICENCE_SIGNER (its public key, base64), so a licence can be
+    /// tried without the production key. Release builds ignore both.</summary>
     public static AppState Open()
     {
         var root = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Stillroom", "Store");
 #if DEBUG
         if (Environment.GetEnvironmentVariable("STILLROOM_STORE_DIR") is { Length: > 0 } elsewhere) root = elsewhere;
 #endif
-        return new AppState(Store.Open(root), root);
+        var store = Store.Open(root);
+#if DEBUG
+        if (Environment.GetEnvironmentVariable("STILLROOM_LICENCE_SIGNER") is { Length: > 0 } signer) store.TrustLicencesForTests(Convert.FromBase64String(signer));
+#endif
+        return new AppState(store, root);
     }
 
     /// <summary>The vault folder changed on disk while locked (a restore): the lock screen looks again.</summary>

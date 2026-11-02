@@ -15,7 +15,7 @@ using Windows.Storage.Pickers;
 namespace Stillroom;
 
 /// <summary>Settings (the Mac's `SettingsPane`): how the vault is kept, in plain words, and what can be changed. The
-/// same four tabs and rows in either vault; nothing on them says which vault is open (docs/SECURITY.md rule 2). Every
+/// same five tabs and rows in either vault; nothing on them says which vault is open (docs/SECURITY.md rule 2). Every
 /// password is typed on the secure desktop, never here.</summary>
 internal sealed class SettingsPage : UserControl
 {
@@ -30,6 +30,10 @@ internal sealed class SettingsPage : UserControl
     /// <summary>Drawing sets switches; only a person's flip of one should act.</summary>
     private bool drawing;
     private bool busy;
+    /// <summary>The key being pasted in the Licence tab, kept across redraws.</summary>
+    private string licenceKey = "";
+    /// <summary>Starts with why a saved key stopped working, if it did, so the drop to Free is explained.</summary>
+    private string? licenceProblem;
 
     private Settings Settings => window.Settings;
     private Vault? Vault => state.Vault;
@@ -46,7 +50,7 @@ internal sealed class SettingsPage : UserControl
         heading.Children.Add(new TextBlock { Text = "How it's kept", FontSize = 24, FontWeight = FontWeights.SemiBold });
 
         var tabs = new SelectorBar();
-        foreach (var name in new[] { "Access", "Protection", "Security", "Data" }) tabs.Items.Add(new SelectorBarItem { Text = name });
+        foreach (var name in new[] { "Access", "Protection", "Security", "Data", "Licence" }) tabs.Items.Add(new SelectorBarItem { Text = name });
         tabs.SelectedItem = tabs.Items[0];
         tabs.SelectionChanged += (_, _) => { tab = ((SelectorBarItem)tabs.SelectedItem).Text; Draw(); };
 
@@ -62,6 +66,10 @@ internal sealed class SettingsPage : UserControl
             helloAvailable = await WindowsHello.IsAvailableAsync();
             Draw();
         };
+        // Light or dark changed (here, or Windows' own): drawn again in its colours.
+        Loaded += (_, _) => Theme.Changed += Draw;
+        Unloaded += (_, _) => Theme.Changed -= Draw;
+        licenceProblem = state.Store.LicenceProblem;
         Draw();
     }
 
@@ -75,6 +83,7 @@ internal sealed class SettingsPage : UserControl
             "Protection" => Protection(),
             "Security" => SecurityFacts(),
             "Data" => Data(),
+            "Licence" => LicenceTab(),
             _ => Access(),
         };
         drawing = false;
@@ -217,6 +226,17 @@ internal sealed class SettingsPage : UserControl
             Save();
         };
 
+        var appearance = new ComboBox { MinWidth = 170 };
+        AutomationProperties.SetName(appearance, "Appearance");
+        foreach (var choice in Enum.GetValues<Appearance>()) appearance.Items.Add(choice.ToString());
+        appearance.SelectedIndex = (int)Settings.Appearance;
+        appearance.SelectionChanged += (_, _) =>
+        {
+            if (drawing || appearance.SelectedIndex < 0) return;
+            window.SetAppearance((Appearance)appearance.SelectedIndex);
+            Save();
+        };
+
         var camera = IntruderCamera.WindowsAllows();
         var cameraLine = new TextBlock { FontSize = 12, Opacity = 0.6, TextWrapping = TextWrapping.Wrap };
         var tryCamera = Button("Try Camera", async () =>
@@ -246,6 +266,7 @@ internal sealed class SettingsPage : UserControl
             Row("Tray icon",
                 $"Shows whether Stillroom is open, and locks it. Either way, {window.LockHotKey ?? SystemWatch.HotKeyName} in any app locks Stillroom and hides it at once.",
                 Switch("Tray icon", Settings.TrayIcon, true, on => { Settings.TrayIcon = on; Save(); window.ShowTrayIcon(on); return Task.CompletedTask; })),
+            Row("Appearance", "Light or dark, or as Windows is set. The lock screen follows it too.", appearance),
             Row("Show in screenshots & screen sharing",
                 "When off, screenshots, recordings and screen sharing see Stillroom blank. Turn on to show someone. Remembered with the vault; the lock screen always stays hidden.",
                 Switch("Show in screenshots and screen sharing", Has("showInCapture"), true, on => Work(async vault =>
@@ -292,11 +313,11 @@ internal sealed class SettingsPage : UserControl
                 Text = fact.Figure,
                 FontSize = 24,
                 FontWeight = FontWeights.SemiBold,
-                Foreground = fact.Off ? new SolidColorBrush(Microsoft.UI.Colors.Orange) : (Brush)Application.Current.Resources["VaultBrush"],
+                Foreground = fact.Off ? new SolidColorBrush(Microsoft.UI.Colors.Orange) : Theme.Brush("VaultBrush"),
             });
             card.Children.Add(new TextBlock { Text = fact.Title });
             card.Children.Add(new TextBlock { Text = fact.Detail, FontSize = 12, Opacity = 0.45, TextWrapping = TextWrapping.Wrap });
-            grid.Children.Add(new Border { Background = (Brush)Application.Current.Resources["PanelBrush"], CornerRadius = new CornerRadius(12), Margin = new Thickness(0, 0, 10, 10), Child = card });
+            grid.Children.Add(new Border { Background = Theme.Brush("PanelBrush"), CornerRadius = new CornerRadius(12), Margin = new Thickness(0, 0, 10, 10), Child = card });
         }
         var limits = new StackPanel { Spacing = 10, Padding = new Thickness(14) };
         foreach (var limit in new[]
@@ -312,7 +333,7 @@ internal sealed class SettingsPage : UserControl
         var page = new StackPanel { Spacing = 12 };
         page.Children.Add(grid);
         page.Children.Add(GroupLabel("What Stillroom can't protect against"));
-        page.Children.Add(new Border { Background = (Brush)Application.Current.Resources["PanelBrush"], CornerRadius = new CornerRadius(12), Child = limits });
+        page.Children.Add(new Border { Background = Theme.Brush("PanelBrush"), CornerRadius = new CornerRadius(12), Child = limits });
         return page;
     }
 
@@ -335,6 +356,8 @@ internal sealed class SettingsPage : UserControl
             Row("Back up", "One file holding the whole vault, still encrypted. Keep it on a disk you plug in, not in the cloud.", Button("Back Up…", BackUp)),
             Row("Restore", "Put the vault back from a backup file. The vault here now is kept aside, never deleted, until you delete the vault.", Button("Restore…", Restore)),
             Row("Export everything", "Every file, note and secret back out as ordinary files in folders, with their own dates. For leaving Stillroom, or a copy anything can read.", Button("Export…", ExportAll))));
+        page.Children.Add(Section("Updates",
+            Row("Check for updates", Updates.Detail(), Button("Check…", () => { Updates.Check(); return Task.CompletedTask; }))));
         var delete = new Button
         {
             Content = "Delete Vault…",
@@ -414,6 +437,80 @@ internal sealed class SettingsPage : UserControl
         state.Lock("vault deleted");
     }
 
+    // MARK: Licence
+
+    /// <summary>Kept outside both vaults, so this reads the same in either; only the open vault's own count differs.</summary>
+    private UIElement LicenceTab()
+    {
+        if (state.Store.Licence is { } licence)
+        {
+            var people = licence.Seats > 1 ? $", for {licence.Seats} people" : "";
+            return Section("Licence",
+                Row(licence.EditionName, $"Licensed to {licence.Name}{people}. No limit on items, and it never expires.",
+                    Button("Remove…", RemoveLicence, quiet: true, name: "Remove the licence")));
+        }
+        var count = contents.GetProperty("files").GetArrayLength();
+        var key = new TextBox { PlaceholderText = "Paste your licence key", Text = licenceKey, MinWidth = 320 };
+        AutomationProperties.SetName(key, "Licence key");
+        var add = Button("Add Licence", () => AddLicence());
+        add.IsEnabled = key.Text.Trim().Length > 0;
+        key.TextChanged += (_, _) =>
+        {
+            licenceKey = key.Text;
+            add.IsEnabled = key.Text.Trim().Length > 0;
+        };
+        key.KeyDown += async (_, e) =>
+        {
+            if (e.Key != Windows.System.VirtualKey.Enter || key.Text.Trim().Length == 0) return;
+            e.Handled = true;
+            await AddLicence();
+        };
+        var entry = new Grid { ColumnSpacing = 8 };
+        entry.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        entry.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        entry.Children.Add(key);
+        Grid.SetColumn(add, 1);
+        entry.Children.Add(add);
+        var pasting = new StackPanel { Spacing = 6, Padding = new Thickness(14, 12, 14, 12) };
+        pasting.Children.Add(entry);
+        if (licenceProblem is { } problemText)
+            pasting.Children.Add(new TextBlock { Text = problemText, FontSize = 12, TextWrapping = TextWrapping.Wrap, Foreground = Theme.Brush("ProblemBrush") });
+        return Section("Licence",
+            Row("Free", $"This vault holds {count} of {FreeItems} items. Every feature is included; a licence key lifts the limit, and it never expires. Opening, exporting and backing up never stop, whatever the count.", null),
+            pasting);
+    }
+
+    /// <summary>The free tier's limit (the engine's `licence::FREE_ITEMS`), for the words; the engine enforces it.</summary>
+    private const int FreeItems = 25;
+
+    private async Task AddLicence()
+    {
+        if (licenceKey.Trim().Length == 0 || busy) return;
+        Licence added;
+        try { added = state.Store.AddLicence(licenceKey); }
+        catch (StillroomException failure)
+        {
+            licenceProblem = failure.Message;
+            Draw();
+            return;
+        }
+        (licenceKey, licenceProblem) = ("", null);
+        Draw();
+        changed();
+        await WelcomeIn.ShowAsync(XamlRoot, added);
+    }
+
+    private async Task RemoveLicence()
+    {
+        if (await Ask.Choose(XamlRoot, "Remove the licence?",
+                $"Stillroom goes back to the free tier. Nothing in the vault is touched, but past {FreeItems} items nothing more can be added. Paste the key again any time.",
+                "Remove Licence", destructive: true) != ContentDialogResult.Primary) return;
+        try { state.Store.RemoveLicence(); }
+        catch (StillroomException failure) { Say(failure.Message, InfoBarSeverity.Error); return; }
+        Draw();
+        changed();
+    }
+
     // MARK: Pieces
 
     /// <summary>Runs something on the open vault, one at a time; a refusal is said at the top. Redraws after.</summary>
@@ -454,7 +551,7 @@ internal sealed class SettingsPage : UserControl
         FontSize = 10.5,
         FontWeight = FontWeights.SemiBold,
         CharacterSpacing = 80,
-        Foreground = (Brush)Application.Current.Resources["QuietBrush"],
+        Foreground = Theme.Brush("QuietBrush"),
     };
 
     private static TextBlock GroupLabel(string text) => new()
@@ -462,13 +559,13 @@ internal sealed class SettingsPage : UserControl
         Text = text,
         FontSize = 12,
         FontWeight = FontWeights.SemiBold,
-        Foreground = (Brush)Application.Current.Resources["QuietBrush"],
+        Foreground = Theme.Brush("QuietBrush"),
         Margin = new Thickness(4, 0, 0, 0),
     };
 
     private static Border Panel(UIElement child) => new()
     {
-        Background = (Brush)Application.Current.Resources["PanelBrush"],
+        Background = Theme.Brush("PanelBrush"),
         CornerRadius = new CornerRadius(12),
         Child = child,
     };
@@ -478,7 +575,7 @@ internal sealed class SettingsPage : UserControl
         var list = new StackPanel();
         foreach (var row in rows)
         {
-            if (list.Children.Count > 0) list.Children.Add(new Border { Height = 1, Margin = new Thickness(14, 0, 0, 0), Background = new SolidColorBrush(Windows.UI.Color.FromArgb(0x0D, 0xFF, 0xFF, 0xFF)) });
+            if (list.Children.Count > 0) list.Children.Add(new Border { Height = 1, Margin = new Thickness(14, 0, 0, 0), Background = Theme.Brush("HairlineBrush") });
             list.Children.Add(row);
         }
         var section = new StackPanel { Spacing = 6 };

@@ -77,7 +77,7 @@ internal sealed class WelcomeTour : UserControl
         title.Text = current.Title;
         text.Text = current.Text;
         // The ring fills as the pages go.
-        ring.Stroke = (Brush)Application.Current.Resources["VaultBrush"];
+        ring.Stroke = Theme.Brush("VaultBrush");
         ring.Opacity = 0.3 + 0.7 * (page + 1) / pages.Length;
         dots.Children.Clear();
         for (var i = 0; i < pages.Length; i++)
@@ -87,7 +87,7 @@ internal sealed class WelcomeTour : UserControl
                 Width = i == page ? 16 : 6,
                 Height = 6,
                 CornerRadius = new CornerRadius(3),
-                Background = i == page ? (Brush)Application.Current.Resources["VaultBrush"] : new SolidColorBrush(Windows.UI.Color.FromArgb(0x26, 0xFF, 0xFF, 0xFF)),
+                Background = i == page ? Theme.Brush("VaultBrush") : Theme.Brush("DotBrush"),
             });
         }
         AutomationProperties.SetName(dots, $"Page {page + 1} of {pages.Length}");

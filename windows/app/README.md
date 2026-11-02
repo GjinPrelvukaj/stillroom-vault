@@ -1,6 +1,6 @@
 # Stillroom for Windows
 
-The app: WinUI 3 (.NET 8, Windows App SDK 1.8, unpackaged and self-contained) on the engine in `../engine`, through its .NET bindings. Windows 11 only. The plan behind it is in [`../PORT.md`](../PORT.md).
+The app: WinUI 3 (.NET 8, Windows App SDK 1.8, unpackaged, carrying its own .NET and Windows App SDK) on the engine in `../engine`, through its .NET bindings. Windows 11 only. The plan behind it is in [`../PORT.md`](../PORT.md).
 
 ## Building and running
 
@@ -11,7 +11,9 @@ cd ../engine && cargo build
 cd ../app/Stillroom && dotnet run
 ```
 
-A development build opens the folder in `STILLROOM_STORE_DIR` instead of the real vault (`%APPDATA%\Stillroom\Store`), so trying it never touches one. Release builds ignore it.
+A development build opens the folder in `STILLROOM_STORE_DIR` instead of the real vault (`%APPDATA%\Stillroom\Store`), so trying it never touches one (nor the licence beside it). `STILLROOM_LICENCE_SIGNER` (a public key, base64) makes it trust licences from a test key pair instead of the real one: the website's test pair is in `website/server/fixtures/test-licence.json`. Release builds ignore both. Preferences (`%APPDATA%\Stillroom\settings.json`) aren't redirected.
+
+A build as it ships: `../make-app.ps1` (release, self-contained, into `../build/Stillroom`), which runs the offline check (`../tools/CheckOffline`) and deletes a build that fails it, then signs if given a certificate (`../sign.ps1`). The build leaves out WebView2, .NET's `msquic.dll` and `createdump.exe`, and the Windows App SDK's AI and Widgets (`Stillroom.csproj`); `../SECURITY.md` rule 5 says why.
 
 `make-icon.ps1` draws `Stillroom/Assets/Stillroom.ico` from the Mac's `macos/Resources/AppIcon.png`; run it again when that changes.
 
@@ -25,8 +27,19 @@ A development build opens the folder in `STILLROOM_STORE_DIR` instead of the rea
 | `LockView.xaml(.cs)` | `LockView`: making the vault, the password, the recovery key, the emergency kit, Windows Hello, the wait after wrong tries, restoring a backup |
 | `VaultView.xaml(.cs)` | `VaultView`: the sidebar (library, kinds, tags), All Files by folder with its breadcrumb, search by name, folder, tag and contents, adding by picker or drop and the originals question after, each item's and folder's menu, new notes and secrets, importing logins, Save a Copy, and the new password a recovery asks for |
 | `Editors.cs` | `NoteEditor` and `SecretEditor`: saved a moment after typing stops, on leaving, and just before the vault locks; concealed fields, generated passwords, two-factor codes |
-| `Preview.cs` | `PreviewCard` (pictures and text from memory; the other viewers are Phase 5) and `VersionsSheet` |
-| `SettingsPage.cs` | `SettingsPane` and `SecurityFacts`: Access (password, Windows Hello, Lock to this PC, recovery key, emergency kit, decoy), Protection (auto-lock, tray, capture, keeping other programs out, the intruder photo), Security (the facts, and what Stillroom can't protect against), Data (check, where it lives, back up, restore, export everything, delete) |
+| `Preview.cs` | `PreviewCard` (pictures, PDFs, email and text from memory, audio and video from the vault, other kinds through `QuickLook`) and `VersionsSheet` |
+| `MailViewer.cs` | `EmailView` and `MailPage`: who, when, the subject and attachments, then the message as the engine's blocks (`mail_page.rs`) drawn with Windows' own text controls. No web view, so nothing in a message can load |
+| `QuickLook.cs` | `QuickLookView`: Windows' font and 3MF previewers, drawing a copy in `%TEMP%\Stillroom Look` into a small window of Stillroom's kept over the card, in Stillroom's colours |
+| `FontCard.cs` | Quick Look's font preview: the alphabet, digits and a sample at growing sizes in the font itself, each line shrinking to fit |
+| `Platform/Recognition.cs` | `SearchIndex.recognized` and PDFKit's text: Windows' own text recognition for pictures, and for PDF pages drawn in memory (the first 50), with the vault free |
+| `Platform/SelfCheck.cs` | `SelfCheck`: whether this copy is still signed by Stillroom's maker; the lock screen warns if not |
+| `ShowAlone.cs` | Development builds only: one file in its viewer with no vault (`STILLROOM_SHOW_FILE`: emails, PDFs, pictures, audio and video, fonts, the fallback), or its words for search (`STILLROOM_READ_WORDS`), for `tests/lockdown.ps1` |
+| `MediaViewer.cs`, `Platform/VaultStream.cs` | `VaultPlayer` and `VaultStreamLoader`: Windows' media player reading the sealed chunks as it asks, with Stillroom's own controls |
+| `PdfViewer.cs` | `PDFPreview`: Windows' own PDF renderer, pages drawn as they come near the view, zoom by buttons, keys, Ctrl and the wheel, or pinching |
+| `SettingsPage.cs` | `SettingsPane` and `SecurityFacts`: Access (password, Windows Hello, Lock to this PC, recovery key, emergency kit, decoy), Protection (auto-lock, tray, appearance, capture, keeping other programs out, the intruder photo), Security (the facts, and what Stillroom can't protect against), Data (check, where it lives, updates, back up, restore, export everything, delete), Licence (free or licensed, pasting a key) |
+| `WelcomeIn.cs` | `WelcomeIn`: a licence that checks out, welcomed by name |
+| `Theme.cs` | `Appearance` and `Color.ink`/`Color.ground`: light, dark or as Windows is set, and App.xaml's theme brushes for what's drawn in code |
+| `Platform/Updates.cs` | `Updates`: Check for Updates opens the release notes in the browser; an old copy says so |
 | `IntruderPage.cs` | `IntruderView`: each wrong try, when, and its photo (mirrored, as a mirror shows a face); delete one or clear all |
 | `KeyDialogs.cs` | `KitSheet` and `CheckSheet` |
 | `RecoveryKeyDialog.cs` | `RecoveryKeySheet`: shown once, then two groups typed back on the secure desktop |
@@ -59,6 +72,12 @@ A development build opens the folder in `STILLROOM_STORE_DIR` instead of the rea
 - **"Move to Stillroom" is in Explorer's Send to menu**, when turned on in Settings › Data (off at first: it changes your Explorer menu). The originals go to the Recycle Bin when BitLocker is off, as the Mac's go to the Trash when FileVault is.
 - **No activity log yet**, so Settings has no Troubleshooting section.
 - **No QR codes for two-factor yet**: Windows has nothing built in to read one, so the setup key is typed or pasted.
+- **Email is drawn by Stillroom, not a web view:** Windows has none without Chromium's networking. The message keeps its words, structure, emphasis and its own pictures, in Stillroom's colours rather than the sender's, and its layout is simpler (table cells come one under another). Clicking a link shows where it goes, with Copy Address; the Mac's links just don't open.
+- **The fallback preview covers fonts and 3MF models only** (TrueType and OpenType in Stillroom's own font card, bitmap fonts and models through Windows' previewers). The Mac's Quick Look shows Word, Excel and the rest; Windows' Office previewers reach the network for a document's linked pictures (Word's did, in `tests/lockdown.ps1`), so they aren't used. Other kinds offer Save a Copy and Edit in Place.
+- **Search reads the first 50 pages of a PDF,** by drawing each page and reading it as a picture (Windows can't take a PDF's text out). The Mac reads a PDF's whole text, but not a scanned one's; Windows finds the words in both. Pictures and PDFs are only read when a text recognition language is installed (Settings › Time & language › Language).
+- **The player has Stillroom's own controls,** not WinUI's: theirs can't play once the player is kept out of Windows' media overlay, and they offer Cast to Device.
+- **The licence welcome is a dialog,** without the Mac's filling ring and confetti.
+- **The tamper warning waits on a certificate:** it's built (`Platform/SelfCheck.cs`, the engine's `selfcheck.rs`), but there's no publisher to check against until Stillroom has its own code-signing certificate, so nothing warns yet. `STILLROOM_SIGNER_TEST` tries it in a development build (`../SECURITY.md` rule 12).
 - **Menus and flyouts** are excluded from capture as Windows reports them made, which can come a frame after they first draw. Nothing secret is shown in one yet; keep it that way, or keep such content inside the window.
 
 ## Tried so far
@@ -79,5 +98,9 @@ On Windows 11 with a TPM and Windows Hello, driving the app from outside: its bu
 
 - The welcome tour; Edit in Place (the warning with its BitLocker line and "Don't ask again", a copy in a folder only this account can read and left out of Windows Search, marked as downloaded, a save sealed back in, Done Editing, locking and quitting all wiping it after a last save, a crash's leftover wiped at start); dragging a file onto a folder with the mouse; "Move to Stillroom" sent while open and while locked (waiting on the lock screen); importing logins (twice: nothing comes in twice); the print dialog opening, cancelling cleanly, and the hot key locking while it's open.
 - Development builds take `STILLROOM_DESK_NO_OPEN`, so tests put working copies out without opening an app on the screen (the Mac's tests swap `EditDesk.opener`).
+
+- `tests/lockdown.ps1` (run from here, a development build, no Stillroom running): a hostile email, a TrueType font, a bitmap font and a Word document that reaches for the network, each shown in its real viewer while a server on this PC counts connections on 127.0.0.1 and ::1. None for the email and the fonts; the Word document isn't previewed. Checked to fail by planting a picture loaded from the server.
+- Words for search, by `STILLROOM_READ_WORDS`: a photo of a receipt and a two-page PDF, read word for word, page two included.
+- In the app by Lis, on a throwaway vault: an HTML email with an inline logo, lists, a quote and an attachment (the hidden preheader and the remote tracker not shown); a TrueType font in the font card, fitting as the window is resized; a Word document saying it has no preview; search finding words in a photo and on page two of a PDF.
 
 Not yet tried: a page actually printed (this PC has no printer), restoring a backup from the lock screen, versions (kept only for changes a while apart, as on the Mac), dropping files from Explorer onto the window, and real sleep and a real Win+L.

@@ -46,7 +46,7 @@ const faq: QA[] = [
   {
     id: 'one-time',
     q: 'Is it one payment, with nothing to renew?',
-    a: 'Yes. $39 once covers every 1.x update, on all of your own Macs. If there’s a 2.0, upgrading will cost $39 for 1.x owners, and 1.x keeps working forever. There is no subscription and nothing renews.',
+    a: 'Yes. $39 once covers every 1.x update, on all of your own Macs. If there’s a 2.0, upgrading will cost $19 for 1.x owners, and 1.x keeps working forever. There is no subscription and nothing renews.',
   },
   {
     id: 'same-protection',
@@ -56,7 +56,7 @@ const faq: QA[] = [
   {
     id: 'limit',
     q: 'What happens when I reach 25 items?',
-    a: 'Only adding stops. Opening, editing, exporting and backing up keep working, licensed or not. Stillroom never holds your files hostage.',
+    a: 'Each file, note or secret is one item; folders and older versions don’t count. At 25, only adding stops. Opening, editing, exporting and backing up keep working, licensed or not. Stillroom never holds your files hostage.',
   },
   {
     id: 'checkout',
@@ -81,12 +81,13 @@ const faq: QA[] = [
   title="Pricing: Free, or $39 Once for Mac"
   h1="Stillroom Vault pricing"
   eyebrow="Pricing"
-  description="Stillroom Vault is free for 25 items with every feature, $39 one-time for one person on all their Macs, or $129 for a family of five. All 1.x updates included."
+  description="Stillroom Vault is free for 25 items with every feature, $39 one-time for one person on all their Macs, or $79 for a family of five. All 1.x updates included."
   lead="Free for 25 items. $39 once for everything. Tiers differ only in how much you keep and for how many people, never in how safe it is."
   jsonLd={[softwareJsonLd(), faqJsonLd(faq)]}
 >
   <ul class="promises stagger" aria-label="What every purchase includes">
     <li><Icon name="check" size={18} /> One-time payment</li>
+    <li><Icon name="check" size={18} /> No account, ever</li>
     <li><Icon name="check" size={18} /> Every 1.x update</li>
     <li><Icon name="check" size={18} /> All of your own Macs</li>
     <li><Icon name="check" size={18} /> Same protection in every tier</li>
@@ -94,6 +95,11 @@ const faq: QA[] = [
   </ul>
 
   <PricingCards checkout headingLevel="h2" />
+  <p class="buy-note note">
+    Your money back within 14 days, for any reason (<a href="/refunds/">refund policy</a>). Paddle.com is our reseller, so
+    the charge on your card statement comes from Paddle, not Stillroom. You never make an account: your licence key arrives
+    by email.
+  </p>
   {
     !configured && (
       <p id="checkout-soon" class="soon note">
@@ -112,7 +118,7 @@ const faq: QA[] = [
           <tr>
             <th scope="col"><span class="visually-hidden">Feature</span></th>
             <th scope="col">Free</th>
-            <th scope="col" class="lit">Stillroom Vault</th>
+            <th scope="col" class="lit">Personal</th>
             <th scope="col">Family</th>
             <th scope="col">Teams</th>
           </tr>
@@ -145,7 +151,7 @@ const faq: QA[] = [
             <th scope="row">Price</th>
             <td>$0</td>
             <td class="lit">$39 once</td>
-            <td>$129 once</td>
+            <td>$79 once</td>
             <td>Upon request</td>
           </tr>
         </tbody>
@@ -178,8 +184,12 @@ const faq: QA[] = [
   .promises :global(svg) {
     color: var(--vault);
   }
-  .soon {
+  .soon,
+  .buy-note {
     margin-top: 24px;
+  }
+  .buy-note a {
+    color: var(--vault);
   }
   .compare,
   .pfaq {

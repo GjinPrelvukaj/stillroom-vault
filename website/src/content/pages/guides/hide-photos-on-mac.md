@@ -1,13 +1,15 @@
 ---
-title: 'How to Hide Photos on a Mac (and Lock Them)'
-description: 'Hide photos on a Mac with the Photos Hidden album and its lock, what that lock really keeps out, and how to keep private photos encrypted instead.'
+title: 'How to Hide Photos on a Mac, or Lock Them in a Vault'
+description: 'Hide photos on a Mac with the Photos Hidden album, what its lock keeps out, and how to keep private photos in an encrypted photo vault instead.'
 h1: 'How to hide photos on a Mac'
 lead: 'Photos has a Hidden album that locks with Touch ID or your password. It is quick and free. Here is how to use it, what it keeps out, and when to put photos in an encrypted vault instead.'
 name: 'Hide photos on a Mac'
-updated: '27 October 2026'
+updated: '30 October 2026'
 order: 30
-related: ['/guides/secure-a-shared-mac/', '/features/view-without-decrypting/', '/features/hidden-from-capture/', '/guides/encrypt-files-on-mac/']
+related: ['/guides/hide-files-on-mac/', '/guides/secure-a-shared-mac/', '/features/view-without-decrypting/', '/features/hidden-from-capture/', '/guides/encrypt-files-on-mac/']
 faq:
+  - q: 'Is there a private photo vault for Mac?'
+    a: 'Yes. Photos'' own Hidden album locks with Touch ID or your login password. For photos behind a separate password and encrypted on disk, use an encrypted disk image or a vault app such as Stillroom Vault, which seals each photo and never goes online.'
   - q: 'Where is the Hidden album on a Mac?'
     a: 'In Photos, click Library in the sidebar and choose View > Show Hidden Photo Album. Hidden then appears in the sidebar under Utilities. By default the album is hidden and locked.'
   - q: 'How do I hide other files on a Mac, not just photos?'
@@ -61,9 +63,13 @@ It is not a separate lock:
 
 For most people, the Hidden album plus a strong login password, FileVault and a lock screen that comes on quickly is enough. If you share the Mac, give each person their [own user account](/guides/secure-a-shared-mac/), so each person has their own files and settings.
 
-## Keep private photos in an encrypted vault instead
+## A private photo vault for Mac
 
-If you want photos behind a password nobody else on the Mac knows, or kept out of iCloud entirely, you need them outside Photos and encrypted. A free way is an encrypted disk image (see [how to encrypt files on a Mac](/guides/encrypt-files-on-mac/)). It works, but while it is open the photos are ordinary files, and the image stays open until you eject it.
+If you want photos behind a password nobody else on the Mac knows, or kept out of iCloud entirely, you need them outside Photos and encrypted: a photo vault.
+
+Many "photo vault" apps are made for the iPhone first. Before trusting one with your pictures on a Mac, check three things: whether it really encrypts the photos or only hides them behind a PIN, whether it uploads them to its own cloud, and what happens if you forget the PIN.
+
+A free way is an encrypted disk image (see [how to encrypt files on a Mac](/guides/encrypt-files-on-mac/)). It works, but while it is open the photos are ordinary files, and the image stays open until you eject it.
 
 [Stillroom Vault](/features/) is made for private files you still want to look at.
 

@@ -36,11 +36,12 @@ use zeroize::{Zeroize, Zeroizing};
 
 use crate::blob::ChunkedReader;
 use crate::kit::KitProblem;
+use crate::licence::Problem;
 use crate::list::{Entry, Item};
 use crate::originals::Originals;
 use crate::session::Contents;
 use crate::vault::{Store, Vault};
-use crate::{backup, email, export, import, intruder, kinds, otp, secure, strength, Error, VaultError};
+use crate::{backup, email, export, import, intruder, kinds, mail_page, otp, search, secure, strength, Error, VaultError};
 
 /// The interface's version: raised when a function changes, so an app built against another can tell.
 pub const STILLROOM_ABI_VERSION: u32 = 1;
@@ -74,8 +75,14 @@ pub const STILLROOM_NOT_A_BACKUP: StillroomStatus = 35;
 pub const STILLROOM_NOT_AN_EXPORT: StillroomStatus = 36;
 pub const STILLROOM_LOCKED_ELSEWHERE: StillroomStatus = 37;
 pub const STILLROOM_NO_TPM: StillroomStatus = 38;
+/// The free tier's limit: nothing more goes in without a licence. The message says how many didn't.
+pub const STILLROOM_FULL: StillroomStatus = 39;
 pub const STILLROOM_INVALID_ARGUMENT: StillroomStatus = 40;
 pub const STILLROOM_PANICKED: StillroomStatus = 41;
+pub const STILLROOM_LICENCE_MALFORMED: StillroomStatus = 50;
+pub const STILLROOM_LICENCE_NOT_SIGNED: StillroomStatus = 51;
+pub const STILLROOM_LICENCE_NEWER: StillroomStatus = 52;
+pub const STILLROOM_LICENCE_BLOCKED: StillroomStatus = 53;
 
 /// What failed, with its code and words.
 struct Failure {
@@ -110,6 +117,11 @@ impl From<Error> for Failure {
             Error::NotABackup => STILLROOM_NOT_A_BACKUP,
             Error::LockedElsewhere => STILLROOM_LOCKED_ELSEWHERE,
             Error::NoTpm => STILLROOM_NO_TPM,
+            Error::Full(_) => STILLROOM_FULL,
+            Error::Licence(Problem::Malformed) => STILLROOM_LICENCE_MALFORMED,
+            Error::Licence(Problem::NotSigned) => STILLROOM_LICENCE_NOT_SIGNED,
+            Error::Licence(Problem::NewerVersion) => STILLROOM_LICENCE_NEWER,
+            Error::Licence(Problem::Blocked) => STILLROOM_LICENCE_BLOCKED,
         };
         Failure { code, message: error.to_string() }
     }
@@ -304,6 +316,17 @@ pub unsafe extern "C" fn stillroom_harden_process(block_extension_dlls: bool, ha
 #[no_mangle]
 pub unsafe extern "C" fn stillroom_protect_folder(folder: *const c_char) -> StillroomStatus {
     call(|| Ok(crate::platform::protect_folder(&path(folder, "The folder")?)?))
+}
+
+/// Whether `file` (UTF-8) is still signed by Stillroom's maker (`selfcheck.rs`), checked offline: 0 signed by us and
+/// unchanged, 1 not signed, 2 changed since it was signed, 3 signed by someone else or a certificate this PC doesn't
+/// trust, 4 nothing to check against yet (no certificate).
+#[no_mangle]
+pub unsafe extern "C" fn stillroom_check_signature(file: *const c_char, result: *mut u32) -> StillroomStatus {
+    call(|| {
+        let file = path(file, "The file")?;
+        out(result, crate::selfcheck::check(&file) as u32)
+    })
 }
 
 /// Whether this PC has a TPM the vault can be locked to.
@@ -536,6 +559,68 @@ pub unsafe extern "C" fn stillroom_store_clear_wrong_tries(handle: *const Stillr
     })
 }
 
+// MARK: The licence
+
+/// The licence kept beside the store, as JSON `{"id", "edition", "editionName", "seats", "name", "email", "issued"}`,
+/// or null when there's none (or it no longer checks out: `stillroom_store_licence_problem` says why). The same whichever
+/// vault is open, or none.
+#[no_mangle]
+pub unsafe extern "C" fn stillroom_store_licence(handle: *const StillroomStore, result: *mut *mut c_char) -> StillroomStatus {
+    call(|| match store(handle)?.licence() {
+        Some(licence) => give_licence(result, &licence),
+        None => out(result, std::ptr::null_mut()),
+    })
+}
+
+fn give_licence(slot: *mut *mut c_char, licence: &crate::licence::Licence) -> Result<(), Failure> {
+    let mut value = serde_json::to_value(licence).map_err(|e| invalid(e.to_string()))?;
+    value["editionName"] = json!(licence.edition.name());
+    give_json(slot, &value)
+}
+
+/// Why a saved licence no longer checks out (a later release turned it off), in words, or null.
+#[no_mangle]
+pub unsafe extern "C" fn stillroom_store_licence_problem(handle: *const StillroomStore, result: *mut *mut c_char) -> StillroomStatus {
+    call(|| match store(handle)?.licence_problem() {
+        Some(problem) => give_string(result, problem.to_string()),
+        None => out(result, std::ptr::null_mut()),
+    })
+}
+
+/// Checks a pasted key (UTF-8, as pasted: spaces and line breaks are taken out) and keeps it beside the store; the
+/// limit lifts at once in either vault. Gives the licence as `stillroom_store_licence` does. `STILLROOM_LICENCE_*`
+/// when it doesn't check out.
+#[no_mangle]
+pub unsafe extern "C" fn stillroom_store_add_licence(handle: *const StillroomStore, key: *const u8, key_length: usize, result: *mut *mut c_char) -> StillroomStatus {
+    call(|| {
+        let licence = store(handle)?.add_licence(secret(key, key_length, "The licence key")?)?;
+        give_licence(result, &licence)
+    })
+}
+
+/// Takes the licence away. Nothing in the vault is touched.
+#[no_mangle]
+pub unsafe extern "C" fn stillroom_store_remove_licence(handle: *const StillroomStore) -> StillroomStatus {
+    call(|| Ok(store(handle)?.remove_licence()?))
+}
+
+/// For tests only: licences signed by this Ed25519 public key (32 bytes) are trusted in this store instead of the
+/// built-in one. Vaults opened from it afterwards follow.
+#[doc(hidden)]
+#[no_mangle]
+pub unsafe extern "C" fn stillroom_store_trust_licences_for_tests(handle: *mut StillroomStore, public_key: *const u8, public_key_length: usize) -> StillroomStatus {
+    call(|| {
+        let key: [u8; 32] = bytes(public_key, public_key_length, "The public key")?.try_into().map_err(|_| invalid("The public key is 32 bytes."))?;
+        if handle.is_null() {
+            return Err(invalid("The store is missing."));
+        }
+        // SAFETY: as in `store`, and `&mut` because the app holds the only handle.
+        let store = unsafe { &mut (*handle).0 };
+        *store = store.clone().trusting_licences_from(key);
+        Ok(())
+    })
+}
+
 /// A backup of the vault while it's locked, into one file at `to` (UTF-8 path).
 #[no_mangle]
 pub unsafe extern "C" fn stillroom_store_backup(handle: *const StillroomStore, to: *const c_char) -> StillroomStatus {
@@ -602,7 +687,8 @@ pub unsafe extern "C" fn stillroom_vault_lock(handle: *mut StillroomVault) {
 }
 
 /// Everything the window shows, as JSON: `{"files": [item…], "folders": […], "tags": […], "showInCapture",
-/// "hasKit", "kitMade", "mustSetPassword", "intruderWasReset", "intruders", "lockedToAPc", "helloIsMine"}`. An item is as the list keeps it
+/// "hasKit", "kitMade", "mustSetPassword", "intruderWasReset", "intruders", "lockedToAPc", "helloIsMine", "room"}`.
+/// `room` is how many more items may go in without a licence, or null when there's no limit (licensed). An item is as the list keeps it
 /// (`id`, `name`, `uti`, `size`, `addedAt`, `folder`, `modifiedAt`, `tags`, `entry`, `versions`, `chunked`, `created`,
 /// `contentModified`…), never with a key. Dates are seconds since 2001.
 #[no_mangle]
@@ -621,13 +707,15 @@ pub unsafe extern "C" fn stillroom_vault_state(handle: *const StillroomVault, re
             "intruders": vault.intruder_entries().len(),
             "lockedToAPc": vault.is_locked_to_a_pc(),
             "helloIsMine": vault.hello_is_mine(),
+            "room": Some(vault.room()).filter(|room| *room != usize::MAX),
         }))
     })
 }
 
 /// Adds files and folders (a JSON array of paths) into `folder` (or the top, when null). Gives JSON:
 /// `{"items": [id…], "originals": {"files": […], "folders": […]}, "unchecked": [path…], "failed": [{"path",
-/// "code", "message"}…], "skipped": n}`. Only `originals` may be deleted (`stillroom_delete_originals`).
+/// "code", "message"}…], "skipped": n, "refused": n}`. Only `originals` may be deleted (`stillroom_delete_originals`).
+/// `refused` files stayed where they are at the free tier's limit; `refusedMessage` says so in words (null when none).
 #[no_mangle]
 pub unsafe extern "C" fn stillroom_vault_add(handle: *const StillroomVault, paths: *const c_char, folder: *const c_char, result: *mut *mut c_char) -> StillroomStatus {
     call(|| {
@@ -648,6 +736,8 @@ pub unsafe extern "C" fn stillroom_vault_add(handle: *const StillroomVault, path
             "unchecked": added.unchecked,
             "failed": failed,
             "skipped": added.skipped,
+            "refused": added.refused,
+            "refusedMessage": (added.refused > 0).then(|| crate::licence::full_message(added.refused)),
         }))
     })
 }
@@ -1032,6 +1122,41 @@ pub unsafe extern "C" fn stillroom_vault_refresh_search(
     })
 }
 
+/// The PDFs and pictures whose words aren't known or have changed: JSON `[{"id", "name", "uti", "size",
+/// "changed"}…]`. The app reads each (`stillroom_vault_read`) and its words with the vault free, then gives them back
+/// with `stillroom_vault_set_words`; `stillroom_vault_refresh_search` without `read_text` leaves them for this.
+#[no_mangle]
+pub unsafe extern "C" fn stillroom_vault_search_wanting(handle: *const StillroomVault, result: *mut *mut c_char) -> StillroomStatus {
+    call(|| {
+        let vault = vault(handle)?;
+        let wanted: Vec<Value> = vault
+            .search_wanting()
+            .into_iter()
+            .map(|item| json!({"id": item.id.to_string().to_uppercase(), "name": item.name, "uti": item.uti, "size": item.size, "changed": item.changed_at()}))
+            .collect();
+        give_json(result, &wanted)
+    })
+}
+
+/// Words the app read, recorded and sealed: JSON `[{"id", "changed", "size", "text"}…]`, with each item's `changed`
+/// and `size` as `stillroom_vault_search_wanting` gave them (an item changed since is read again later). An empty
+/// `text` records that there are none.
+#[no_mangle]
+pub unsafe extern "C" fn stillroom_vault_set_words(handle: *const StillroomVault, words: *const c_char) -> StillroomStatus {
+    call(|| {
+        #[derive(serde::Deserialize)]
+        struct Read {
+            id: Uuid,
+            changed: f64,
+            size: u64,
+            text: String,
+        }
+        let read: Vec<Read> = json_in(words, "The words")?;
+        let words = read.into_iter().map(|r| (r.id, search::Entry { changed: r.changed, size: r.size, text: r.text })).collect();
+        Ok(vault(handle)?.set_words(words)?)
+    })
+}
+
 /// Items whose name, tags or words hold `query`: a JSON array of ids.
 #[no_mangle]
 pub unsafe extern "C" fn stillroom_vault_search(handle: *const StillroomVault, query: *const c_char, result: *mut *mut c_char) -> StillroomStatus {
@@ -1049,14 +1174,17 @@ pub unsafe extern "C" fn stillroom_vault_snippet(handle: *const StillroomVault, 
 
 // MARK: Importing passwords
 
-/// Accounts from a password export (CSV bytes), each a Login secret in "Imported". Gives JSON `{"added", "skipped"}`.
+/// Accounts from a password export (CSV bytes), each a Login secret in "Imported". Gives JSON `{"added", "skipped",
+/// "left", "leftMessage"}`: `left` didn't go in at the free tier's limit (the export still holds them, so don't offer it
+/// for deletion), and `leftMessage` says so in words (null when none).
 #[no_mangle]
 pub unsafe extern "C" fn stillroom_vault_import_logins(handle: *const StillroomVault, csv: *const u8, csv_length: usize, result: *mut *mut c_char) -> StillroomStatus {
     call(|| {
         let logins = import::logins(bytes(csv, csv_length, "The export")?)
             .map_err(|e| Failure { code: STILLROOM_NOT_AN_EXPORT, message: e.to_string() })?;
-        let (added, skipped) = vault(handle)?.import_logins(&logins)?;
-        give_json(result, &json!({"added": added, "skipped": skipped}))
+        let (added, skipped, left) = vault(handle)?.import_logins(&logins)?;
+        let message = (left > 0).then(|| crate::licence::full_message(left));
+        give_json(result, &json!({"added": added, "skipped": skipped, "left": left, "leftMessage": message}))
     })
 }
 
@@ -1185,9 +1313,10 @@ pub unsafe extern "C" fn stillroom_can_edit(uti: *const c_char, name: *const c_c
     call(|| out(result, kinds::can_edit(text(uti, "The kind")?, text(name, "The name")?, is_file)))
 }
 
-/// An email (.eml or .emlx bytes) read into JSON: `{"from", "to", "cc", "subject", "date", "page", "text",
-/// "attachments": [{"name", "kind", "size"}…]}`. `page` is the HTML to show; nothing in it may be fetched. Gives null
-/// when the bytes aren't an email.
+/// An email (.eml or .emlx bytes) read into JSON: `{"from", "to", "cc", "subject", "date", "document", "text",
+/// "attachments": [{"name", "kind", "size"}…]}`. `document` is the message to draw (`mail_page::Document`): blocks of
+/// styled words and pictures from inside the email, with no address in it that could be loaded. Gives null when the
+/// bytes aren't an email.
 #[no_mangle]
 pub unsafe extern "C" fn stillroom_email_read(data: *const u8, length: usize, result: *mut *mut c_char) -> StillroomStatus {
     call(|| match email::parse(bytes(data, length, "The email")?) {
@@ -1196,7 +1325,7 @@ pub unsafe extern "C" fn stillroom_email_read(data: *const u8, length: usize, re
                 found.attachments.iter().map(|a| json!({"name": a.name, "kind": a.kind, "size": a.data.len()})).collect();
             give_json(result, &json!({
                 "from": found.from, "to": found.to, "cc": found.cc, "subject": found.subject, "date": found.date,
-                "page": found.page(), "text": found.text, "attachments": attachments,
+                "document": mail_page::document(&found), "text": found.text, "attachments": attachments,
             }))
         }
         None => out(result, std::ptr::null_mut()),

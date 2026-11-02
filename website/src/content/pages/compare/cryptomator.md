@@ -6,7 +6,7 @@ lead: 'Both encrypt your files on your own device. Cryptomator is built for the 
 name: 'Cryptomator'
 updated: '27 October 2026'
 order: 10
-related: ['/moving-from/cryptomator/', '/guides/encrypt-files-on-mac/', '/compare/proton-drive/', '/compare/veracrypt/']
+related: ['/moving-from/cryptomator/', '/guides/encrypt-files-on-mac/', '/compare/proton-drive/', '/compare/veracrypt/', '/compare/best-encryption-software-mac/']
 faq:
   - q: 'Is Cryptomator free on the Mac?'
     a: 'Yes. Cryptomator says all functional and encryption features are free on the desktop, on Windows, macOS and Linux. The mobile apps are free to read, and writing is a one-time purchase per platform.'
@@ -38,7 +38,7 @@ Stillroom Vault solves a narrower problem: a vault on one Mac, for files, notes,
 | Where data lives | In a folder you choose, usually one your cloud syncs | One folder on your Mac |
 | Encryption | AES with 256-bit keys for files and names; password stretched with scrypt | AES-256-GCM with a fresh key per item; password stretched with Argon2id (512 MB) |
 | Platforms | Windows, macOS, Linux, iOS, Android | Apple silicon Macs, macOS 26 or later |
-| Price | Free on desktop; mobile writing is a one-time purchase per platform; Hub for teams | Free for 25 items; $39 once; Family $129 for 5 people |
+| Price | Free on desktop; mobile writing is a one-time purchase per platform; Hub for teams | Free for 25 items; $39 once; Family $79 for 5 people |
 | Source | Open source | Source available (FSL); the reader script is MIT |
 | Cloud and sync | Made for it | None; it never goes online |
 | Scope | Files | Files, notes, passwords and two-factor codes |

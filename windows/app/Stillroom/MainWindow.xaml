@@ -8,14 +8,15 @@
         <DesktopAcrylicBackdrop />
     </Window.SystemBackdrop>
 
-    <!-- Black glass over the desktop, as the Mac's window; the lock screen or the vault on top. -->
-    <Grid Background="{StaticResource GlassBrush}">
+    <!-- Black glass over the desktop (paper in the light appearance), as the Mac's window; the lock screen or the vault
+         on top. -->
+    <Grid x:Name="Root" Background="{ThemeResource GlassBrush}">
         <Grid.RowDefinitions>
             <RowDefinition Height="40" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
         <Grid x:Name="TitleBar">
-            <TextBlock Text="Stillroom" Margin="16,0,0,0" VerticalAlignment="Center" FontSize="12" Foreground="{StaticResource QuietBrush}" />
+            <TextBlock Text="Stillroom" Margin="16,0,0,0" VerticalAlignment="Center" FontSize="12" Foreground="{ThemeResource QuietBrush}" />
         </Grid>
         <ContentControl x:Name="Page" Grid.Row="1" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" />
     </Grid>

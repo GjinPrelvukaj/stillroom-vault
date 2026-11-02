@@ -12,7 +12,7 @@ export const GET: APIRoute = () => {
 > ${site.tagline} Files, notes, passwords and two-factor codes, sealed with AES-256-GCM under keys only the owner holds, in one folder on their Mac. No server, no account, no sync. Made by ${site.owners.join(' and ')}; sold by ${site.seller} through Paddle.
 
 - Requires: ${download.requires}.
-- Price: Free for ${pricing.freeItems} items with every feature; Stillroom Vault $39 one-time (one person, all their Macs, all 1.x updates); Family $129 one-time (up to 5 people); Teams upon request (${email.hello}). Tiers never differ in protection.
+- Price: Free for ${pricing.freeItems} items with every feature; Stillroom Vault $39 one-time (one person, all their Macs, all 1.x updates); Family $79 one-time (up to 5 people); Teams upon request (${email.hello}). Tiers never differ in protection.
 - If the password, recovery key and emergency kit are all lost, nobody can open the vault, not even its maker.
 - The decoy is protection against thieves and abusers, not police: it doesn't fool someone with one password and a copy of the folder.
 - Argon2id makes each password guess slow (512 MB, 3 passes, 4 lanes); it doesn't make a weak password safe.

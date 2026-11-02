@@ -4,10 +4,12 @@ description: 'Apple Notes can lock a note with a password, free and synced throu
 h1: 'Stillroom Vault vs locked notes in Apple Notes'
 lead: 'Locked notes are free, encrypted and on every Apple device you own. They also have limits worth knowing before you trust them with documents.'
 name: 'Apple Notes locked notes'
-updated: '27 October 2026'
+updated: '30 October 2026'
 order: 40
 related: ['/moving-from/apple-passwords/', '/guides/keep-id-scans-safe/', '/guides/store-two-factor-backup-codes/', '/compare/encrypted-disk-image/']
 faq:
+  - q: 'Are Apple Notes encrypted?'
+    a: 'Yes, but who holds the key depends. Apple says ordinary notes in iCloud are encrypted in transit and on its servers with keys Apple holds, unless you turn on Advanced Data Protection, which makes them end-to-end encrypted. Locked notes are end-to-end encrypted either way.'
   - q: 'Are locked notes in Apple Notes encrypted?'
     a: 'Yes. Apple''s Platform Security guide says locked notes are end-to-end encrypted with a key derived from your passphrase, and the note and its attachments are encrypted with AES-GCM.'
   - q: 'Can I lock a note with a PDF in it?'
@@ -15,6 +17,8 @@ faq:
   - q: 'What if I forget my locked notes password?'
     a: 'Apple says that if you forget a custom password and can''t use Touch ID, you can''t view those notes, and Apple can''t restore access. Stillroom Vault is the same: nobody can recover a forgotten password, which is why it gives you a recovery key and an optional emergency kit.'
 sources:
+  - label: 'Apple: iCloud data security overview'
+    url: 'https://support.apple.com/en-us/102651'
   - label: 'Apple: Lock your notes on Mac'
     url: 'https://support.apple.com/guide/notes/not28c5f5468/mac'
   - label: 'Apple Platform Security: Secure features in the Notes app'
@@ -22,6 +26,16 @@ sources:
   - label: 'Apple: Passwords User Guide'
     url: 'https://support.apple.com/guide/passwords/welcome/mac'
 ---
+
+## Are Apple Notes encrypted?
+
+Every note is encrypted, but not every note is encrypted the same way. Apple's iCloud data security overview says:
+
+- **Ordinary notes in iCloud** are encrypted in transit and on Apple's servers, with keys Apple holds. That protects them from strangers, but Apple could decrypt them.
+- **With Advanced Data Protection turned on,** notes are end-to-end encrypted, with keys only on your trusted devices.
+- **Locked notes** are end-to-end encrypted with a key made from your Notes password, whether or not Advanced Data Protection is on.
+
+On the Mac itself, a note that isn't locked is readable by anyone using your logged-in account. So if a note matters, lock it, or keep it somewhere that is encrypted under its own password.
 
 ## What locked notes are, and who they suit
 
@@ -38,7 +52,7 @@ Locked notes suit you if you want a few private notes, such as a door code or a 
 | Where data lives | On your Mac, or in iCloud | One folder on your Mac |
 | Encryption | AES-GCM, key from your passphrase with PBKDF2 | AES-256-GCM, a fresh key per item; Argon2id (512 MB) for the password |
 | Platforms | Mac, iPhone, iPad, and the iCloud website | Apple silicon Macs, macOS 26 or later |
-| Price | Free, built in | Free for 25 items; $39 once; Family $129 for 5 people |
+| Price | Free, built in | Free for 25 items; $39 once; Family $79 for 5 people |
 | Source | Part of macOS and iOS | Source available (FSL); the reader script is MIT |
 | Cloud and sync | Through iCloud | None; it never goes online |
 | Scope | Notes, with images, scans and drawings | Files of any kind, notes, passwords and two-factor codes |

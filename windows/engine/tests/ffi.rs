@@ -270,6 +270,8 @@ fn the_helpers_that_need_no_vault() { unsafe {
     ok(stillroom_email_read(mail.as_ptr(), mail.len(), &mut read));
     let read = take_json(read);
     assert_eq!((read["subject"].as_str(), read["attachments"][0]["name"].as_str()), (Some("Hi"), Some("x.pdf")));
+    assert_eq!(read["document"]["blocks"][0]["runs"][0]["text"].as_str(), Some("Body"));
+    assert!(read.get("page").is_none(), "no HTML leaves the engine to be drawn");
     let mut attachment = StillroomBytes { data: null_mut(), length: 0 };
     ok(stillroom_email_attachment(mail.as_ptr(), mail.len(), 0, &mut attachment));
     assert_eq!(std::slice::from_raw_parts(attachment.data, attachment.length), b"%PDF");

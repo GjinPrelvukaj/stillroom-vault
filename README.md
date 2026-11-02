@@ -45,7 +45,7 @@ If you forget your password and lose your recovery key and kit, no one can open 
 | **Keys only you hold** | AES-256-GCM with a fresh key for every item; your password stretched with Argon2id (512 MB, 3 passes). |
 | **Ways back in** | A recovery key, a printed emergency kit (Shamir pieces), Touch ID, and an optional lock to this Mac. |
 | **Never locked in** | Export plain files any time. The format is public, and [`tools/stillroom-open.py`](tools/stillroom-open.py) opens a vault without the app. |
-| **Fair pricing** | Free for 25 items with every feature; $39 once for one person, $129 once for a family of five. |
+| **Fair pricing** | Free for 25 items with every feature; $39 once for one person, $79 once for a family of five. |
 
 Stillroom is made by Gjin Prelvukaj and Lis Shala. Questions: hello@stillroomvault.com. Security problems: report them [privately](https://github.com/GjinPrelvukaj/stillroom-vault/security/advisories/new) or to security@stillroomvault.com, never in a public issue.
 
@@ -154,7 +154,7 @@ Scripts/make-app.sh debug        # build/Stillroom.app, signed for development
 Scripts/make-dist.sh             # Developer ID signed, notarized and stapled app and zip
 ```
 
-Every app build runs [`macos/Scripts/check-offline.sh`](macos/Scripts/check-offline.sh), which fails it if the binary links networking frameworks or calls socket, DNS or URL-loading APIs.
+Every app build runs [`macos/Scripts/check-offline.sh`](macos/Scripts/check-offline.sh), which fails it if the binary links networking frameworks, calls socket, DNS or URL-loading APIs, or looks code up by name at run time (`dlopen`, `dlsym`, `NSClassFromString`), apart from the one OS-version lookup the compiler adds.
 
 > [!WARNING]
 > Never point a development build at a real vault. Tests redirect the store to a temporary folder. To try a build on screen, copy `build/Stillroom.app`, give the copy its own bundle id (and sign it again), and run it with `CFFIXED_USER_HOME=<scratch folder>`, so its vault, caches and logs land there.
@@ -209,7 +209,7 @@ docs/                security rules and the file format
 
 **1.0.0 is out** (28 October 2026): download it from [stillroomvault.com](https://www.stillroomvault.com/download/). Format 4 is the 1.0 format, and every later version must open a vault 1.0 wrote (`OneZeroFixtureTests`). An independent, named security review is next.
 
-- **1.0:** sold directly for $39 one-time (Family $129 for five people, Teams upon request) with an offline-signed license key, plus a free tier of 25 items that never blocks opening, exporting or backing up.
+- **1.0:** sold directly for $39 one-time (Family $79 for five people, Teams upon request) with an offline-signed license key, plus a free tier of 25 items that never blocks opening, exporting or backing up.
 - **1.x:** key rotation; a kit id in emergency-kit pieces.
 - **2.0:** optional sync through a folder you choose, carrying only sealed files.
 

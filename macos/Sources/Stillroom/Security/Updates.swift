@@ -23,6 +23,11 @@ enum Updates {
 
     static func check() { NSWorkspace.shared.open(pageURL()) }
 
+    /// The pricing page, where a licence is bought (Paddle's checkout runs in the browser, never in the app).
+    static let pricingURL = URL(string: "https://www.stillroomvault.com/pricing/")!
+
+    static func buy() { NSWorkspace.shared.open(pricingURL) }
+
     static func day(_ text: String) -> Date? {
         try? Date(text, strategy: Date.ISO8601FormatStyle().year().month().day())
     }

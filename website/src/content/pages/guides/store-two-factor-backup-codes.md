@@ -2,12 +2,20 @@
 title: 'Where to Store Two-Factor Backup Codes Safely'
 description: 'Two-factor backup codes get you back in when your phone is gone. Where to keep them on a Mac or on paper, and what each place protects against.'
 h1: 'Where to store two-factor backup codes'
-lead: 'Backup codes are the spare key to an account that uses two-factor sign-in. They need to be safe from other people and still there when your phone is not. Here is how to choose a place for them.'
+lead: 'The short answer: keep two copies, one printed and locked away, one encrypted on a computer, and neither on the phone that makes your codes. Backup codes are the spare key to your account, so they need to be safe from other people and still there when your phone is not.'
 name: 'Store two-factor backup codes'
-updated: '27 October 2026'
+updated: '30 October 2026'
 order: 50
-related: ['/tools/recovery-code-sheet/', '/tools/qr-code-reader/', '/compare/apple-notes-locked-notes/', '/moving-from/apple-passwords/', '/features/recovery-key/', '/compare/1password/']
+points:
+  - '**Two copies:** one on paper with your important documents, one in an encrypted place such as a locked note, an encrypted disk image or a vault app.'
+  - '**Not with your authenticator.** The codes are for the day you lose that phone or app, so keep them somewhere that doesn''t depend on it.'
+  - '**Never as a screenshot or a loose text file** in Downloads, Desktop or your photos.'
+related: ['/tools/recovery-code-sheet/', '/guides/two-factor-codes-on-mac/', '/compare/apple-notes-locked-notes/', '/compare/offline-password-manager-mac/', '/tools/qr-code-reader/', '/features/recovery-key/']
 faq:
+  - q: 'Where should I store my 2FA backup codes?'
+    a: 'In two places that don''t depend on your phone: a printed copy kept with your important papers, and an encrypted copy on a computer, such as a locked note, an encrypted disk image or an offline vault. Don''t keep them in the authenticator app they back up.'
+  - q: 'Is it safe to keep 2FA backup codes in a password manager?'
+    a: 'It is far better than a text file or a screenshot. The trade-off is that the password manager then holds both your password and the way past two-factor, so many people keep a printed copy as well.'
   - q: 'What are two-factor backup codes?'
     a: 'One-time codes a website gives you when you turn on two-factor sign-in. Each one can stand in for a code from your phone once, so you can get back in if you lose the phone or authenticator app.'
   - q: 'Should I keep backup codes in the same app as my two-factor codes?'

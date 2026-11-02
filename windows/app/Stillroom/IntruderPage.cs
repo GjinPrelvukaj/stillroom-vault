@@ -27,7 +27,7 @@ internal sealed class IntruderPage : UserControl
     public IntruderPage(AppState state, Settings settings)
     {
         this.state = state;
-        var eyebrow = new TextBlock { Text = "INTRUDER LOG", FontSize = 10.5, FontWeight = FontWeights.SemiBold, CharacterSpacing = 80, Foreground = (Brush)Application.Current.Resources["QuietBrush"] };
+        var eyebrow = new TextBlock { Text = "INTRUDER LOG", FontSize = 10.5, FontWeight = FontWeights.SemiBold, CharacterSpacing = 80, Foreground = Theme.Brush("QuietBrush") };
         var heading = new Grid();
         heading.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         heading.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
@@ -55,7 +55,7 @@ internal sealed class IntruderPage : UserControl
         list = new ScrollViewer
         {
             VerticalScrollBarVisibility = ScrollBarVisibility.Hidden,
-            Content = new Border { Background = (Brush)Application.Current.Resources["PanelBrush"], CornerRadius = new CornerRadius(12), Child = rows, VerticalAlignment = VerticalAlignment.Top },
+            Content = new Border { Background = Theme.Brush("PanelBrush"), CornerRadius = new CornerRadius(12), Child = rows, VerticalAlignment = VerticalAlignment.Top },
         };
 
         var page = new Grid { RowSpacing = 12, Padding = new Thickness(0, 4, 0, 0) };
@@ -105,7 +105,7 @@ internal sealed class IntruderPage : UserControl
         rows.Children.Clear();
         foreach (var entry in entries)
         {
-            if (rows.Children.Count > 0) rows.Children.Add(new Border { Height = 1, Background = new SolidColorBrush(Windows.UI.Color.FromArgb(0x0D, 0xFF, 0xFF, 0xFF)) });
+            if (rows.Children.Count > 0) rows.Children.Add(new Border { Height = 1, Background = Theme.Brush("HairlineBrush") });
             rows.Children.Add(Row(entry));
         }
     }
@@ -133,7 +133,7 @@ internal sealed class IntruderPage : UserControl
                 Width = 64,
                 Height = 48,
                 CornerRadius = new CornerRadius(8),
-                Background = new SolidColorBrush(Windows.UI.Color.FromArgb(0x0A, 0xFF, 0xFF, 0xFF)),
+                Background = Theme.Brush("FaintBrush"),
                 Child = new FontIcon { Glyph = "", FontSize = 16, Opacity = 0.35 },
             };
             AutomationProperties.SetName(picture, "No photo");

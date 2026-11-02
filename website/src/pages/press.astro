@@ -1,0 +1,204 @@
+---
+// The press page: everything a writer needs on one page, so a pitch links here instead of attaching a zip. Every claim
+// is one the site already makes; the layout is the download page's labelled rows.
+import PageLayout from '../layouts/PageLayout.astro';
+import { download, email, pricing, site } from '../config';
+
+const tiers = pricing.tiers.filter((t) => t.id !== 'free');
+const shots = [
+  ['vault', 'The vault: files, notes and secrets in one list'],
+  ['preview', 'A PDF read inside the app, with no copy left on the disk'],
+  ['lock', 'The lock screen, which never shows how long your password is'],
+  ['twofactor', 'A login with its live two-factor code'],
+  ['settings', 'Settings: every way in, in plain words'],
+] as const;
+---
+
+<PageLayout
+  centered
+  title="Press Kit"
+  h1="Stillroom Vault press kit"
+  eyebrow="Press"
+  description="Facts, screenshots, icons and contacts for writing about Stillroom Vault, the offline encrypted vault for Mac."
+  lead={`Writing about Stillroom? Everything is here. For a full licence to review it, write to ${email.hello}.`}
+>
+  <section class="row" aria-labelledby="short-title">
+    <div class="label">
+      <h2 id="short-title" class="row-title">In short</h2>
+      <p class="quiet">Copy any of this as it is.</p>
+    </div>
+    <div class="card">
+      <p><strong>One line:</strong> {site.tagline}</p>
+      <p>
+        <strong>A paragraph:</strong> Stillroom Vault keeps files, notes, passwords and two-factor codes sealed with
+        AES-256-GCM on your Mac, each item under its own key. There is no server, no account and no sync: the app makes no
+        network connections, and a build check fails any version that links networking code. Its file format is public,
+        and a short open-source script opens a vault without the app. It has not had an independent audit yet.
+      </p>
+    </div>
+  </section>
+
+  <section class="row" aria-labelledby="facts-title">
+    <div class="label">
+      <h2 id="facts-title" class="row-title">Facts</h2>
+    </div>
+    <div class="card">
+      <dl class="meta">
+        <div><dt>Name</dt><dd>Stillroom Vault</dd></div>
+        <div><dt>Version</dt><dd>{download.version}, released 28 October 2026</dd></div>
+        <div><dt>Runs on</dt><dd>{download.requires}. A Windows version is in progress.</dd></div>
+        <div>
+          <dt>Price</dt>
+          <dd>
+            Free for {pricing.freeItems} items, with every feature.
+            {tiers.map((t) => <> {t.name}: {t.price} {t.id === 'teams' ? `(${t.cadence})` : 'once'}.</>)}
+          </dd>
+        </div>
+        <div><dt>Sold by</dt><dd>{site.seller}, directly, through Paddle. Not on the Mac App Store.</dd></div>
+        <div><dt>Made by</dt><dd>{site.owners.join(' and ')}</dd></div>
+        <div><dt>Audit</dt><dd>Not yet. <a href="/security/">The threat model</a> says what it protects against and what it doesn’t.</dd></div>
+      </dl>
+    </div>
+  </section>
+
+  <section class="row" aria-labelledby="check-title">
+    <div class="label">
+      <h2 id="check-title" class="row-title">Claims you can check</h2>
+      <p class="quiet">Each one links to how.</p>
+    </div>
+    <ul class="card list">
+      <li><span><strong>It never goes online</strong> <span class="quiet">A build check fails any version that links networking code. <a href="/security/">How we check</a></span></span></li>
+      <li><span><strong>You can leave without us</strong> <span class="quiet">The format is documented byte by byte, and an MIT-licensed reader opens a vault. <a href="/format/">The format</a></span></span></li>
+      <li><span><strong>A decoy password</strong> <span class="quiet">It opens a second, harmless vault. Against thieves and abusers, not police. <a href="/features/decoy-password/">How it works</a></span></span></li>
+      <li><span><strong>The source is public</strong> <span class="quiet">Read, check and build it. <a href={site.repo}>GitHub</a></span></span></li>
+    </ul>
+  </section>
+
+  <section class="row" aria-labelledby="shots-title">
+    <div class="label">
+      <h2 id="shots-title" class="row-title">Screenshots</h2>
+      <p class="quiet">From a demo vault of invented files. Click one for the full size.</p>
+    </div>
+    <div class="shots">
+      {
+        shots.map(([id, caption]) => (
+          <figure>
+            <a href={`/screenshots/${id}.webp`}>
+              <img src={`/screenshots/${id}-1440.webp`} width="1440" height="720" alt={caption} loading="lazy" decoding="async" />
+            </a>
+            <figcaption class="quiet">{caption}</figcaption>
+          </figure>
+        ))
+      }
+    </div>
+  </section>
+
+  <section class="row" aria-labelledby="icon-title">
+    <div class="label">
+      <h2 id="icon-title" class="row-title">Icon</h2>
+    </div>
+    <div class="card icon-card">
+      <img src="/icon-512.png" width="128" height="128" alt="The Stillroom Vault app icon" />
+      <p><a href="/icon-512.png" download>App icon, 512 × 512 PNG</a></p>
+    </div>
+  </section>
+
+  <section class="row" aria-labelledby="contact-title">
+    <div class="label">
+      <h2 id="contact-title" class="row-title">Contact</h2>
+    </div>
+    <ul class="card list">
+      <li><span><strong>Press and review licences</strong> <span class="quiet"><a href={`mailto:${email.hello}`}>{email.hello}</a></span></span></li>
+      <li><span><strong>Security researchers</strong> <span class="quiet"><a href={`mailto:${email.security}`}>{email.security}</a></span></span></li>
+    </ul>
+  </section>
+</PageLayout>
+
+<style>
+  .row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+    gap: var(--space-8) var(--space-16);
+    padding-block: var(--space-12);
+    border-top: 1px solid var(--divider);
+  }
+  .label {
+    display: grid;
+    align-content: start;
+    gap: var(--space-2);
+  }
+  .row-title {
+    font-size: var(--text-3xl);
+  }
+  .card {
+    display: grid;
+    gap: var(--space-4);
+    margin: 0;
+    padding: var(--space-6) var(--space-8);
+    border: 1px solid var(--hairline);
+    border-radius: var(--r-panel);
+    background: var(--bg-raised);
+  }
+  .card a,
+  .shots a {
+    color: var(--vault);
+  }
+  .list {
+    gap: 0;
+    padding-block: var(--space-2);
+    list-style: none;
+  }
+  .list li {
+    padding: var(--space-4) 0;
+    border-bottom: 1px solid var(--divider);
+  }
+  .list li:last-child {
+    border-bottom: 0;
+  }
+  .list li > span {
+    display: grid;
+    gap: 2px;
+  }
+  .meta {
+    display: grid;
+    gap: var(--space-3);
+    margin: 0;
+  }
+  .meta div {
+    display: grid;
+    grid-template-columns: 6rem minmax(0, 1fr);
+    gap: var(--space-4);
+  }
+  .meta dt {
+    color: var(--fg-quiet);
+  }
+  .meta dd {
+    margin: 0;
+  }
+  .shots {
+    display: grid;
+    gap: var(--space-8);
+  }
+  .shots figure {
+    display: grid;
+    gap: var(--space-2);
+    margin: 0;
+  }
+  .shots img {
+    width: 100%;
+    height: auto;
+    border-radius: var(--r-panel);
+  }
+  .icon-card {
+    justify-items: start;
+  }
+  @media (max-width: 960px) {
+    .row {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .meta div {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 2px;
+    }
+  }
+</style>

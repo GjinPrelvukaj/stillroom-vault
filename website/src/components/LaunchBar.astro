@@ -1,0 +1,60 @@
+---
+// A thin bar above the header while a launch is on: before the day it names the date, on the day (Pacific time) it
+// says we're live, and after `until` it hides itself. A plain link only: nothing is loaded from the launch site.
+// Remove it (and `launch` in config.ts) once the launch is over.
+import { launch } from '../config';
+import Icon from './ui/Icon.astro';
+
+const over = new Date().toISOString().slice(0, 10) >= launch.until;
+---
+
+{
+  !over && (
+    <div class="launch-bar" data-launch-day={launch.day} data-launch-until={launch.until} hidden>
+      <a href={launch.url} target="_blank" rel="noopener">
+        <span data-launch-before>{launch.before}</span>
+        <span data-launch-live hidden>{launch.live}</span>
+        <Icon name="arrow" size={14} />
+      </a>
+    </div>
+  )
+}
+
+<script>
+  // The launch site's day starts at midnight Pacific; compare dates there. Without scripts the bar stays hidden.
+  const bar = document.querySelector<HTMLElement>('.launch-bar');
+  if (bar) {
+    const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Los_Angeles' }).format(new Date());
+    const { launchDay = '', launchUntil = '' } = bar.dataset;
+    if (today < launchUntil) {
+      bar.hidden = false;
+      if (today >= launchDay) {
+        bar.querySelector<HTMLElement>('[data-launch-before]')!.hidden = true;
+        bar.querySelector<HTMLElement>('[data-launch-live]')!.hidden = false;
+      }
+    }
+  }
+</script>
+
+<style>
+  .launch-bar {
+    background: color-mix(in srgb, var(--vault) 12%, var(--bg));
+    text-align: center;
+  }
+  .launch-bar a {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-4);
+    color: var(--fg);
+    font-size: var(--text-sm);
+    text-decoration: none;
+  }
+  .launch-bar a:hover span {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  .launch-bar :global(svg) {
+    color: var(--vault);
+  }
+</style>

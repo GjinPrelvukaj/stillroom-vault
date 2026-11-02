@@ -6,7 +6,7 @@ lead: 'VeraCrypt encrypts whole volumes and drives, on almost any computer. Stil
 name: 'VeraCrypt'
 updated: '27 October 2026'
 order: 20
-related: ['/moving-from/veracrypt/', '/compare/encrypted-disk-image/', '/learn/plausible-deniability/', '/features/decoy-password/']
+related: ['/moving-from/veracrypt/', '/compare/encrypted-disk-image/', '/learn/plausible-deniability/', '/features/decoy-password/', '/compare/best-encryption-software-mac/']
 faq:
   - q: 'Is VeraCrypt free?'
     a: 'Yes. VeraCrypt is free and open source, for Windows, macOS and Linux. On a Mac it needs macFUSE or FUSE-T, and VeraCrypt recommends the FUSE-T version on Apple silicon.'
@@ -46,7 +46,7 @@ It suits people who move encrypted drives between Windows, Mac and Linux machine
 | Where data lives | A container file, a partition or a whole drive, wherever you put it | One folder on your Mac |
 | Encryption | Whole volumes, encrypted in real time | AES-256-GCM, a fresh key per item; Argon2id (512 MB) for the password |
 | Platforms | Windows, macOS (with macFUSE or FUSE-T), Linux | Apple silicon Macs, macOS 26 or later |
-| Price | Free | Free for 25 items; $39 once; Family $129 for 5 people |
+| Price | Free | Free for 25 items; $39 once; Family $79 for 5 people |
 | Source | Open source | Source available (FSL); the reader script is MIT |
 | Cloud and sync | None built in; you can copy a container anywhere | None; it never goes online |
 | Scope | Volumes and drives | Files, notes, passwords and two-factor codes |

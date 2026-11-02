@@ -10,7 +10,7 @@ points:
   - '**Pick Bitwarden** for the lowest price, a free plan that doesn''t run out, open source code, or running the server yourself.'
   - '**Pick 1Password** for the most polished apps, two-factor codes on every plan, Travel Mode, and family sharing anyone can use.'
   - 'Every device an Apple one? Apple''s free **Passwords** app is a fine choice too.'
-related: ['/compare/1password/', '/compare/bitwarden/', '/guides/store-two-factor-backup-codes/', '/compare/keepassxc/']
+related: ['/compare/1password/', '/compare/bitwarden/', '/guides/store-two-factor-backup-codes/', '/compare/keepassxc/', '/compare/password-manager-no-subscription/']
 faq:
   - q: 'Is Bitwarden as secure as 1Password?'
     a: 'Both encrypt your vault on your device before it syncs, so neither company can read it, and both have outside security reviews. 1Password adds a 128-bit Secret Key to your account password. Bitwarden is open source, and lets you pick Argon2id to stretch your master password.'
@@ -77,6 +77,6 @@ Stillroom Vault isn't a password manager: it has no autofill, no phone app and n
 
 - **The keys to your password manager.** Your 1Password Emergency Kit or Bitwarden recovery code, kept off the cloud they protect.
 - **Files.** ID scans, contracts, tax records, photos and recordings of any size, opened in built-in viewers without writing a decrypted copy to disk.
-- **Pay once.** Free for 25 items, $39 once for one person's Macs, or $129 once for a family of five.
+- **Pay once.** Free for 25 items, $39 once for one person's Macs, or $79 once for a family of five.
 
 For a closer look at each, see [Stillroom Vault vs 1Password](/compare/1password/) and [Stillroom Vault vs Bitwarden](/compare/bitwarden/).

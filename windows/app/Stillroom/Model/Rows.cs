@@ -18,7 +18,7 @@ public sealed class Row
     public string Kind { get; init; } = "";
     public string Size { get; init; } = "";
     public string Date { get; init; } = "";
-    public Brush GlyphBrush { get; init; } = new SolidColorBrush(Colors.White) { Opacity = 0.6 };
+    public Brush GlyphBrush { get; init; } = Theme.Ink(0.6);
     public Visibility VersionsShown => Versions.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
     public Visibility DetailShown => Detail.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
 
@@ -32,7 +32,7 @@ public sealed class TagChip
 {
     public string Text { get; init; } = "";
     public Brush Fill { get; init; } = new SolidColorBrush(Colors.Transparent);
-    public Brush Ink { get; init; } = new SolidColorBrush(Colors.White);
+    public Brush Ink { get; init; } = Theme.Brush("InkBrush");
 }
 
 /// <summary>A tag's colour, the same every time for the same word: Tally's palette, picked by the word, as the Mac's

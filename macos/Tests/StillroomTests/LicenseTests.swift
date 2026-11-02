@@ -118,7 +118,11 @@ extension VaultFlowTests {
         let state = AppState()
         try await state.create(password: "real password 123", touchID: false)
         #expect(state.license == nil)
+        try await fill(state, to: 19)
+        #expect(state.roomNote == nil)
         try await fill(state, to: 20)
+        // From five left, the sidebar says so and offers a licence.
+        #expect(state.roomNote == "5 of 25 free items left")
 
         // Ten dropped at once: five fit, and only their originals may be removed.
         let ten = try (0..<10).map { try sample("more \($0).txt", "more") }
@@ -126,6 +130,7 @@ extension VaultFlowTests {
         #expect(state.files.count == 25)
         #expect(originals.files.count == 5)
         #expect(state.problem == AppState.fullMessage(5))
+        #expect(state.roomNote == "Free limit reached, adding is paused")
 
         // Every other way in stops too, and says why.
         state.problem = nil
@@ -144,6 +149,7 @@ extension VaultFlowTests {
         // A licence lifts it at once, and is still there after locking and starting again.
         state.problem = nil
         try state.addLicense(try testLicense())
+        #expect(state.roomNote == nil)
         #expect(state.newEntry(.note, name: "Note", content: Data()) != nil)
         await state.add([try sample("twenty-seventh.txt", "x")])
         #expect(state.importLogins(logins) == (2, 0, 0))

@@ -32,8 +32,8 @@ export function softwareJsonLd() {
     author: site.owners.map((name) => ({ '@type': 'Person', name })),
     offers: [
       offer('Free', '0', 'Every feature, up to 25 items.'),
-      offer('Stillroom Vault', '39', 'Every feature, unlimited, on all of one person’s Macs, with all 1.x updates. One-time.'),
-      offer('Family', '129', 'Stillroom Vault for up to 5 people. One-time.'),
+      offer('Personal', '39', 'Every feature, unlimited, on all of one person’s Macs, with all 1.x updates. One-time.'),
+      offer('Family', '79', 'Stillroom Vault for up to 5 people. One-time.'),
     ],
   };
 }

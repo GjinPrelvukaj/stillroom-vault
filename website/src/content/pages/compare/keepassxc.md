@@ -6,7 +6,7 @@ lead: 'Both keep everything in an encrypted file on your own computer, with no c
 name: 'KeePassXC'
 updated: '27 October 2026'
 order: 70
-related: ['/compare/bitwarden/', '/compare/1password/', '/guides/store-two-factor-backup-codes/', '/learn/argon2id/']
+related: ['/compare/bitwarden/', '/compare/1password/', '/guides/store-two-factor-backup-codes/', '/learn/argon2id/', '/compare/offline-password-manager-mac/']
 faq:
   - q: 'Is KeePassXC free?'
     a: 'Yes. KeePassXC is free and open source under the GPLv3, for Windows, macOS and Linux, with no subscription.'
@@ -40,7 +40,7 @@ It suits people who want a password manager they control completely, on any desk
 | Where data lives | One `.kdbx` file, wherever you put it | One folder on your Mac |
 | Encryption | AES-256 or Twofish; Argon2 in KDBX 4; optional key file or YubiKey | AES-256-GCM, a fresh key per item; Argon2id (512 MB) |
 | Platforms | Windows, macOS, Linux; phone apps from other developers | Apple silicon Macs, macOS 26 or later |
-| Price | Free | Free for 25 items; $39 once; Family $129 once for 5 people |
+| Price | Free | Free for 25 items; $39 once; Family $79 once for 5 people |
 | Source | Open source (GPLv3) | Source available (FSL); the reader script is MIT |
 | Cloud and sync | None built in; store the file in a cloud folder if you want | None; it never goes online |
 | Scope | Password manager, with attachments | File vault that also holds passwords and two-factor codes |

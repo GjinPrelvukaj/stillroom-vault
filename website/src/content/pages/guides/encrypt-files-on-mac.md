@@ -4,13 +4,13 @@ description: 'Encrypt files on a Mac with FileVault, an encrypted disk image or 
 h1: 'How to encrypt files on a Mac'
 lead: 'Your Mac already has three ways to encrypt files, each for a different job. Here is how to use them, where each stops, and what a vault app adds.'
 name: 'Encrypt files on a Mac'
-updated: '27 October 2026'
+updated: '30 October 2026'
 order: 20
 points:
   - '**FileVault** protects the whole disk while you''re logged out. Turn it on first.'
   - '**An encrypted disk image** locks a set of files behind their own password, until you open it.'
   - '**A password-protected PDF** is for sending one document, not for storing many.'
-related: ['/tools/passphrase-generator/', '/guides/password-protect-a-folder-on-mac/', '/compare/encrypted-disk-image/', '/learn/aes-256-gcm/', '/compare/cryptomator/']
+related: ['/guides/password-protect-a-folder-on-mac/', '/compare/best-encryption-software-mac/', '/guides/encrypt-pdf-on-mac/', '/guides/encrypt-zip-file-on-mac/', '/guides/encrypt-excel-file-on-mac/', '/compare/filevault/']
 faq:
   - q: 'Are files on a Mac encrypted by default?'
     a: 'On Macs with Apple silicon or a T2 chip, Apple says data on the disk is already encrypted. FileVault adds the requirement for your login password before it can be decrypted, which is what protects it if the Mac is stolen.'
@@ -77,7 +77,7 @@ For a single document you need to send, Preview can add an open password.
 3. Enter the password and retype it.
 4. Click **Apply**, then **Save**.
 
-Send the password a different way from the file (a phone call, a different app). This suits sharing, not storage: you get one password per file, and nothing locks again on its own once it is open.
+Send the password a different way from the file (a phone call, a different app). This suits sharing, not storage: you get one password per file, and nothing locks again on its own once it is open. [How to password protect a PDF on a Mac](/guides/encrypt-pdf-on-mac/) covers it in more detail, and there are guides for [zip files](/guides/encrypt-zip-file-on-mac/) and [Excel and Numbers files](/guides/encrypt-excel-file-on-mac/) too.
 
 ## When a vault app makes more sense
 

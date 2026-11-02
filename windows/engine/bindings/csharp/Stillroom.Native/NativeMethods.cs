@@ -24,6 +24,7 @@ internal static unsafe partial class NativeMethods
     [LibraryImport(Library)] [return: MarshalAs(UnmanagedType.U1)] internal static partial bool stillroom_keys_are_locked();
     [LibraryImport(Library)] internal static partial int stillroom_exclude_from_crash_reports();
     [LibraryImport(Library)] internal static partial int stillroom_harden_process([MarshalAs(UnmanagedType.U1)] bool blockExtensionDlls, out uint hardened);
+    [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)] internal static partial int stillroom_check_signature(string file, out uint result);
     [LibraryImport(Library)] [return: MarshalAs(UnmanagedType.U1)] internal static partial bool stillroom_tpm_available();
     [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)] internal static partial int stillroom_protect_folder(string folder);
     [LibraryImport(Library)] internal static partial int stillroom_hello_new_challenge(out StillroomBytes result);
@@ -58,6 +59,13 @@ internal static unsafe partial class NativeMethods
     [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)] internal static partial int stillroom_store_backup(IntPtr store, string to);
     [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)] internal static partial int stillroom_store_restore(IntPtr store, string file, out IntPtr setAside);
     [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)] internal static partial int stillroom_backup_check(string file);
+
+    // The licence
+    [LibraryImport(Library)] internal static partial int stillroom_store_licence(IntPtr store, out IntPtr result);
+    [LibraryImport(Library)] internal static partial int stillroom_store_licence_problem(IntPtr store, out IntPtr result);
+    [LibraryImport(Library)] internal static partial int stillroom_store_add_licence(IntPtr store, byte* key, nuint length, out IntPtr result);
+    [LibraryImport(Library)] internal static partial int stillroom_store_remove_licence(IntPtr store);
+    [LibraryImport(Library)] internal static partial int stillroom_store_trust_licences_for_tests(IntPtr store, byte* publicKey, nuint length);
 
     // Open vaults
     [LibraryImport(Library)] internal static partial void stillroom_vault_lock(IntPtr vault);
@@ -101,6 +109,8 @@ internal static unsafe partial class NativeMethods
     [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)] internal static partial int stillroom_vault_delete_intruder(VaultHandle vault, string entry);
     [LibraryImport(Library)] internal static partial int stillroom_vault_clear_intruders(VaultHandle vault);
     [LibraryImport(Library)] internal static partial int stillroom_vault_refresh_search(VaultHandle vault, delegate* unmanaged<IntPtr, byte*, byte*, nuint, byte*> readText, IntPtr context, [MarshalAs(UnmanagedType.U1)] out bool changed);
+    [LibraryImport(Library)] internal static partial int stillroom_vault_search_wanting(VaultHandle vault, out IntPtr result);
+    [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)] internal static partial int stillroom_vault_set_words(VaultHandle vault, string words);
     [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)] internal static partial int stillroom_vault_search(VaultHandle vault, string query, out IntPtr result);
     [LibraryImport(Library, StringMarshalling = StringMarshalling.Utf8)] internal static partial int stillroom_vault_snippet(VaultHandle vault, string item, string query, out IntPtr result);
     [LibraryImport(Library)] internal static partial int stillroom_vault_import_logins(VaultHandle vault, byte* csv, nuint length, out IntPtr result);

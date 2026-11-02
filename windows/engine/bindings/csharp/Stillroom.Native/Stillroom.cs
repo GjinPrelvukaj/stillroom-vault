@@ -40,8 +40,23 @@ public enum Status
     NotAnExport = 36,
     LockedElsewhere = 37,
     NoTpm = 38,
+    /// <summary>The free tier's limit: nothing more goes in without a licence.</summary>
+    Full = 39,
     InvalidArgument = 40,
     Panicked = 41,
+    LicenceMalformed = 50,
+    LicenceNotSigned = 51,
+    LicenceNewer = 52,
+    LicenceBlocked = 53,
+}
+
+/// <summary>A bought licence, as the engine checked it. `EditionName` is how Settings shows the edition.</summary>
+public sealed record Licence(string Id, string Edition, string EditionName, int Seats, string Name, string Email, string Issued)
+{
+    internal static Licence? From(JsonElement json) => json.ValueKind != JsonValueKind.Object ? null : new Licence(
+        json.GetProperty("id").GetString()!, json.GetProperty("edition").GetString()!, json.GetProperty("editionName").GetString()!,
+        json.GetProperty("seats").GetInt32(), json.GetProperty("name").GetString()!, json.GetProperty("email").GetString()!,
+        json.GetProperty("issued").GetString()!);
 }
 
 /// <summary>How a kind of file looks (stillroom_look): pictures go on Images; audio and video on Audio &amp; Video; PDFs,
@@ -231,6 +246,42 @@ public sealed unsafe class Store : IDisposable
     }
 
     public static void CheckBackup(string file) => Call.Check(NativeMethods.stillroom_backup_check(file));
+
+    // The licence: kept beside the store, in neither vault, so it's the same whichever is open (or none).
+
+    /// <summary>The licence, or null when there's none or it no longer checks out (LicenceProblem says why).</summary>
+    public Licence? Licence
+    {
+        get { Call.Check(NativeMethods.stillroom_store_licence(Handle, out var json)); return Native.Licence.From(Call.TakeJson(json)); }
+    }
+
+    /// <summary>Why a saved licence no longer checks out (a later release turned it off), in words, or null.</summary>
+    public string? LicenceProblem
+    {
+        get { Call.Check(NativeMethods.stillroom_store_licence_problem(Handle, out var text)); return Call.Take(text); }
+    }
+
+    /// <summary>Checks a pasted key and keeps it; the limit lifts at once in either vault. Throws a Licence* status, with
+    /// words to show, when it doesn't check out.</summary>
+    public Licence AddLicence(string typed)
+    {
+        var key = Encoding.UTF8.GetBytes(typed);
+        fixed (byte* p = key)
+        {
+            Call.Check(NativeMethods.stillroom_store_add_licence(Handle, p, (nuint)key.Length, out var json));
+            return Native.Licence.From(Call.TakeJson(json))!;
+        }
+    }
+
+    /// <summary>Takes the licence away. Nothing in the vault is touched.</summary>
+    public void RemoveLicence() => Call.Check(NativeMethods.stillroom_store_remove_licence(Handle));
+
+    /// <summary>Tests only: trust licences signed by this Ed25519 public key (32 bytes) instead of the real one.</summary>
+    public void TrustLicencesForTests(ReadOnlySpan<byte> publicKey)
+    {
+        fixed (byte* p = publicKey)
+            Call.Check(NativeMethods.stillroom_store_trust_licences_for_tests(Handle, p, (nuint)publicKey.Length));
+    }
 
     public void Dispose()
     {
@@ -519,6 +570,23 @@ public sealed unsafe class Vault : IDisposable
         }
     }
 
+    /// <summary>The PDFs and pictures whose words aren't known or have changed (`id`, `name`, `uti`, `size`, `changed`): to read with
+    /// the vault free (`Read`, then Windows' own reading), and give back with `SetWords`. `RefreshSearch` without a
+    /// reader leaves them for this, so a slow reading never holds the vault.</summary>
+    public JsonElement[] SearchWanting()
+    {
+        Call.Check(NativeMethods.stillroom_vault_search_wanting(Handle, out var json));
+        return Call.TakeJson(json).EnumerateArray().ToArray();
+    }
+
+    /// <summary>Words read for items from `SearchWanting`, each with the `changed` and `size` it gave (an item changed
+    /// since is asked for again). Empty text records that there are none.</summary>
+    public void SetWords(IEnumerable<(string Id, double Changed, long Size, string Text)> words)
+    {
+        var json = JsonSerializer.Serialize(words.Select(w => new { id = w.Id, changed = w.Changed, size = w.Size, text = w.Text }));
+        Call.Check(NativeMethods.stillroom_vault_set_words(Handle, json));
+    }
+
     public string[] Search(string query)
     {
         Call.Check(NativeMethods.stillroom_vault_search(Handle, query, out var json));
@@ -531,14 +599,17 @@ public sealed unsafe class Vault : IDisposable
         return Call.Take(snippet);
     }
 
-    /// <summary>Accounts from a password export (CSV), each a Login secret in "Imported".</summary>
-    public (int Added, int Skipped) ImportLogins(ReadOnlySpan<byte> csv)
+    /// <summary>Accounts from a password export (CSV), each a Login secret in "Imported". `Left` didn't go in at the free
+    /// tier's limit (the export still holds them, so don't offer it for deletion); `LeftMessage` says so in words.</summary>
+    public (int Added, int Skipped, int Left, string? LeftMessage) ImportLogins(ReadOnlySpan<byte> csv)
     {
         fixed (byte* p = csv)
         {
             Call.Check(NativeMethods.stillroom_vault_import_logins(Handle, p, (nuint)csv.Length, out var json));
             var result = Call.TakeJson(json);
-            return (result.GetProperty("added").GetInt32(), result.GetProperty("skipped").GetInt32());
+            var message = result.GetProperty("leftMessage");
+            return (result.GetProperty("added").GetInt32(), result.GetProperty("skipped").GetInt32(), result.GetProperty("left").GetInt32(),
+                    message.ValueKind == JsonValueKind.String ? message.GetString() : null);
         }
     }
 
@@ -677,6 +748,17 @@ public static unsafe class Engine
     {
         Call.Check(NativeMethods.stillroom_harden_process(blockExtensionDlls, out var hardened));
         return (Hardening)hardened;
+    }
+
+    /// <summary>What CheckSignature found.</summary>
+    public enum Signature : uint { ByUs = 0, NotSigned = 1, Changed = 2, SomeoneElse = 3, NotSetUp = 4 }
+
+    /// <summary>Whether a file is still signed by Stillroom's maker, checked offline; NotSetUp while there's no
+    /// certificate to check against.</summary>
+    public static Signature CheckSignature(string file)
+    {
+        Call.Check(NativeMethods.stillroom_check_signature(file, out var result));
+        return (Signature)result;
     }
 
     /// <summary>Whether this PC has a TPM the vault can be locked to.</summary>

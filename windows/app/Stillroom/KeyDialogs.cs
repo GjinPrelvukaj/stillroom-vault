@@ -26,7 +26,7 @@ internal static class KitDialog
     {
         var plan = Plans[1];
         string[]? pieces = null;
-        var problem = new TextBlock { TextWrapping = TextWrapping.Wrap, Foreground = (Brush)Application.Current.Resources["ProblemBrush"], FontSize = 12 };
+        var problem = new TextBlock { TextWrapping = TextWrapping.Wrap, Foreground = Theme.Brush("ProblemBrush"), FontSize = 12 };
         var example = new TextBlock { Text = plan.Example, TextWrapping = TextWrapping.Wrap, FontSize = 12, Opacity = 0.55 };
         var choice = new RadioButtons { MaxColumns = 3 };
         foreach (var p in Plans) choice.Items.Add(p.Name);
@@ -103,7 +103,7 @@ internal static class KitDialog
         var list = new StackPanel();
         for (var i = 0; i < pieces.Length; i++)
         {
-            if (i > 0) list.Children.Add(new Border { Height = 1, Background = new SolidColorBrush(Windows.UI.Color.FromArgb(0x0D, 0xFF, 0xFF, 0xFF)) });
+            if (i > 0) list.Children.Add(new Border { Height = 1, Background = Theme.Brush("HairlineBrush") });
             var row = new Grid { Padding = new Thickness(12, 8, 12, 8) };
             row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(56) });
             row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
@@ -115,7 +115,7 @@ internal static class KitDialog
         }
         var body = new StackPanel { Spacing = 12, Width = 440 };
         body.Children.Add(Quiet("One page per piece, with plain instructions on it. Print on paper; don't print to a PDF or take a photo. They won't be shown again."));
-        body.Children.Add(new Border { Background = (Brush)Application.Current.Resources["PanelBrush"], CornerRadius = new CornerRadius(12), Child = list });
+        body.Children.Add(new Border { Background = Theme.Brush("PanelBrush"), CornerRadius = new CornerRadius(12), Child = list });
         dialog.Title = "Print the pieces";
         dialog.Content = body;
         dialog.PrimaryButtonText = "Print Pieces…";
@@ -126,7 +126,7 @@ internal static class KitDialog
     {
         Text = text,
         TextWrapping = TextWrapping.Wrap,
-        Foreground = (Brush)Application.Current.Resources["QuietBrush"],
+        Foreground = Theme.Brush("QuietBrush"),
     };
 }
 
@@ -137,7 +137,7 @@ internal static class CheckDialog
     public static async Task ShowAsync(XamlRoot root, Vault vault, IReadOnlyList<VaultItem> items)
     {
         var total = items.Count + items.Sum(i => i.Versions.Count);
-        var summary = new TextBlock { Text = "Reading every item back…", TextWrapping = TextWrapping.Wrap, Foreground = (Brush)Application.Current.Resources["QuietBrush"] };
+        var summary = new TextBlock { Text = "Reading every item back…", TextWrapping = TextWrapping.Wrap, Foreground = Theme.Brush("QuietBrush") };
         var list = new StackPanel();
         var body = new StackPanel { Spacing = 14, Width = 460 };
         body.Children.Add(summary);
@@ -207,7 +207,7 @@ internal static class CheckDialog
             body.Children.Add(new ScrollViewer
             {
                 MaxHeight = 260,
-                Content = new Border { Background = (Brush)Application.Current.Resources["PanelBrush"], CornerRadius = new CornerRadius(12), Child = list },
+                Content = new Border { Background = Theme.Brush("PanelBrush"), CornerRadius = new CornerRadius(12), Child = list },
             });
         }
         await shown;

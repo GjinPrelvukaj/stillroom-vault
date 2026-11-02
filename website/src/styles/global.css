@@ -11,6 +11,8 @@
   box-sizing: border-box;
 }
 html {
+  /* Phones (iOS Safari) ignore body's clip alone, so anything sliding in from the side scrolled the page. */
+  overflow-x: clip;
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
   background: var(--bg);

@@ -1,6 +1,7 @@
 ---
 import '../styles/global.css';
 import Header from '../components/Header.astro';
+import LaunchBar from '../components/LaunchBar.astro';
 import Footer from '../components/Footer.astro';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
@@ -90,6 +91,7 @@ const graph = [organization, website, ...jsonLd];
   </head>
   <body class:list={[{ ink: theme === 'night' }]}>
     <a class="skip-link" href="#main">Skip to content</a>
+    <LaunchBar />
     <Header />
     <main id="main" tabindex="-1">
       <slot />

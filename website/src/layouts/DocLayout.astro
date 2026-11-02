@@ -246,6 +246,14 @@ const article = {
           )
         }
         {
+          page && (
+            <div>
+              <dt>Written by</dt>
+              <dd>{site.owners.join(' and ')}, who make Stillroom</dd>
+            </div>
+          )
+        }
+        {
           section && (
             <div>
               <dt>Section</dt>

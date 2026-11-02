@@ -7,12 +7,21 @@
     <!-- In place of everything while the vault is shut: nothing of what's inside is drawn. The first time, the same
          screen makes the vault. -->
     <StackPanel Width="340" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="16" Margin="0,0,0,60">
+        <!-- Before a password is typed into it: this copy may not be the real Stillroom (Platform/SelfCheck.cs). -->
+        <Border x:Name="NotOurs" CornerRadius="10" Padding="14,8" Visibility="Collapsed">
+            <Border.Background><SolidColorBrush Color="Orange" Opacity="0.12" /></Border.Background>
+            <StackPanel Orientation="Horizontal" Spacing="8">
+                <FontIcon Glyph="&#xE7BA;" FontSize="14" Foreground="Orange" VerticalAlignment="Top" Margin="0,2,0,0" />
+                <TextBlock Width="280" FontSize="12" Foreground="Orange" TextWrapping="Wrap" TextAlignment="Center"
+                           Text="This copy isn't signed by Stillroom's maker, so it may have been changed. Download Stillroom again from stillroomvault.com." />
+            </StackPanel>
+        </Border>
         <!-- Files sent from Explorer wait for the vault to open. -->
-        <Border x:Name="Waiting" HorizontalAlignment="Center" CornerRadius="14" Padding="12,4" Background="#2EB08CFF" Visibility="Collapsed">
+        <Border x:Name="Waiting" HorizontalAlignment="Center" CornerRadius="14" Padding="12,4" Background="{ThemeResource VaultWashBrush}" Visibility="Collapsed">
             <TextBlock x:Name="WaitingText" FontSize="12" />
         </Border>
         <Grid Width="84" Height="84" HorizontalAlignment="Center">
-            <Ellipse x:Name="Ring" Stroke="{StaticResource VaultBrush}" StrokeThickness="2" StrokeDashArray="1,3" Opacity="0.7" />
+            <Ellipse x:Name="Ring" Stroke="{ThemeResource VaultBrush}" StrokeThickness="2" StrokeDashArray="1,3" Opacity="0.7" />
             <FontIcon x:Name="LockGlyph" Glyph="&#xE72E;" FontSize="24" Opacity="0.75" />
             <ProgressRing x:Name="Working" IsActive="False" Width="84" Height="84" />
         </Grid>

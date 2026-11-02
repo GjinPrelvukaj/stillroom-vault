@@ -99,9 +99,22 @@ typedef const char *(*StillroomReadText)(void *context,
 
 #define STILLROOM_NO_TPM 38
 
+/**
+ * The free tier's limit: nothing more goes in without a licence. The message says how many didn't.
+ */
+#define STILLROOM_FULL 39
+
 #define STILLROOM_INVALID_ARGUMENT 40
 
 #define STILLROOM_PANICKED 41
+
+#define STILLROOM_LICENCE_MALFORMED 50
+
+#define STILLROOM_LICENCE_NOT_SIGNED 51
+
+#define STILLROOM_LICENCE_NEWER 52
+
+#define STILLROOM_LICENCE_BLOCKED 53
 
 #ifdef __cplusplus
 extern "C" {
@@ -147,6 +160,14 @@ StillroomStatus stillroom_harden_process(bool block_extension_dlls,
  * copies. Its permissions are replaced by one entry, this account's, inherited by everything inside.
  */
 StillroomStatus stillroom_protect_folder(const char *folder);
+
+/**
+ * Whether `file` (UTF-8) is still signed by Stillroom's maker (`selfcheck.rs`), checked offline: 0 signed by us and
+ * unchanged, 1 not signed, 2 changed since it was signed, 3 signed by someone else or a certificate this PC doesn't
+ * trust, 4 nothing to check against yet (no certificate).
+ */
+StillroomStatus stillroom_check_signature(const char *file,
+                                          uint32_t *result);
 
 /**
  * Whether this PC has a TPM the vault can be locked to.
@@ -278,6 +299,42 @@ StillroomStatus stillroom_store_count_wrong_try(const struct StillroomStore *han
 StillroomStatus stillroom_store_clear_wrong_tries(const struct StillroomStore *handle);
 
 /**
+ * The licence kept beside the store, as JSON `{"id", "edition", "editionName", "seats", "name", "email", "issued"}`,
+ * or null when there's none (or it no longer checks out: `stillroom_store_licence_problem` says why). The same whichever
+ * vault is open, or none.
+ */
+StillroomStatus stillroom_store_licence(const struct StillroomStore *handle,
+                                        char **result);
+
+/**
+ * Why a saved licence no longer checks out (a later release turned it off), in words, or null.
+ */
+StillroomStatus stillroom_store_licence_problem(const struct StillroomStore *handle, char **result);
+
+/**
+ * Checks a pasted key (UTF-8, as pasted: spaces and line breaks are taken out) and keeps it beside the store; the
+ * limit lifts at once in either vault. Gives the licence as `stillroom_store_licence` does. `STILLROOM_LICENCE_*`
+ * when it doesn't check out.
+ */
+StillroomStatus stillroom_store_add_licence(const struct StillroomStore *handle,
+                                            const uint8_t *key,
+                                            size_t key_length,
+                                            char **result);
+
+/**
+ * Takes the licence away. Nothing in the vault is touched.
+ */
+StillroomStatus stillroom_store_remove_licence(const struct StillroomStore *handle);
+
+/**
+ * For tests only: licences signed by this Ed25519 public key (32 bytes) are trusted in this store instead of the
+ * built-in one. Vaults opened from it afterwards follow.
+ */
+StillroomStatus stillroom_store_trust_licences_for_tests(struct StillroomStore *handle,
+                                                         const uint8_t *public_key,
+                                                         size_t public_key_length);
+
+/**
  * A backup of the vault while it's locked, into one file at `to` (UTF-8 path).
  */
 StillroomStatus stillroom_store_backup(const struct StillroomStore *handle, const char *to);
@@ -302,7 +359,8 @@ void stillroom_vault_lock(struct StillroomVault *handle);
 
 /**
  * Everything the window shows, as JSON: `{"files": [item…], "folders": […], "tags": […], "showInCapture",
- * "hasKit", "kitMade", "mustSetPassword", "intruderWasReset", "intruders", "lockedToAPc", "helloIsMine"}`. An item is as the list keeps it
+ * "hasKit", "kitMade", "mustSetPassword", "intruderWasReset", "intruders", "lockedToAPc", "helloIsMine", "room"}`.
+ * `room` is how many more items may go in without a licence, or null when there's no limit (licensed). An item is as the list keeps it
  * (`id`, `name`, `uti`, `size`, `addedAt`, `folder`, `modifiedAt`, `tags`, `entry`, `versions`, `chunked`, `created`,
  * `contentModified`…), never with a key. Dates are seconds since 2001.
  */
@@ -312,7 +370,8 @@ StillroomStatus stillroom_vault_state(const struct StillroomVault *handle,
 /**
  * Adds files and folders (a JSON array of paths) into `folder` (or the top, when null). Gives JSON:
  * `{"items": [id…], "originals": {"files": […], "folders": […]}, "unchecked": [path…], "failed": [{"path",
- * "code", "message"}…], "skipped": n}`. Only `originals` may be deleted (`stillroom_delete_originals`).
+ * "code", "message"}…], "skipped": n, "refused": n}`. Only `originals` may be deleted (`stillroom_delete_originals`).
+ * `refused` files stayed where they are at the free tier's limit; `refusedMessage` says so in words (null when none).
  */
 StillroomStatus stillroom_vault_add(const struct StillroomVault *handle,
                                     const char *paths,
@@ -566,6 +625,22 @@ StillroomStatus stillroom_vault_refresh_search(const struct StillroomVault *hand
                                                bool *changed);
 
 /**
+ * The PDFs and pictures whose words aren't known or have changed: JSON `[{"id", "name", "uti", "size",
+ * "changed"}…]`. The app reads each (`stillroom_vault_read`) and its words with the vault free, then gives them back
+ * with `stillroom_vault_set_words`; `stillroom_vault_refresh_search` without `read_text` leaves them for this.
+ */
+StillroomStatus stillroom_vault_search_wanting(const struct StillroomVault *handle,
+                                               char **result);
+
+/**
+ * Words the app read, recorded and sealed: JSON `[{"id", "changed", "size", "text"}…]`, with each item's `changed`
+ * and `size` as `stillroom_vault_search_wanting` gave them (an item changed since is read again later). An empty
+ * `text` records that there are none.
+ */
+StillroomStatus stillroom_vault_set_words(const struct StillroomVault *handle,
+                                          const char *words);
+
+/**
  * Items whose name, tags or words hold `query`: a JSON array of ids.
  */
 StillroomStatus stillroom_vault_search(const struct StillroomVault *handle,
@@ -581,7 +656,9 @@ StillroomStatus stillroom_vault_snippet(const struct StillroomVault *handle,
                                         char **result);
 
 /**
- * Accounts from a password export (CSV bytes), each a Login secret in "Imported". Gives JSON `{"added", "skipped"}`.
+ * Accounts from a password export (CSV bytes), each a Login secret in "Imported". Gives JSON `{"added", "skipped",
+ * "left", "leftMessage"}`: `left` didn't go in at the free tier's limit (the export still holds them, so don't offer it
+ * for deletion), and `leftMessage` says so in words (null when none).
  */
 StillroomStatus stillroom_vault_import_logins(const struct StillroomVault *handle,
                                               const uint8_t *csv,
@@ -663,9 +740,10 @@ StillroomStatus stillroom_look(const char *uti,
 StillroomStatus stillroom_can_edit(const char *uti, const char *name, bool is_file, bool *result);
 
 /**
- * An email (.eml or .emlx bytes) read into JSON: `{"from", "to", "cc", "subject", "date", "page", "text",
- * "attachments": [{"name", "kind", "size"}…]}`. `page` is the HTML to show; nothing in it may be fetched. Gives null
- * when the bytes aren't an email.
+ * An email (.eml or .emlx bytes) read into JSON: `{"from", "to", "cc", "subject", "date", "document", "text",
+ * "attachments": [{"name", "kind", "size"}…]}`. `document` is the message to draw (`mail_page::Document`): blocks of
+ * styled words and pictures from inside the email, with no address in it that could be loaded. Gives null when the
+ * bytes aren't an email.
  */
 StillroomStatus stillroom_email_read(const uint8_t *data,
                                      size_t length,

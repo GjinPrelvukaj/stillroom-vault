@@ -86,11 +86,13 @@ import { softwareJsonLd } from '../lib/schema';
       <dl class="meta">
         <div><dt>File</dt><dd class="mono">{download.file}</dd></div>
         <div><dt>SHA-256</dt><dd class="mono">{download.sha256}</dd></div>
+        <div><dt>Team ID</dt><dd class="mono">{download.teamId}</dd></div>
       </dl>
       <p class="quiet">
         To check the download is the real one, run <code>shasum -a 256 ~/Downloads/{download.file}</code> in Terminal: it
         should print the number above. No Terminal? Drop the zip on the <a href="/tools/file-checksum/">file checksum
-        checker</a>, which recognises it. Stillroom also checks its own signature each time it opens, and says so on the
+        checker</a>, which recognises it. To check who signed the app, run <code>codesign -dv /Applications/Stillroom.app</code>: the
+        TeamIdentifier line should read {download.teamId}. Stillroom also checks its own signature each time it opens, and says so on the
         lock screen if the copy has been changed.
       </p>
     </div>

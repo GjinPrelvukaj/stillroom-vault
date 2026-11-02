@@ -77,10 +77,10 @@ internal abstract class Editor : UserControl, IDisposable
             Background = new SolidColorBrush(Windows.UI.Color.FromArgb(0x24, 0xB0, 0x8C, 0xFF)),
             BorderBrush = new SolidColorBrush(Windows.UI.Color.FromArgb(0x38, 0xB0, 0x8C, 0xFF)),
             BorderThickness = new Thickness(1),
-            Child = new FontIcon { Glyph = glyph, FontSize = 19, Foreground = (Brush)Application.Current.Resources["VaultBrush"] },
+            Child = new FontIcon { Glyph = glyph, FontSize = 19, Foreground = Theme.Brush("VaultBrush") },
         });
         var words = new StackPanel { Spacing = 2, VerticalAlignment = VerticalAlignment.Center };
-        words.Children.Add(new TextBlock { Text = kind.ToUpperInvariant(), FontSize = 10.5, FontWeight = FontWeights.SemiBold, CharacterSpacing = 80, Foreground = (Brush)Application.Current.Resources["QuietBrush"] });
+        words.Children.Add(new TextBlock { Text = kind.ToUpperInvariant(), FontSize = 10.5, FontWeight = FontWeights.SemiBold, CharacterSpacing = 80, Foreground = Theme.Brush("QuietBrush") });
         words.Children.Add(Title);
         Grid.SetColumn(words, 1);
         header.Children.Add(words);
@@ -160,7 +160,7 @@ internal abstract class Editor : UserControl, IDisposable
 
     protected static Border Panel(UIElement child) => new()
     {
-        Background = (Brush)Application.Current.Resources["PanelBrush"],
+        Background = Theme.Brush("PanelBrush"),
         CornerRadius = new CornerRadius(12),
         Child = child,
     };
@@ -294,7 +294,7 @@ internal sealed class SecretEditor : Editor
         ticking.Clear();
         foreach (var field in secret.Fields)
         {
-            if (rows.Children.Count > 0) rows.Children.Add(new Border { Height = 1, Background = new SolidColorBrush(Windows.UI.Color.FromArgb(0x0D, 0xFF, 0xFF, 0xFF)) });
+            if (rows.Children.Count > 0) rows.Children.Add(new Border { Height = 1, Background = Theme.Brush("HairlineBrush") });
             rows.Children.Add(FieldRow(field));
             if (CodeRow(field) is { } code) rows.Children.Add(code);
         }
@@ -400,7 +400,7 @@ internal sealed class SecretEditor : Editor
             // Split in half, as authenticator apps show it: easier to read off and type.
             code.Text = $"{now.Code[..(now.Code.Length / 2)]} {now.Code[(now.Code.Length / 2)..]}";
             var warn = now.SecondsLeft <= 5;
-            code.Foreground = warn ? new SolidColorBrush(Microsoft.UI.Colors.Orange) : (Brush)Application.Current.Resources["VaultBrush"];
+            code.Foreground = warn ? new SolidColorBrush(Microsoft.UI.Colors.Orange) : Theme.Brush("VaultBrush");
             left.Text = $"{now.SecondsLeft} s";
             AutomationProperties.SetName(code, $"Code {string.Join(' ', now.Code.ToCharArray())}");
         }

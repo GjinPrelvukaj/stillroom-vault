@@ -4,6 +4,16 @@ All notable changes to Stillroom. The format follows [Keep a Changelog](https://
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-11-02
+
+A heads-up before the free limit, a way to buy from inside the app, and a stricter offline check.
+
+### Added
+- From five free items left, the sidebar says how many remain ("3 of 25 free items left", then "Free limit reached, adding is paused") with a Buy a Licence button, so the limit is never a surprise. Settings › Licence has the same button. Both open the pricing page in your browser; the app itself still makes no connection.
+
+### Changed
+- The offline build check also fails a build that looks code up by name at run time (`dlopen`, `dlsym`, `NSClassFromString` and the Objective-C class lookups), so nothing can reach a networking function that way. The app's one `dlsym`, used to make crash stacks readable, is now a direct link instead. Thanks to a reader of the dev.to article for pointing out the gap.
+
 ## [1.0.0] - 2026-10-28
 
 The first release. Format 4, the 1.0 format. Vaults from 0.1.0 and format 3 don't open in this version: export from the old version and add the files again.

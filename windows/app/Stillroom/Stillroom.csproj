@@ -17,19 +17,61 @@
     <!-- Unpackaged, carrying its own Windows App SDK: nothing to install first. -->
     <WindowsPackageType>None</WindowsPackageType>
     <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+    <!-- .NET itself too: since .NET 8 a runtime identifier alone no longer brings it, and a copy needing the .NET
+         Desktop Runtime installed first isn't what the Mac's "drag it in" promises. -->
+    <SelfContained>true</SelfContained>
     <!-- Program.Main hardens the process before WinUI starts, so XAML's own Main is off. -->
     <DefineConstants>$(DefineConstants);DISABLE_XAML_GENERATED_MAIN</DefineConstants>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <!-- Not released yet: 0.x until the Windows 1.0. Shown in Settings › Data under Check for Updates. -->
+    <Version>0.1.0</Version>
   </PropertyGroup>
 
+  <!-- A release knows the day it was built, so Settings can say when it's over six months old (the Mac's
+       StillroomBuilt). A debug build has none. -->
+  <ItemGroup Condition="'$(Configuration)' == 'Release'">
+    <AssemblyMetadata Include="StillroomBuilt" Value="$([System.DateTime]::UtcNow.ToString('yyyy-MM-dd'))" />
+  </ItemGroup>
+
   <ItemGroup>
-    <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.8.260921001" />
+    <!-- The Windows App SDK's parts Stillroom uses, not the whole of Microsoft.WindowsAppSDK (1.8.260921001), whose
+         on-device AI, ONNX Runtime, DirectML and Widgets would ship 47 MB of code nothing calls. The versions are the
+         ones that release pins. -->
+    <PackageReference Include="Microsoft.WindowsAppSDK.Base" Version="1.8.251216001" />
+    <PackageReference Include="Microsoft.WindowsAppSDK.Foundation" Version="1.8.260803002" />
+    <PackageReference Include="Microsoft.WindowsAppSDK.InteractiveExperiences" Version="1.8.260708001" />
+    <PackageReference Include="Microsoft.WindowsAppSDK.WinUI" Version="1.8.260803003" />
+    <PackageReference Include="Microsoft.WindowsAppSDK.DWrite" Version="1.8.25122902" />
+    <PackageReference Include="Microsoft.WindowsAppSDK.Runtime" Version="1.8.260921001" />
     <ProjectReference Include="..\..\engine\bindings\csharp\Stillroom.Native\Stillroom.Native.csproj" />
     <None Include="..\..\engine\target\$(Configuration.ToLowerInvariant())\stillroom_core.dll" Link="stillroom_core.dll" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="Assets\Stillroom.ico" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
+
+  <!-- Carrying its own Windows App SDK unpacks the whole of its runtime beside the app, whichever parts are referenced.
+       What nothing in Stillroom calls is left out: on-device AI and its models' runtimes, vision, semantic search and
+       Widgets. -->
+  <ItemGroup>
+    <MicrosoftWindowsAppSDKFilesExcluded Include="$(SelfContainedIntermediateOutputPath)MsixContent\Microsoft.Windows.AI.*;$(SelfContainedIntermediateOutputPath)MsixContent\onnxruntime*.dll;$(SelfContainedIntermediateOutputPath)MsixContent\DirectML.dll;$(SelfContainedIntermediateOutputPath)MsixContent\NpuDetect\**;$(SelfContainedIntermediateOutputPath)MsixContent\Microsoft.Graphics.Imaging*;$(SelfContainedIntermediateOutputPath)MsixContent\Microsoft.Graphics.ImagingInternal*;$(SelfContainedIntermediateOutputPath)MsixContent\Microsoft.Graphics.Internal.Imaging*;$(SelfContainedIntermediateOutputPath)MsixContent\Microsoft.Windows.Vision*;$(SelfContainedIntermediateOutputPath)MsixContent\Microsoft.Windows.Internal.Vision*;$(SelfContainedIntermediateOutputPath)MsixContent\Microsoft.Windows.VisionInternal*;$(SelfContainedIntermediateOutputPath)MsixContent\Microsoft.Windows.SemanticSearch*;$(SelfContainedIntermediateOutputPath)MsixContent\Microsoft.Windows.Workloads*;$(SelfContainedIntermediateOutputPath)MsixContent\Microsoft.Windows.Private.Workloads*;$(SelfContainedIntermediateOutputPath)MsixContent\workloads*.json;$(SelfContainedIntermediateOutputPath)MsixContent\Microsoft.Windows.Widgets.*" />
+  </ItemGroup>
+
+  <!-- Files that could reach the network or write the process's memory to disk, deleted from every build and publish;
+       the offline check (windows/tools/CheckOffline) fails if one comes back. Stillroom uses none of them.
+       - WinUI brings WebView2, which starts Edge's Chromium and its networking. Stillroom never makes a web view;
+         without these two nothing in the process can.
+       - .NET brings msquic.dll (QUIC, for HTTP/3) and createdump.exe, which writes a crashed process's whole memory
+         to a file when DOTNET_DbgEnableMiniDump is set, and links sockets. -->
+  <ItemGroup>
+    <LeftOut Include="WebView2Loader.dll;Microsoft.Web.WebView2.Core.dll;msquic.dll;createdump.exe" />
+  </ItemGroup>
+  <Target Name="LeaveOut" AfterTargets="Build">
+    <Delete Files="@(LeftOut->'$(OutDir)%(Identity)')" />
+  </Target>
+  <Target Name="LeaveOutFromPublish" AfterTargets="Publish">
+    <Delete Files="@(LeftOut->'$(PublishDir)%(Identity)')" />
+  </Target>
 
 </Project>

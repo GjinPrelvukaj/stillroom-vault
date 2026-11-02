@@ -28,6 +28,9 @@ internal sealed class VaultItem
     public bool IsFile => Entry is null;
     public bool IsNote => Entry == "note";
     public bool IsSecret => Entry == "secret";
+    /// <summary>An email file (.eml, or Apple Mail's .emlx), as the engine's `kinds::is_email` tells.</summary>
+    public bool IsEmail => IsFile && (Uti is "com.apple.mail.email" or "com.apple.mail.emlx" or "public.email-message"
+        || Name.EndsWith(".eml", StringComparison.OrdinalIgnoreCase) || Name.EndsWith(".emlx", StringComparison.OrdinalIgnoreCase));
     public DateTimeOffset ChangedAt => ModifiedAt ?? AddedAt;
     /// <summary>Last changed in the vault, else last changed before it came in, else when it came in.</summary>
     public DateTimeOffset ShownDate => ModifiedAt ?? ContentModified ?? AddedAt;

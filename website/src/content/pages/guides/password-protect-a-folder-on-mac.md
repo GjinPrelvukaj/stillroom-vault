@@ -1,19 +1,25 @@
 ---
 title: 'How to Password Protect a Folder on a Mac'
-description: 'macOS has no lock button for folders. Here are the free ways that work (an encrypted disk image, FileVault, your login) and what each one protects.'
+description: 'macOS has no lock button for folders. How to lock one with a password for free: Disk Utility, one Terminal command, or an external drive.'
 h1: 'How to password protect a folder on a Mac'
-lead: 'Finder has no "lock this folder with a password" button. macOS can still do it, with an encrypted disk image. Here is how, what it covers, and when a vault app fits better.'
+lead: 'Finder has no "lock this folder with a password" button. The built-in way is to turn the folder into an encrypted disk image with Disk Utility, which opens only with your password. Here is how, step by step, what it covers, and when a vault app fits better.'
 name: 'Password protect a folder'
-updated: '27 October 2026'
+updated: '30 October 2026'
 order: 10
-related: ['/guides/encrypt-files-on-mac/', '/compare/encrypted-disk-image/', '/guides/secure-a-shared-mac/', '/learn/argon2id/']
+related: ['/guides/encrypt-files-on-mac/', '/guides/hide-files-on-mac/', '/compare/encrypted-disk-image/', '/compare/filevault/', '/guides/secure-a-shared-mac/']
 faq:
+  - q: 'How do I lock a folder on a Mac with a password?'
+    a: 'Make it an encrypted disk image. In Disk Utility choose File > New Image > Blank Image, pick an encryption option, set a password, then copy the folder in. Eject the image to lock it; double-click it and type the password to open it.'
   - q: 'Can I put a password on a folder in Finder?'
     a: 'No. Finder can change who may read a folder, but it has no password lock. The built-in way to put a password on a folder is to turn it into an encrypted disk image with Disk Utility.'
   - q: 'Can I lock or hide files on a Mac without an app?'
     a: 'Not in a way that keeps people out. Ticking Locked in a file''s Get Info window only stops it being changed or deleted by accident; anyone can still open it. Hidden files show again with Command Shift period in Finder. To lock files so they can''t be read, put them in an encrypted disk image.'
   - q: 'Is FileVault enough to protect a folder?'
     a: 'FileVault protects everything on the disk while the Mac is off or no one is logged in. Once you log in, every file in your account is readable by anyone at your keyboard, so it does not protect one folder from someone using your Mac.'
+  - q: 'Can I password protect a folder without Disk Utility?'
+    a: 'Yes, with one Terminal command: diskutil image create from --encrypt, followed by the folder and a name for the image. It asks for a password and makes an encrypted image that grows as you add files.'
+  - q: 'Can I password protect a folder on an external hard drive?'
+    a: 'You can encrypt the whole drive: in Finder, Control-click the drive and choose Encrypt. To lock just one folder on it, make an encrypted disk image and save it on the drive.'
   - q: 'What happens if I forget the disk image password?'
     a: 'Apple says you will not be able to open the disk image. There is no reset, so keep the password somewhere safe.'
   - q: 'Does deleting the original folder after making the image remove it for good?'
@@ -21,6 +27,8 @@ faq:
 sources:
   - label: 'Apple: Create a disk image using Disk Utility on Mac'
     url: 'https://support.apple.com/guide/disk-utility/create-a-disk-image-dskutl11888/mac'
+  - label: 'Apple: Encrypt and protect a storage device with a password in Disk Utility'
+    url: 'https://support.apple.com/guide/disk-utility/dskutl35612/mac'
   - label: 'Apple: Protect data on your Mac with FileVault'
     url: 'https://support.apple.com/guide/mac-help/protect-data-on-your-mac-with-filevault-mh11785/mac'
   - label: 'Apple: Change Lock Screen settings on Mac'
@@ -60,6 +68,30 @@ To lock it again, eject the image in Finder. To open it, double-click the `.dmg`
 
 There is also **File > New Image > Image from Folder**, which makes an image straight from an existing folder. Its read-only formats cannot be changed after they are made, so use it for an archive rather than a folder you still work in.
 
+### Without Disk Utility: one Terminal command
+
+If you'd rather not click through Disk Utility, Terminal can make the same thing in one line. On macOS 27 the command is `diskutil image create`:
+
+```bash
+diskutil image create from --encrypt ~/Private ~/Private.sparsebundle
+```
+
+Replace `~/Private` with the folder you want to lock. Terminal asks for a password, then makes `Private.sparsebundle`, encrypted with AES-256, next to it. Because it is a sparse bundle, it starts small and grows as you add files, so there is no size to pick.
+
+On earlier versions of macOS, use `hdiutil` instead (it still works on macOS 27, with a warning that it is deprecated). It makes a read/write `.dmg` sized to the folder:
+
+```bash
+hdiutil create -srcfolder ~/Private -encryption AES-256 -format UDRW ~/Private.dmg
+```
+
+Either way, open it with a double-click and your password, like any disk image. Check your files are inside before you delete the original folder.
+
+### On an external hard drive
+
+To protect everything on an external drive, encrypt the drive itself. In Finder, Control-click the drive in the sidebar and choose **Encrypt**, then set a password and a hint. Apple says this works without erasing the drive. If **Encrypt** isn't in the menu, the drive is probably formatted for Windows (exFAT or FAT); the way round that is to erase it as **APFS (Encrypted)** in Disk Utility, which deletes everything on it, so copy your files off first.
+
+To lock only one folder on the drive, make an encrypted disk image as above and save it on the drive.
+
 ### What an encrypted disk image does well
 
 - It is free and already on your Mac.
@@ -70,7 +102,7 @@ There is also **File > New Image > Image from Folder**, which makes an image str
 
 - **While it is open, it is just a drive.** Anyone at your keyboard, and any app you run, can read it until you eject it.
 - **If you forget the password, the image is gone.** Apple says plainly that you will not be able to open it.
-- **You pick its size up front,** so choose one with room to grow.
+- **You pick its size up front** in Disk Utility, so choose one with room to grow (the Terminal sparse bundle above grows by itself).
 
 ## Turn on FileVault and lock your screen as well
 

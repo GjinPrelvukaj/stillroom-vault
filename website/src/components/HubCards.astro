@@ -3,7 +3,7 @@
 // - featured: the first three as picture cards, then the rest as the journal index (Guides)
 // - grid: every article as an even card with its picture (Comparisons)
 // - gallery: pictures in two sizes, staggered (Learn)
-// - stories: tall pictures, two to a row, with each article's lead (Who it's for)
+// - stories: pictures three to a row, with each article's lead (Who it's for)
 // - moves: one row per app, "from" it to Stillroom (Moving to Stillroom)
 import Art from './Art.astro';
 import ArticleList from './ArticleList.astro';
@@ -17,7 +17,7 @@ interface Props {
 const { variant, items } = Astro.props;
 const top = variant === 'featured' ? items.slice(0, 3) : items;
 const rest = variant === 'featured' ? items.slice(3) : [];
-const ratio = variant === 'stories' ? '4 / 5' : '3 / 2';
+const ratio = '3 / 2';
 ---
 
 {
@@ -102,13 +102,7 @@ const ratio = variant === 'stories' ? '4 / 5' : '3 / 2';
     }
     .stories {
       grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: var(--space-16) var(--space-12);
-    }
-    .stories .name {
-      font-size: var(--text-3xl);
-    }
-    .stories .what {
-      font-size: var(--text-lg);
+      gap: var(--space-12) var(--space-8);
     }
     /* Two sizes in a 12-column grid: a big one, then two small, the small ones dropped a little to stagger. */
     .gallery {
@@ -134,6 +128,9 @@ const ratio = variant === 'stories' ? '4 / 5' : '3 / 2';
     }
     .featured .name {
       font-size: var(--text-3xl);
+    }
+    .stories {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
     }
   }
 

@@ -31,6 +31,7 @@ use crate::crypto::{
 };
 use crate::list::{Item, VaultList};
 use crate::names::{ItemSeal, Names};
+use crate::licence::{self, Licence};
 use crate::{fsx, intruder, kinds, kit, search, Error, VaultError};
 
 /// One of the two slots, built exactly alike. The letters say nothing about which is whose.
@@ -85,11 +86,13 @@ pub struct Store {
     root: PathBuf,
     cost: PasswordCost,
     read_only: bool,
+    /// Tests sign licences with a test pair; None trusts only the key built in.
+    licence_signer: Option<[u8; 32]>,
 }
 
 impl Store {
     pub fn at(root: impl Into<PathBuf>) -> Store {
-        Store { root: root.into(), cost: PasswordCost::CURRENT, read_only: false }
+        Store { root: root.into(), cost: PasswordCost::CURRENT, read_only: false, licence_signer: None }
     }
 
     /// Where the vault lives on Windows: %APPDATA%\Stillroom\Store.
@@ -100,6 +103,13 @@ impl Store {
     /// Passwords stretched at this cost from now on. Tests turn it down, as the Mac tests do.
     pub fn with_cost(mut self, cost: PasswordCost) -> Store {
         self.cost = cost;
+        self
+    }
+
+    /// For tests: licences signed by this public key are trusted instead of the built-in one, as the Mac's
+    /// `License.signerForTests` (the real key is never used in tests).
+    pub fn trusting_licences_from(mut self, public_key: [u8; 32]) -> Store {
+        self.licence_signer = Some(public_key);
         self
     }
 
@@ -165,7 +175,46 @@ impl Store {
             }
             own.push(canonical(&parent.join("tries.json")));
         }
+        own.push(canonical(&self.licence_file()));
         own
+    }
+
+    // MARK: The licence
+
+    /// The licence, beside the store and in neither slot: `%APPDATA%\Stillroom\License` beside `Store`, as the Mac
+    /// keeps `Application Support/Stillroom/License`. A store named otherwise (a test's) has its own, `<name>-License`,
+    /// so no test reads or writes another's.
+    pub fn licence_file(&self) -> PathBuf {
+        let name = self.root.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
+        let file = if name == "Store" { "License".to_owned() } else { format!("{name}-License") };
+        self.root.with_file_name(file)
+    }
+
+    fn licence_signer(&self) -> Option<ed25519_dalek::VerifyingKey> {
+        match self.licence_signer {
+            Some(bytes) => ed25519_dalek::VerifyingKey::from_bytes(&bytes).ok(),
+            None => licence::built_in(),
+        }
+    }
+
+    /// The saved licence, if there is one and it still checks out.
+    pub fn licence(&self) -> Option<Licence> {
+        licence::load(&self.licence_file(), self.licence_signer().as_ref())
+    }
+
+    /// Why a saved licence no longer checks out (blocked by a later release), or None.
+    pub fn licence_problem(&self) -> Option<licence::Problem> {
+        licence::saved_problem(&self.licence_file(), self.licence_signer().as_ref())
+    }
+
+    /// Checks a pasted key and keeps it: the limit lifts at once, in either vault. Writes nothing in the vault folder.
+    pub fn add_licence(&self, typed: &str) -> Result<Licence, Error> {
+        licence::save(&self.licence_file(), typed, self.licence_signer().as_ref())
+    }
+
+    /// Takes the licence away; nothing in the vault is touched.
+    pub fn remove_licence(&self) -> Result<(), Error> {
+        Ok(licence::remove(&self.licence_file())?)
     }
 
     pub fn mac_key(&self) -> PathBuf {

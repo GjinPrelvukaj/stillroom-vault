@@ -61,7 +61,7 @@ If your files never really needed to be in the cloud, and you used Boxcryptor ma
 |---|---|---|---|
 | Where data lives | A folder your cloud syncs | Proton's servers, synced to your devices | One folder on your Mac |
 | Platforms | Windows, macOS, Linux, iOS, Android | Windows, macOS, iOS, Android, web | Apple silicon Macs, macOS 26 or later |
-| Price | Free on desktop; mobile writing paid once per platform | Free 5 GB; subscriptions for more | Free for 25 items; $39 once; Family $129 for 5 |
+| Price | Free on desktop; mobile writing paid once per platform | Free 5 GB; subscriptions for more | Free for 25 items; $39 once; Family $79 for 5 |
 | Source | Open source | Open source apps and libraries | Source available (FSL); reader script MIT |
 | Cloud and sync | Through your cloud | Built in | None; it never goes online |
 | Sharing | Teams through Cryptomator Hub | Links with password and expiry | None |

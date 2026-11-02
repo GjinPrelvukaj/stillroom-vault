@@ -21,12 +21,12 @@ export const homeFaq: QA[] = [
   {
     id: 'free',
     q: 'What happens at 25 items on the free version?',
-    a: 'Adding more stops until you buy a licence. Opening, editing, exporting and backing up always keep working, licensed or not: Stillroom never holds your files hostage.',
+    a: 'Each file, note or secret is one item; folders and older versions don’t count. At 25, adding more stops until you buy a licence. Opening, editing, exporting and backing up always keep working, licensed or not: Stillroom never holds your files hostage.',
   },
   {
     id: 'once',
     q: 'Is $39 a subscription?',
-    a: 'No. It’s one payment, for every 1.x update. If there’s a 2.0, upgrading will cost $39 for 1.x owners, and 1.x keeps working forever. Every tier, Free included, has the same protection.',
+    a: 'No. It’s one payment, for every 1.x update. If there’s a 2.0, upgrading will cost $19 for 1.x owners, and 1.x keeps working forever. Every tier, Free included, has the same protection.',
   },
   {
     id: 'sync',

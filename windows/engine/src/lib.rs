@@ -18,13 +18,16 @@ pub mod import;
 pub mod intruder;
 pub mod kinds;
 pub mod kit;
+pub mod licence;
 pub mod list;
+pub mod mail_page;
 pub mod names;
 pub mod originals;
 pub mod otp;
 pub mod platform;
 pub mod search;
 pub mod secure;
+pub mod selfcheck;
 pub mod session;
 pub mod strength;
 pub mod tpm;
@@ -129,6 +132,10 @@ pub enum Error {
     LockedElsewhere,
     /// This PC has no TPM Stillroom can use, so it can't be locked to it.
     NoTpm,
+    /// The free tier's limit: this many items didn't go in. Only adding ever stops.
+    Full(usize),
+    /// A licence key that doesn't check out.
+    Licence(licence::Problem),
 }
 
 impl PartialEq for Error {
@@ -138,6 +145,8 @@ impl PartialEq for Error {
             (Error::Kit(a), Error::Kit(b)) => a == b,
             (Error::Io(a), Error::Io(b)) => a.kind() == b.kind(),
             (Error::FolderExists(a), Error::FolderExists(b)) => a == b,
+            (Error::Full(a), Error::Full(b)) => a == b,
+            (Error::Licence(a), Error::Licence(b)) => a == b,
             (a, b) => std::mem::discriminant(a) == std::mem::discriminant(b),
         }
     }
@@ -158,6 +167,8 @@ impl fmt::Display for Error {
                 f.write_str("This vault is locked to a Mac. Only one computer can hold the lock: turn it off on that Mac first.")
             }
             Error::NoTpm => f.write_str("This PC has no TPM that Stillroom can use, so the vault can't be locked to it."),
+            Error::Full(left) => f.write_str(&licence::full_message(*left)),
+            Error::Licence(problem) => problem.fmt(f),
         }
     }
 }
@@ -173,6 +184,12 @@ impl From<VaultError> for Error {
 impl From<kit::KitProblem> for Error {
     fn from(problem: kit::KitProblem) -> Self {
         Error::Kit(problem)
+    }
+}
+
+impl From<licence::Problem> for Error {
+    fn from(problem: licence::Problem) -> Self {
+        Error::Licence(problem)
     }
 }
 

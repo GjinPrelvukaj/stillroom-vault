@@ -204,6 +204,17 @@ struct VaultView: View {
             .padding(.vertical, Kit.Space.group)
             .accessibilityElement(children: .combine)
             .animation(Motion.change, value: state.size)
+            // The free tier, from a few items before the limit: the same line in either vault.
+            if let note = state.roomNote {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(note).font(Kit.quiet).foregroundStyle(Color.vault)
+                    Button("Buy a Licence", action: Updates.buy).buttonStyle(.quiet)
+                        .help("Opens stillroomvault.com/pricing in your browser")
+                }
+                .padding(.horizontal, 10)
+                .padding(.bottom, Kit.Space.item)
+                .transition(.opacity)
+            }
             HStack(spacing: Kit.Space.item) {
                 Button { choosing = true } label: { Label("Add Files", systemImage: "plus").frame(maxWidth: .infinity) }
                     .buttonStyle(.primary)

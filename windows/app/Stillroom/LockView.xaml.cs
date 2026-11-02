@@ -58,6 +58,7 @@ public sealed partial class LockView : UserControl
         var wait = making ? TimeSpan.Zero : state.Store.WaitBeforeNextTry;
         var helloOn = !making && !recovering && !usingKit && state.Store.HelloChallenge() is not null;
 
+        NotOurs.Visibility = SelfCheck.SignedByUs ? Visibility.Collapsed : Visibility.Visible;
         Waiting.Visibility = Inbox.Count > 0 && !OldFormat ? Visibility.Visible : Visibility.Collapsed;
         WaitingText.Text = $"Unlock to put {Inbox.Count} {(Inbox.Count == 1 ? "item" : "items")} in the vault.";
 
@@ -70,7 +71,7 @@ public sealed partial class LockView : UserControl
 
         var seconds = (int)Math.Ceiling(wait.TotalSeconds);
         Line.Text = seconds > 0 ? $"Too many wrong tries. Try again in {seconds} s." : problem ?? " ";
-        Line.Foreground = seconds > 0 || problem is not null ? (Brush)Application.Current.Resources["ProblemBrush"] : (Brush)Application.Current.Resources["QuietBrush"];
+        Line.Foreground = seconds > 0 || problem is not null ? Theme.Brush("ProblemBrush") : Theme.Brush("QuietBrush");
         if (seconds > 0) clock.Start(); else clock.Stop();
 
         GoButton.Content = making ? "Make Vault…" : "Unlock…";

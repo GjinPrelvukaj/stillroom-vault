@@ -332,7 +332,8 @@ struct SettingsPane: View {
                 }
             } else {
                 row("Free", "This vault holds \(state.files.count) of \(License.freeItems) items. Every feature is included; a licence key lifts the limit, and it never expires. Opening, exporting and backing up never stop, whatever the count.") {
-                    EmptyView()
+                    Button("Buy a Licence…", action: Updates.buy).buttonStyle(.secondary)
+                        .help("Opens stillroomvault.com/pricing in your browser")
                 }
                 divider
                 VStack(alignment: .leading, spacing: Kit.Space.label) {

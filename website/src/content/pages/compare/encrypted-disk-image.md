@@ -6,7 +6,7 @@ lead: 'Every Mac can already make an encrypted disk image in Disk Utility, for f
 name: 'Encrypted disk image'
 updated: '27 October 2026'
 order: 30
-related: ['/guides/password-protect-a-folder-on-mac/', '/guides/encrypt-files-on-mac/', '/compare/veracrypt/', '/features/view-without-decrypting/']
+related: ['/guides/password-protect-a-folder-on-mac/', '/guides/encrypt-files-on-mac/', '/compare/veracrypt/', '/features/view-without-decrypting/', '/compare/filevault/']
 faq:
   - q: 'How do I make an encrypted disk image on a Mac?'
     a: 'In Disk Utility, choose File, New Image, Blank Image, pick an encryption option and a read/write format, and set a password. Apple''s guide walks through it.'
@@ -36,7 +36,7 @@ It also helps to know what's already protecting you. FileVault protects everythi
 | Where data lives | One image file, wherever you save it | One folder on your Mac |
 | Encryption | An encryption option you choose in Disk Utility | AES-256-GCM, a fresh key per item; Argon2id (512 MB) for the password |
 | Platforms | Any Mac | Apple silicon Macs, macOS 26 or later |
-| Price | Free, built in | Free for 25 items; $39 once; Family $129 for 5 people |
+| Price | Free, built in | Free for 25 items; $39 once; Family $79 for 5 people |
 | Source | Part of macOS | Source available (FSL); the reader script is MIT |
 | Cloud and sync | None; you can copy the file anywhere | None; it never goes online |
 | Scope | Any files | Files, notes, passwords and two-factor codes |

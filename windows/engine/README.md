@@ -25,7 +25,7 @@ cargo test --test decoy
 | `kit.rs` | `Crypto/EmergencyKit.swift` |
 | `list.rs` | `Models/VaultFile.swift`, `Models/Secret.swift` |
 | `blob.rs` | `Storage/Chunked.swift` and one-piece items: sealing, reading, range reads for playback |
-| `search.rs` | `Storage/SearchIndex.swift` (PDFs and pictures are read by the platform, through `Extra`) |
+| `search.rs` | `Storage/SearchIndex.swift` (PDFs and pictures are read by the platform with the vault free: `search_wanting`, then `set_words`) |
 | `backup.rs` | `Storage/Backup.swift` |
 | `originals.rs` | `Storage/Originals.swift` |
 | `intruder.rs` | `Security/IntruderLog.swift` |
@@ -33,6 +33,7 @@ cargo test --test decoy
 | `otp.rs` | `Crypto/OneTimeCode.swift` |
 | `import.rs` | `Models/PasswordImport.swift` |
 | `email.rs` | `Models/Email.swift` |
+| `mail_page.rs` | `MailPage`, without a web engine: the message as blocks of styled words and pictures from inside the email, for the app to draw, with no address left in it but a link's words |
 | `export.rs`, `bin/stillroom-open.rs` | `exportAll`, and `tools/stillroom-open.py` as a Windows command |
 | `tries.rs` | `TryLimit` (in `Views/LockView.swift`): wrong tries, kept beside the vault folder |
 | `kinds.rs` | What the Mac learns from `UTType`: an extension's UTI, whether a kind is text, a picture, a PDF, audio or video, and `canEdit`'s allowlist |
@@ -43,6 +44,7 @@ cargo test --test decoy
 | `hello.rs` | Windows Hello's way in (`TouchIDKey.swift`'s counterpart): the app asks Hello to sign a challenge, the signature seals the slot key; `hello.key` and the list's `hello` field |
 | `platform.rs` | Process hardening (mitigation policies), and the vault folder readable by this account only |
 | `desktop.rs` | Typing a secret on a desktop of its own, out of other programs' keyboard hooks' sight |
+| `selfcheck.rs` | `Security/SelfCheck.swift`: whether a file is signed by Stillroom's maker (Authenticode, offline, a pinned publisher name) |
 
 Not here, because the platform layer will do them: Windows Hello and the TPM (Touch ID and Lock to this Mac), the camera, the RAM disk, the Recycle Bin, reading PDFs and pictures for search, and remembering when the last backup was made.
 
@@ -85,9 +87,9 @@ cargo run --bin stillroom-open -- STORE_FOLDER OUT_FOLDER --kit        # asks fo
 
 ## Tests
 
-Each Mac test suite has its Rust counterpart, test for test: `vault_flow.rs` (VaultFlow, ItemKey, ChunkBinding, Check, Folder, Originals, ExportKit and the import flow), `decoy.rs` (one test per tell in `docs/SECURITY.md` rule 2), `review_fixes.rs` (ReviewFixTests), `backup.rs`, `chunked.rs`, `intruder.rs`, `kit.rs`, `crypto.rs`, `argon2.rs` and `small_pieces.rs` (two-factor codes, password strength, import, email). `stretches.rs` counts the Argon2 runs per try, so every try is checked to cost the same whichever slots can answer. Each test makes a vault of its own in a temp folder.
+Each Mac test suite has its Rust counterpart, test for test: `vault_flow.rs` (VaultFlow, ItemKey, ChunkBinding, Check, Folder, Originals, ExportKit and the import flow), `decoy.rs` (one test per tell in `docs/SECURITY.md` rule 2), `review_fixes.rs` (ReviewFixTests), `backup.rs`, `chunked.rs`, `intruder.rs`, `kit.rs`, `crypto.rs`, `argon2.rs` and `small_pieces.rs` (two-factor codes, password strength, import, email). `mail_page.rs` is `MailLockdownTests` at its source: a hostile email comes out with no address to load; `search_platform.rs` covers the words the app reads. `stretches.rs` counts the Argon2 runs per try, so every try is checked to cost the same whichever slots can answer. Each test makes a vault of its own in a temp folder.
 
-Windows' own protections: `pc_lock.rs` (against this PC's real TPM, skipped without one; every TPM key a test makes is deleted), `hello.rs` (with a stand-in for Windows Hello's signature; `tests/hello/windows-hello.ps1` runs the real thing by hand, asking for your PIN), `hardening.rs` and `secure.rs` (each alone, as they change the whole process), `folder_permissions.rs`, and `secure_desktop.rs` (the prompt made on its own desktop and typed into, without switching the screen). `cargo run --example secure_prompt` shows the secure desktop for real.
+Windows' own protections: `pc_lock.rs` (against this PC's real TPM, skipped without one; every TPM key a test makes is deleted), `hello.rs` (with a stand-in for Windows Hello's signature; `tests/hello/windows-hello.ps1` runs the real thing by hand, asking for your PIN), `hardening.rs` and `secure.rs` (each alone, as they change the whole process), `folder_permissions.rs`, `selfcheck.rs` (real signatures from `../sign.ps1 -Test`, skipped without the Windows SDK's signtool), and `secure_desktop.rs` (the prompt made on its own desktop and typed into, without switching the screen). `cargo run --example secure_prompt` shows the secure desktop for real.
 
 Two fixtures check the format both ways:
 

@@ -1,10 +1,10 @@
 ---
 title: 'Authenticator App for Mac: 2FA Codes Without a Phone'
 description: 'Get two-factor codes on your Mac with Apple Passwords, a password manager or an offline vault. How to set each up, and the trade-off to know first.'
-h1: 'Two-factor codes on your Mac, without your phone'
+h1: 'An authenticator app for Mac: 2FA codes offline, without your phone'
 lead: 'You don''t need your phone in your hand to sign in with two-factor codes. Your Mac can make the same six-digit codes. Here are the ways to do it, and the one trade-off to think about first.'
 name: 'Two-factor codes on a Mac'
-updated: '28 October 2026'
+updated: '30 October 2026'
 order: 55
 points:
   - 'Any app holding a site''s setup key makes the same codes as your phone, so your Mac can make them.'
@@ -12,6 +12,8 @@ points:
   - 'Keep each site''s **backup codes** somewhere other than the device that makes your codes.'
 related: ['/tools/two-factor-codes/', '/tools/qr-code-reader/', '/guides/store-two-factor-backup-codes/', '/moving-from/apple-passwords/', '/compare/1password-vs-bitwarden/', '/guides/if-your-mac-is-stolen/']
 faq:
+  - q: 'Does an authenticator app on a Mac work offline?'
+    a: 'Yes. Two-factor codes are made from the setup key and the clock (RFC 6238), so any authenticator, Apple Passwords included, makes them with no internet connection. Only syncing codes between devices needs a connection.'
   - q: 'Is there a free authenticator app for Mac?'
     a: 'Yes. Apple Passwords, which comes with macOS, can make two-factor codes from a setup key. Select the account, click Edit, then Set Up Code.'
   - q: 'Can I move my codes from Google Authenticator or Authy to my Mac?'

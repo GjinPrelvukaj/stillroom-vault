@@ -6,7 +6,7 @@ lead: 'What protects your files is mostly decided before the theft: FileVault, a
 name: 'If your Mac is stolen'
 updated: '27 October 2026'
 order: 60
-related: ['/features/lock-to-this-mac/', '/features/intruder-log/', '/features/recovery-key/', '/for/travellers/']
+related: ['/features/lock-to-this-mac/', '/features/intruder-log/', '/features/recovery-key/', '/for/travellers/', '/compare/filevault/']
 faq:
   - q: 'Can a thief read my files if my Mac was locked?'
     a: 'With FileVault on and a strong login password, the disk cannot be decrypted without that password. If the Mac was unlocked and awake when it was taken, your files are as open as they were to you.'

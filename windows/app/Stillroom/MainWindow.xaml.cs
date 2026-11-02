@@ -32,6 +32,10 @@ public sealed partial class MainWindow : Window
 
         ExtendsContentIntoTitleBar = true;
         SetTitleBar(TitleBar);
+        // Light or dark from the start, the lock screen included; the title bar's buttons follow.
+        Theme.Changed += ColourCaptionButtons;
+        Theme.Follow(Root, settings.Appearance);
+        ColourCaptionButtons();
         AppWindow.SetIcon(Path.Combine(AppContext.BaseDirectory, "Assets", "Stillroom.ico"));
         var scale = Win32.GetDpiForWindow(hwnd) / 96.0;
         AppWindow.Resize(new SizeInt32((int)(1180 * scale), (int)(760 * scale)));
@@ -143,6 +147,25 @@ public sealed partial class MainWindow : Window
 
     /// <summary>The app's preferences, changed by Settings and saved there.</summary>
     internal Settings Settings => settings;
+
+    /// <summary>Settings › Protection › Appearance: the window, the lock screen and the title bar change at once.</summary>
+    internal void SetAppearance(Appearance appearance)
+    {
+        settings.Appearance = appearance;
+        Theme.Set(appearance);
+    }
+
+    /// <summary>The minimize, maximize and close buttons in the theme's ink, which Windows doesn't do for a title bar
+    /// drawn by the app.</summary>
+    private void ColourCaptionButtons()
+    {
+        var ink = ((Microsoft.UI.Xaml.Media.SolidColorBrush)Theme.Brush("InkBrush")).Color;
+        AppWindow.TitleBar.ButtonForegroundColor = ink;
+        AppWindow.TitleBar.ButtonHoverForegroundColor = ink;
+        AppWindow.TitleBar.ButtonInactiveForegroundColor = Windows.UI.Color.FromArgb(0x80, ink.R, ink.G, ink.B);
+        AppWindow.TitleBar.ButtonBackgroundColor = Microsoft.UI.Colors.Transparent;
+        AppWindow.TitleBar.ButtonInactiveBackgroundColor = Microsoft.UI.Colors.Transparent;
+    }
 
     /// <summary>The tray icon shown or not (Settings).</summary>
     internal void ShowTrayIcon(bool show) => watch.ShowTrayIcon(show);

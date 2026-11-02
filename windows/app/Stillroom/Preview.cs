@@ -15,16 +15,16 @@ using Windows.System;
 
 namespace Stillroom;
 
-/// <summary>A file, or an earlier version of anything, shown in a card (the Mac's `PreviewCard`): pictures and text
-/// drawn here from memory, never written to disk. PDFs, audio, video and email get their viewers in Phase 5; until
-/// then they offer a copy to open elsewhere.</summary>
+/// <summary>A file, or an earlier version of anything, shown in a card (the Mac's `PreviewCard`): pictures, PDFs, email
+/// and text drawn here from memory, audio and video played straight from the vault, never written to disk.</summary>
 internal sealed class PreviewCard : UserControl
 {
     /// <summary>Bigger than this isn't read into memory for a look.</summary>
     private const long Largest = 64 << 20;
 
-    /// <summary>`edit`: Edit in Place, for a kind that may open in another app; null hides the button.</summary>
-    public PreviewCard(AppState state, VaultItem item, VersionInfo? version, Action close, Action save, Action? edit = null)
+    /// <summary>`edit`: Edit in Place, for a kind that may open in another app; null hides the button. `attachments`:
+    /// what an email's attachments do (seal one in, save one out).</summary>
+    public PreviewCard(AppState state, VaultItem item, VersionInfo? version, Action close, Action save, Action? edit = null, Attachments? attachments = null)
     {
         var size = version?.Size ?? item.Size;
         var date = version?.Date ?? item.ShownDate;
@@ -36,7 +36,7 @@ internal sealed class PreviewCard : UserControl
             FontSize = 10.5,
             FontWeight = FontWeights.SemiBold,
             CharacterSpacing = 80,
-            Foreground = (Brush)Application.Current.Resources["QuietBrush"],
+            Foreground = Theme.Brush("QuietBrush"),
         });
         heading.Children.Add(new TextBlock { Text = item.Name, FontSize = 24, FontWeight = FontWeights.SemiBold, TextTrimming = TextTrimming.CharacterEllipsis });
 
@@ -74,9 +74,9 @@ internal sealed class PreviewCard : UserControl
 
         var shown = new Border
         {
-            Background = new SolidColorBrush(Windows.UI.Color.FromArgb(0x0A, 0xFF, 0xFF, 0xFF)),
+            Background = Theme.Brush("FaintBrush"),
             CornerRadius = new CornerRadius(12),
-            Child = Contents(state, item, version, size),
+            Child = Contents(state, item, version, size, attachments),
         };
         var card = new Grid { RowSpacing = 16, Padding = new Thickness(0, 8, 0, 0) };
         card.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
@@ -90,10 +90,39 @@ internal sealed class PreviewCard : UserControl
         Content = card;
     }
 
-    private static UIElement Contents(AppState state, VaultItem item, VersionInfo? version, long size)
+    private static UIElement Contents(AppState state, VaultItem item, VersionInfo? version, long size, Attachments? attachments)
     {
-        var showable = item.Look is Look.Picture or Look.Text || !item.IsFile;
-        if (!showable) return Message(item.Glyph, "No preview here yet", "Save a copy to open it in its own app. Viewers for this kind come in a later version.");
+        var playable = item.Look is Look.Audio or Look.Video;
+        Func<UIElement> unplayable = () => Message(item.Glyph, "Windows can't play this", "Save a copy to open it in an app that plays this kind.");
+        // Played as it's read, a piece at a time, whatever its size.
+        if (playable && version is null)
+        {
+            try { return new MediaViewer(item, state.Vault!.OpenReader(item.Id), null, unplayable); }
+            catch (StillroomException failure) when (failure.Status == Status.InvalidArgument) { /* Not in chunks: read whole, below. */ }
+            catch (Exception e) when (e is StillroomException or ObjectDisposedException or NullReferenceException)
+            {
+                return Message(item.Glyph, "Couldn't be read", e is StillroomException failure ? failure.Message : "");
+            }
+        }
+        var showable = item.Look is Look.Picture or Look.Text or Look.Pdf || item.IsEmail || playable || !item.IsFile;
+        if (!showable && item.IsFile && version is null && FontCard.Shows(item.Name))
+        {
+            if (size > QuickLook.Largest) return Message(item.Glyph, "Too big to show here", "Save a copy to open it in its app.");
+            var vault = state.Vault;
+            return new FontCard(
+                () => EditDesk.PutOutForLook(item.Name, path => vault!.ExportItem(item.Id, path)),
+                () => Message(item.Glyph, "Couldn't show it", "It may not be a font Windows can read. Save a copy to open it in its own app."));
+        }
+        if (!showable && item.IsFile && version is null && QuickLook.CanShow(item.Name))
+        {
+            if (size > QuickLook.Largest) return Message(item.Glyph, "Too big to show here", "Save a copy, or Edit in Place, to open it in its app.");
+            // Windows' own previewer, from a copy put out (it reads only files), wiped as the card closes.
+            var vault = state.Vault;
+            return new QuickLook(
+                () => EditDesk.PutOutForLook(item.Name, path => vault!.ExportItem(item.Id, path)),
+                () => Message(item.Glyph, "Couldn't show it", "Windows' previewer couldn't draw it. Save a copy to open it in its own app."));
+        }
+        if (!showable) return Message(item.Glyph, "No preview for this kind", "Save a copy, or Edit in Place, to open it in its own app.");
         if (size > Largest) return Message(item.Glyph, "Too big to show here", "Save a copy to open it in its app.");
         byte[] data;
         try
@@ -107,7 +136,11 @@ internal sealed class PreviewCard : UserControl
         try
         {
             if (item.IsSecret) return SecretFields(data);
+            if (item.IsEmail) return new MailViewer(data, attachments?.Keep ?? ((_, _) => { }), attachments?.Save ?? ((_, _) => Task.CompletedTask));
             if (item.Look == Look.Picture && item.Uti != "public.svg-image") return Picture(data);
+            if (playable) return new MediaViewer(item, null, data, unplayable);
+            if (item.Look == Look.Pdf)
+                return new PdfViewer(data, () => Message(item.Glyph, "Couldn't be shown", "It may be damaged, or locked with a password. Save a copy to open it in its own app."));
             return Text(Encoding.UTF8.GetString(data));
         }
         finally
@@ -116,7 +149,7 @@ internal sealed class PreviewCard : UserControl
         }
     }
 
-    private static UIElement Picture(byte[] data)
+    internal static UIElement Picture(byte[] data)
     {
         var image = new Image { Stretch = Stretch.Uniform, Margin = new Thickness(16) };
         var bitmap = new BitmapImage();
@@ -182,6 +215,9 @@ internal sealed class PreviewCard : UserControl
     }
 }
 
+/// <summary>What an email's attachments do: `Keep` seals one into the vault, `Save` saves one out, unencrypted.</summary>
+internal sealed record Attachments(Action<string, byte[]> Keep, Func<string, byte[], Task> Save);
+
 /// <summary>Earlier contents of an item, newest first: open one to look, or put it back (the Mac's `VersionsSheet`).</summary>
 internal static class VersionsDialog
 {
@@ -193,7 +229,7 @@ internal static class VersionsDialog
         ContentDialog? dialog = null;
         foreach (var version in item.Versions.Reverse())
         {
-            if (list.Children.Count > 0) list.Children.Add(new Border { Height = 1, Background = new SolidColorBrush(Windows.UI.Color.FromArgb(0x0D, 0xFF, 0xFF, 0xFF)) });
+            if (list.Children.Count > 0) list.Children.Add(new Border { Height = 1, Background = Theme.Brush("HairlineBrush") });
             var row = new Grid { Height = 42, ColumnSpacing = 8, Padding = new Thickness(14, 0, 8, 0) };
             row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
@@ -217,12 +253,12 @@ internal static class VersionsDialog
         {
             Text = $"“{item.Name}” as it was before each change. Putting one back keeps today's as a version too.",
             TextWrapping = TextWrapping.Wrap,
-            Foreground = (Brush)Application.Current.Resources["QuietBrush"],
+            Foreground = Theme.Brush("QuietBrush"),
         });
         body.Children.Add(new ScrollViewer
         {
             MaxHeight = 320,
-            Content = new Border { Background = (Brush)Application.Current.Resources["PanelBrush"], CornerRadius = new CornerRadius(12), Child = list },
+            Content = new Border { Background = Theme.Brush("PanelBrush"), CornerRadius = new CornerRadius(12), Child = list },
         });
         dialog = new ContentDialog { XamlRoot = root, Title = "Versions", Content = body, CloseButtonText = "Done", DefaultButton = ContentDialogButton.Close };
         await dialog.ShowAsync();

@@ -34,6 +34,10 @@ const tiles = [
       <p class="proof">
         Free for {pricing.freeItems} items · $39 once <span class="nowrap">· <Icon name="apple" size={13} class="inline-icon" /> Apple silicon,</span> macOS 26+
       </p>
+      <p class="proof">
+        Coming from <a href="/compare/1password/">1Password</a>, <a href="/compare/bitwarden/">Bitwarden</a> or
+        <a href="/compare/cryptomator/">Cryptomator</a>? See how it compares.
+      </p>
     </div>
   </div>
 
@@ -127,6 +131,9 @@ const tiles = [
   .proof {
     color: var(--fg-quiet);
     font-size: var(--text-sm);
+  }
+  .proof a {
+    color: var(--vault);
   }
   .proof :global(.inline-icon) {
     display: inline-block;

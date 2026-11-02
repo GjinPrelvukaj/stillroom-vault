@@ -75,6 +75,13 @@ var checks = new List<(string Name, Action<string> Run)>
         }), "search refreshed");
         Expect(asked == 1, $"the reader was asked {asked} times");
         Expect(vault.Search("OAK TABLE").SequenceEqual([scanId]), "found by the picture's words");
+        // The app's way: the picture's words read with the vault free, then given back.
+        var photo = vault.AddData("PNG later"u8, "whiteboard.png");
+        vault.RefreshSearch();
+        var wanted = vault.SearchWanting();
+        Expect(wanted.Length == 1 && wanted[0].GetProperty("id").GetString()!.Equals(photo, StringComparison.OrdinalIgnoreCase), "the new picture is wanted");
+        vault.SetWords([(photo, wanted[0].GetProperty("changed").GetDouble(), wanted[0].GetProperty("size").GetInt64(), "marker on the whiteboard")]);
+        Expect(vault.SearchWanting().Length == 0 && vault.Search("WHITEBOARD MARKER").Length == 0 && vault.Search("marker on").SequenceEqual([photo]), "found by the words given back");
 
         var note = vault.NewNote("Diary", "day one");
         vault.Update(note, "day two"u8, "Diary 2");
@@ -200,6 +207,29 @@ var checks = new List<(string Name, Action<string> Run)>
         Expect(Encoding.ASCII.GetString(Engine.EmailAttachment(mail, 0)) == "%PDF", "attachment");
         Expect(Engine.ReadEmail([0, 0xFF]) is null, "not an email");
     }),
+
+    ("the licence and the free tier", dir =>
+    {
+        // The website signer's test key (website/server/fixtures/test-licence.json), never the production one.
+        using var fixture = JsonDocument.Parse(File.ReadAllText(RepoFile("website/server/fixtures/test-licence.json")));
+        using var store = QuickStore(dir);
+        store.TrustLicencesForTests(Convert.FromBase64String(fixture.RootElement.GetProperty("publicKey").GetString()!));
+        using var vault = store.Create("real password 123").Vault;
+        Expect(store.Licence is null && vault.State().GetProperty("room").GetInt32() == 25, "25 items without one");
+        for (var i = 0; i < 25; i++) vault.NewNote($"Note {i}", "");
+        Expect(Throws(() => vault.NewNote("One more", "")).Status == Status.Full, "the 26th is refused");
+        Expect(Throws(() => store.AddLicence("SR1.nonsense")).Status == Status.LicenceMalformed, "a mistyped key");
+        var licence = store.AddLicence("  " + fixture.RootElement.GetProperty("key").GetString() + "\r\n");
+        Expect(licence is { Name: "Zoë Ångström-Test", Edition: "family", EditionName: "Family", Seats: 5 }, $"{licence}");
+        Expect(vault.State().GetProperty("room").ValueKind == JsonValueKind.Null, "no limit with one");
+        vault.NewNote("One more", "");
+        var import = vault.ImportLogins("Title,URL,Username,Password\nA,https://a.com,me,1\n"u8);
+        Expect(import is (1, 0, 0, null), $"{import}");
+        store.RemoveLicence();
+        Expect(store.Licence is null && store.LicenceProblem is null, "gone");
+        var left = vault.ImportLogins("Title,URL,Username,Password\nB,https://b.com,me,2\n"u8);
+        Expect(left.Left == 1 && left.LeftMessage!.Contains("Settings › Licence"), $"{left}");
+    }),
 };
 
 var failed = 0;
@@ -229,6 +259,17 @@ static Store QuickStore(string dir)
     var store = Store.Open(Path.Combine(dir, "Store"));
     store.LowerCostForTests();
     return store;
+}
+
+/// A file in the repository, found from where the tests run.
+static string RepoFile(string relative)
+{
+    for (var dir = new DirectoryInfo(AppContext.BaseDirectory); dir is not null; dir = dir.Parent)
+    {
+        var path = Path.Combine(dir.FullName, relative);
+        if (File.Exists(path)) return path;
+    }
+    throw new FileNotFoundException(relative);
 }
 
 static void Expect(bool condition, string what)

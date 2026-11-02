@@ -17,7 +17,7 @@ internal static class RecoveryKeyDialog
         var groups = key.Split('-');
         // Which two groups are asked for, picked at random each time.
         var asked = Enumerable.Range(0, groups.Length).OrderBy(_ => RandomNumberGenerator.GetInt32(int.MaxValue)).Take(2).Order().ToArray();
-        var line = new TextBlock { Style = (Style)Application.Current.Resources["QuietText"], TextAlignment = TextAlignment.Left, Foreground = (Brush)Application.Current.Resources["ProblemBrush"] };
+        var line = new TextBlock { Style = (Style)Application.Current.Resources["QuietText"], TextAlignment = TextAlignment.Left, Foreground = Theme.Brush("ProblemBrush") };
         var dialog = new ContentDialog
         {
             XamlRoot = root,
@@ -38,7 +38,7 @@ internal static class RecoveryKeyDialog
                     },
                     new Border
                     {
-                        Background = (Brush)Application.Current.Resources["PanelBrush"],
+                        Background = Theme.Brush("PanelBrush"),
                         CornerRadius = new CornerRadius(10),
                         Padding = new Thickness(0, 16, 0, 16),
                         Child = new TextBlock

@@ -524,9 +524,9 @@ fn a_new_kit_isnt_brought_up_yet() {
 fn importing_twice_adds_nothing_twice() {
     let (_dir, _store, mut vault, _) = made();
     let logins = import::logins(b"Title,URL,Username,Password\nA,https://a.com,me,1\nB,https://b.com,me,2\n").unwrap();
-    assert_eq!(vault.import_logins(&logins).unwrap(), (2, 0));
+    assert_eq!(vault.import_logins(&logins).unwrap(), (2, 0, 0));
     assert!(vault.files().iter().all(|i| i.entry == Some(Entry::Secret) && i.folder.as_deref() == Some("Imported")));
-    assert_eq!(vault.import_logins(&logins).unwrap(), (0, 2));
+    assert_eq!(vault.import_logins(&logins).unwrap(), (0, 2, 0));
     let first = vault.files()[0].id;
     let stored: Secret = serde_json::from_slice(&vault.read(&first).unwrap()).unwrap();
     assert!(stored.fields[2].value == "1" || stored.fields[2].value == "2");

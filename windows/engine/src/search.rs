@@ -84,6 +84,12 @@ pub fn reads(item: &Item) -> bool {
         || kinds::is_image(&item.uti)
 }
 
+/// Whether only the platform can read an item's words: a PDF or a picture. The app reads these with the vault free
+/// (`Vault::search_wanting`, `Vault::set_words`), as reading them (text recognition) is slow.
+pub fn needs_platform(item: &Item) -> bool {
+    item.entry.is_none() && !kinds::is_email(&item.uti, &item.name) && (kinds::is_pdf(&item.uti) || kinds::is_image(&item.uti))
+}
+
 /// The words in an item's contents, or None when there are none to find. `extra` reads what only the platform can
 /// (PDFs, the text in pictures).
 pub fn words(item: &Item, data: &[u8], extra: Option<Extra>) -> Option<String> {

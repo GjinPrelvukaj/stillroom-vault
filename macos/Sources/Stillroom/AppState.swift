@@ -66,6 +66,15 @@ import UniformTypeIdentifiers
     /// How many more items the open vault may take: unlimited with a licence, otherwise up to `License.freeItems`
     /// counting its files, notes and secrets (folders and earlier versions don't count). Only adding asks.
     var room: Int { license == nil ? max(0, License.freeItems - files.count) : .max }
+    /// From this many free items left, the sidebar says so and offers a licence, so the limit is never a surprise.
+    static let nudgeAt = 5
+    /// The sidebar's quiet line about the free tier: nil while there's room to spare or with a licence. The same words
+    /// in either vault; only the open vault's own count goes in.
+    static func roomNote(room: Int, licensed: Bool) -> String? {
+        guard !licensed, room <= nudgeAt else { return nil }
+        return room == 0 ? "Free limit reached, adding is paused" : "\(room) of \(License.freeItems) free items left"
+    }
+    var roomNote: String? { Self.roomNote(room: room, licensed: license != nil) }
     /// Said when adding stops at the free tier's limit, the same words in either vault.
     static func fullMessage(_ left: Int) -> String {
         let what = left == 1 ? "1 item didn't go in" : "\(left) items didn't go in"

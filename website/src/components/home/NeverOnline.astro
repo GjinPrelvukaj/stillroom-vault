@@ -10,7 +10,7 @@ import Icon from '../ui/Icon.astro';
       <p class="eyebrow lit">Never goes online</p>
       <h2 id="never-title" class="section-title" data-converge>Nothing leaves your Mac.</h2>
       <p class="lead">
-        Stillroom makes no network connections, so there’s nothing of yours on a server for anyone to breach.
+        Stillroom makes no network connections, and a build check fails any version that links networking code. There’s nothing of yours on a server for anyone to breach.
         <a href="/security/">How we check</a>
       </p>
     </div>
@@ -39,6 +39,10 @@ import Icon from '../ui/Icon.astro';
 </script>
 
 <style>
+  /* The words start up to 144px right of their place (scripts/converge.ts); keep them inside the column. */
+  .section-title {
+    overflow-x: clip;
+  }
   .lead a {
     color: var(--vault);
     white-space: nowrap;

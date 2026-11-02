@@ -40,7 +40,7 @@ It suits you if you want your files backed up off your Mac, available on every d
 | Where data lives | Proton's servers, synced to your devices | One folder on your Mac |
 | Encryption | End-to-end, files and folder names | AES-256-GCM, a fresh key per item; Argon2id (512 MB) for the password |
 | Platforms | Windows, macOS, iOS, Android, web, command line | Apple silicon Macs, macOS 26 or later |
-| Price | Free 5 GB; paid subscriptions for more | Free for 25 items; $39 once; Family $129 once for 5 people |
+| Price | Free 5 GB; paid subscriptions for more | Free for 25 items; $39 once; Family $79 once for 5 people |
 | Source | Open source apps and libraries | Source available (FSL); the reader script is MIT |
 | Cloud and sync | Built in | None; it never goes online |
 | Scope | Cloud storage and sharing | Files, notes, passwords and two-factor codes |
@@ -62,7 +62,7 @@ Proton Drive is a good answer to "I want my files in the cloud, privately." Stil
 - **Passwords and two-factor codes.** Secrets are records with fields, with live two-factor codes. Copied secrets stay off Universal Clipboard and clear after 30 seconds.
 - **Protection at the keyboard.** A [decoy password](/features/decoy-password/), an [intruder log](/features/intruder-log/), and windows [hidden from screen capture](/features/hidden-from-capture/). The decoy protects against thieves and abusers, not police, and doesn't fool someone who has one password and a copy of the vault folder ([rule 2](/security/#rules)).
 - **Ways back in that you hold.** A [recovery key](/features/recovery-key/), a printable [emergency kit](/features/emergency-kit/), [Touch ID](/features/touch-id/) and optional [Lock to this Mac](/features/lock-to-this-mac/). Nobody can recover a forgotten Stillroom password.
-- **Pay once.** No subscription: $39 for one person's Macs, or $129 for a family of five.
+- **Pay once.** No subscription: $39 for one person's Macs, or $79 for a family of five.
 
 ## Using both
 

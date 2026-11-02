@@ -24,6 +24,11 @@ internal sealed class Settings
     /// shows it. The log is the same in either vault, so this says nothing about which one is open.</summary>
     [JsonPropertyName("intrudersSeen")] public int IntrudersSeen { get; set; }
 
+    /// <summary>Light, dark, or as Windows is set. The lock screen follows it too.</summary>
+    [JsonPropertyName("appearance")]
+    [JsonConverter(typeof(JsonStringEnumConverter<Appearance>))]
+    public Appearance Appearance { get; set; } = Appearance.System;
+
     /// <summary>Edit in Place opens without first saying what it gives away (the Mac's "Don't ask again").</summary>
     [JsonPropertyName("editWarningOff")] public bool EditWarningOff { get; set; }
 

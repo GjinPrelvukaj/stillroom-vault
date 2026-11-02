@@ -59,8 +59,8 @@ public sealed partial class VaultView : UserControl
         RefreshSearchSoon();
         DrawEditing();
         // The desk outlives this view (a lock makes a new one): heard only while this one is up.
-        Loaded += (_, _) => { window.Desk.Changed += Edited; window.Desk.Problem += DeskProblem; Inbox.Changed += TakeInbox; TakeInbox(); };
-        Unloaded += (_, _) => { window.Desk.Changed -= Edited; window.Desk.Problem -= DeskProblem; Inbox.Changed -= TakeInbox; folderDrags.Clear(); };
+        Loaded += (_, _) => { window.Desk.Changed += Edited; window.Desk.Problem += DeskProblem; Inbox.Changed += TakeInbox; Theme.Changed += Redraw; TakeInbox(); };
+        Unloaded += (_, _) => { window.Desk.Changed -= Edited; window.Desk.Problem -= DeskProblem; Inbox.Changed -= TakeInbox; Theme.Changed -= Redraw; folderDrags.Clear(); };
         Loaded += async (_, _) =>
         {
             if (state.FreshRecoveryKey is not { } fresh) return;
@@ -156,8 +156,15 @@ public sealed partial class VaultView : UserControl
         DrawPane();
     }
 
-    /// <summary>The word index brought up to date off the UI thread (text only for now: reading pictures and PDFs
-    /// comes with the viewers), then the search run again.</summary>
+    /// <summary>Light or dark changed: what's drawn in code is drawn again in the new colours (XAML follows by itself).</summary>
+    private void Redraw()
+    {
+        DrawSidebar();
+        DrawPane();
+    }
+
+    /// <summary>The word index brought up to date off the UI thread, then the search run again: notes, secrets, text
+    /// and email by the engine, then the words in pictures and PDFs read by Windows (`ReadWords`).</summary>
     private void RefreshSearchSoon()
     {
         if (state.Vault is not { } vault) return;
@@ -167,8 +174,58 @@ public sealed partial class VaultView : UserControl
             catch (Exception e) when (e is ObjectDisposedException or StillroomException) { return false; }
         }).ContinueWith(t =>
         {
-            if (t.Result && search.Length > 0) DispatcherQueue.TryEnqueue(() => { Search(); DrawPane(); });
+            if (t.Result) SearchAgain();
+            ReadWords(vault);
         }, TaskScheduler.Default);
+    }
+
+    private void SearchAgain()
+    {
+        if (search.Length > 0) DispatcherQueue.TryEnqueue(() => { Search(); DrawPane(); });
+    }
+
+    /// <summary>One reading of pictures and PDFs at a time.</summary>
+    private int readingWords;
+
+    /// <summary>The pictures and PDFs whose words aren't known, read one at a time by Windows' text recognition with
+    /// the vault free between engine calls (a slow reading never holds up locking), given back a few at a time so
+    /// search finds them as they come. Stops when the vault locks; what's left is read after the next unlock.</summary>
+    private void ReadWords(Vault vault)
+    {
+        if (!Recognition.Available || Interlocked.Exchange(ref readingWords, 1) == 1) return;
+        try
+        {
+            var tried = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var batch = new List<(string, double, long, string)>();
+            var since = Environment.TickCount64;
+            void Give()
+            {
+                if (batch.Count == 0) return;
+                vault.SetWords(batch);
+                batch.Clear();
+                since = Environment.TickCount64;
+                SearchAgain();
+            }
+            // Asked again until nothing's left, so what's added meanwhile is read too.
+            while (vault.SearchWanting().Where(w => tried.Add(w.GetProperty("id").GetString()!)).ToList() is { Count: > 0 } wanted)
+            {
+                foreach (var item in wanted)
+                {
+                    var id = item.GetProperty("id").GetString()!;
+                    byte[] data;
+                    try { data = vault.Read(id); }
+                    catch (StillroomException) { continue; }
+                    string? words;
+                    try { words = Recognition.Read(item.GetProperty("uti").GetString()!, data); }
+                    finally { CryptographicOperations.ZeroMemory(data); }
+                    batch.Add((id, item.GetProperty("changed").GetDouble(), item.GetProperty("size").GetInt64(), words ?? ""));
+                    if (batch.Count >= 8 || Environment.TickCount64 - since > 5000) Give();
+                }
+            }
+            Give();
+        }
+        catch (Exception e) when (e is ObjectDisposedException or StillroomException) { /* Locked meanwhile. */ }
+        finally { readingWords = 0; }
     }
 
     // MARK: Sidebar
@@ -202,7 +259,7 @@ public sealed partial class VaultView : UserControl
         Text = text,
         FontSize = 11,
         FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
-        Foreground = (Brush)Application.Current.Resources["QuietBrush"],
+        Foreground = Theme.Brush("QuietBrush"),
         Margin = new Thickness(10, 16, 0, 4),
     };
 
@@ -217,7 +274,7 @@ public sealed partial class VaultView : UserControl
         {
             Glyph = glyph,
             FontSize = tint is null || glyphTint ? 15 : 9,
-            Foreground = tint is { } color ? new SolidColorBrush(color) : (Brush)Application.Current.Resources["ButtonForeground"],
+            Foreground = tint is { } color ? new SolidColorBrush(color) : Theme.Brush("InkBrush"),
         });
         var name = new TextBlock { Text = title, TextTrimming = TextTrimming.CharacterEllipsis };
         Grid.SetColumn(name, 1);
@@ -235,7 +292,7 @@ public sealed partial class VaultView : UserControl
             HorizontalContentAlignment = HorizontalAlignment.Stretch,
             Padding = new Thickness(10, 6, 10, 6),
             BorderThickness = new Thickness(0),
-            Background = new SolidColorBrush(chosen ? Windows.UI.Color.FromArgb(0x1F, 0xFF, 0xFF, 0xFF) : Microsoft.UI.Colors.Transparent),
+            Background = chosen ? Theme.Brush("ChosenBrush") : new SolidColorBrush(Microsoft.UI.Colors.Transparent),
         };
         AutomationProperties.SetName(button, title);
         button.Click += (_, _) => go();
@@ -320,7 +377,7 @@ public sealed partial class VaultView : UserControl
     private Row FolderRow(string path) => new()
     {
         Glyph = Glyphs.Folder,
-        GlyphBrush = (Brush)Application.Current.Resources["VaultBrush"],
+        GlyphBrush = Theme.Brush("VaultBrush"),
         Name = path.ShownLast(),
         Kind = items.Count(i => i.IsInside(path)) is var n && n == 1 ? "1 item" : $"{n} items",
         FolderPath = path,
@@ -479,7 +536,7 @@ public sealed partial class VaultView : UserControl
     {
         if (item.IsNote) ShowEditor(new NoteEditor(state, item, CloseEditor, () => _ = ShowVersions(item)));
         else if (item.IsSecret) ShowEditor(new SecretEditor(state, item, CloseEditor, () => _ = ShowVersions(item)));
-        else ShowEditor(new PreviewCard(state, item, null, CloseEditor, () => _ = SaveCopy(item), CanEdit(item) ? () => { CloseEditor(); _ = EditInPlace(item); } : null));
+        else ShowEditor(new PreviewCard(state, item, null, CloseEditor, () => _ = SaveCopy(item), CanEdit(item) ? () => { CloseEditor(); _ = EditInPlace(item); } : null, AttachmentsOf(item)));
     }
 
     private void ShowEditor(UIElement editor)
@@ -487,6 +544,9 @@ public sealed partial class VaultView : UserControl
         Editor.Content = editor;
         Editor.Visibility = Visibility.Visible;
         foreach (var part in new UIElement[] { Header, Crumbs, Rows, Empty }) part.Visibility = Visibility.Collapsed;
+        // What the notice said was about the list (a limit reached, a file that didn't go in): it would show through
+        // the page over it, and may no longer be true once there (a licence added in Settings).
+        Notice.IsOpen = false;
     }
 
     /// <summary>Back to the list; an editor saves as it goes.</summary>
@@ -896,6 +956,8 @@ public sealed partial class VaultView : UserControl
         {
             Say($"{unchecked_} added, but their copies couldn't be checked against the originals, so the originals stay where they are.", InfoBarSeverity.Warning);
         }
+        // Full: the rest stay where they are, and only what went in is offered for deleting.
+        if (report.GetProperty("refusedMessage") is { ValueKind: JsonValueKind.String } full) Say(full.GetString()!, InfoBarSeverity.Warning);
         if (moving) await MoveOriginals(report.GetProperty("originals"));
         else await OfferOriginals(report.GetProperty("originals"));
     }
@@ -956,7 +1018,7 @@ public sealed partial class VaultView : UserControl
         picker.FileTypeFilter.Add(".csv");
         if (await picker.PickSingleFileAsync() is not { } file) return;
         var csv = await File.ReadAllBytesAsync(file.Path);
-        (int Added, int Skipped) result = default;
+        (int Added, int Skipped, int Left, string? LeftMessage) result = default;
         try
         {
             if (!Change(v => result = v.ImportLogins(csv))) return;
@@ -968,6 +1030,12 @@ public sealed partial class VaultView : UserControl
         (shelf, tag) = (Shelf.Secrets, null);
         DrawSidebar();
         DrawPane();
+        // Some left out at the free tier's limit: the export still holds them, so it isn't offered for deletion.
+        if (result.LeftMessage is { } left)
+        {
+            Say(left, InfoBarSeverity.Warning);
+            return;
+        }
         var title = result.Added == 0
             ? result.Skipped == 0 ? "No accounts in that file." : $"Nothing new: all {result.Skipped} were already here."
             : $"Imported {result.Added} {(result.Added == 1 ? "login" : "logins")}{(result.Skipped > 0 ? $"; {result.Skipped} were already here." : ".")}";
@@ -1002,6 +1070,37 @@ public sealed partial class VaultView : UserControl
         catch (ObjectDisposedException) { }
     }
 
+    /// <summary>An email's attachments: sealed in beside the email, or saved out where the person picks (marked as
+    /// downloaded: an attachment is the classic way a program arrives, and SmartScreen checks it before it runs).</summary>
+    private Attachments AttachmentsOf(VaultItem email) => new(
+        (name, bytes) =>
+        {
+            try
+            {
+                if (Change(v => v.AddData(bytes, name, email.Folder))) Say($"“{name}” is in Stillroom now.", InfoBarSeverity.Success);
+            }
+            finally { CryptographicOperations.ZeroMemory(bytes); }
+        },
+        async (name, bytes) =>
+        {
+            try
+            {
+                var picker = new FileSavePicker { SuggestedFileName = Path.GetFileNameWithoutExtension(name), CommitButtonText = "Save Unencrypted Copy" };
+                WinRT.Interop.InitializeWithWindow.Initialize(picker, window.Handle);
+                var extension = Path.GetExtension(name);
+                picker.FileTypeChoices.Add(extension.Length > 1 ? Shell.TypeName(name) : "File", [extension.Length > 1 ? extension : ".data"]);
+                if (await picker.PickSaveFileAsync() is not StorageFile target) return;
+                await File.WriteAllBytesAsync(target.Path, bytes);
+                try { await File.WriteAllTextAsync(target.Path + ":Zone.Identifier", "[ZoneTransfer]\r\nZoneId=3\r\nReferrerUrl=about:stillroom\r\n"); }
+                catch (Exception e) when (e is IOException or UnauthorizedAccessException or NotSupportedException) { /* A disk that can't hold it (FAT). */ }
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+            {
+                Say($"The attachment couldn't be saved. {e.Message}", InfoBarSeverity.Error);
+            }
+            finally { CryptographicOperations.ZeroMemory(bytes); }
+        });
+
     private async Task ShowVersions(VaultItem item)
     {
         var current = items.FirstOrDefault(i => string.Equals(i.Id, item.Id, StringComparison.OrdinalIgnoreCase)) ?? item;
@@ -1015,7 +1114,7 @@ public sealed partial class VaultView : UserControl
         }
         else
         {
-            ShowEditor(new PreviewCard(state, current, version, CloseEditor, () => _ = SaveCopy(current)));
+            ShowEditor(new PreviewCard(state, current, version, CloseEditor, () => _ = SaveCopy(current), attachments: AttachmentsOf(current)));
         }
     }
 

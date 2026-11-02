@@ -22,6 +22,19 @@ public partial class App : Application
         CaptureShield.Start();
         // Working copies a crash left behind go before anything else happens.
         EditDesk.ClearLeftovers();
+#if DEBUG
+        if (Environment.GetEnvironmentVariable("STILLROOM_READ_WORDS") is { Length: > 0 } read)
+        {
+            ShowAlone.ReadWords(read);
+            return;
+        }
+        // tests/lockdown.ps1: one file in its viewer, alone, with no vault.
+        if (Environment.GetEnvironmentVariable("STILLROOM_SHOW_FILE") is { Length: > 0 } shown)
+        {
+            ShowAlone.Show(shown);
+            return;
+        }
+#endif
         Window = new MainWindow(settings);
         Window.Activate();
     }

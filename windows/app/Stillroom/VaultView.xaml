@@ -16,7 +16,7 @@
         </Grid.ColumnDefinitions>
 
         <!-- Sidebar -->
-        <Grid Background="#06FFFFFF" Padding="12,4,12,16">
+        <Grid Background="{ThemeResource SidebarBrush}" Padding="12,4,12,16">
             <Grid.RowDefinitions>
                 <RowDefinition Height="*" />
                 <RowDefinition Height="Auto" />
@@ -28,9 +28,9 @@
             </ScrollViewer>
             <StackPanel x:Name="Pages" Grid.Row="1" Spacing="2" Margin="0,12,0,0" />
             <StackPanel Grid.Row="2" Padding="10,16" Spacing="2" AutomationProperties.AccessibilityView="Raw">
-                <TextBlock Text="IN THE VAULT" FontSize="10.5" FontWeight="SemiBold" CharacterSpacing="80" Foreground="{StaticResource QuietBrush}" />
+                <TextBlock Text="IN THE VAULT" FontSize="10.5" FontWeight="SemiBold" CharacterSpacing="80" Foreground="{ThemeResource QuietBrush}" />
                 <TextBlock x:Name="TotalSize" FontSize="17" FontWeight="SemiBold" />
-                <TextBlock x:Name="TotalCount" FontSize="12" Foreground="{StaticResource QuietBrush}" />
+                <TextBlock x:Name="TotalCount" FontSize="12" Foreground="{ThemeResource QuietBrush}" />
             </StackPanel>
             <Grid Grid.Row="3" ColumnSpacing="8">
                 <Grid.ColumnDefinitions>
@@ -62,7 +62,7 @@
             </Grid>
         </Grid>
 
-        <Rectangle Grid.Column="1" Fill="#0FFFFFFF" />
+        <Rectangle Grid.Column="1" Fill="{ThemeResource DividerBrush}" />
 
         <!-- Pane -->
         <Grid Grid.Column="2" Padding="28,4,28,20" RowSpacing="12">
@@ -81,7 +81,7 @@
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
                 <StackPanel Spacing="4" VerticalAlignment="Bottom">
-                    <TextBlock x:Name="Eyebrow" FontSize="10.5" FontWeight="SemiBold" CharacterSpacing="80" Foreground="{StaticResource QuietBrush}" />
+                    <TextBlock x:Name="Eyebrow" FontSize="10.5" FontWeight="SemiBold" CharacterSpacing="80" Foreground="{ThemeResource QuietBrush}" />
                     <TextBlock x:Name="Headline" FontSize="24" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
                 </StackPanel>
                 <TextBox x:Name="SearchBox" Grid.Column="1" Width="220" VerticalAlignment="Bottom" PlaceholderText="Search"
@@ -102,17 +102,17 @@
             </StackPanel>
 
             <!-- After the recovery key or the kit: a new password before anything else. -->
-            <StackPanel x:Name="MustSetPassword" Grid.Row="3" Spacing="10" Padding="20" CornerRadius="12" Background="{StaticResource PanelBrush}" Visibility="Collapsed">
+            <StackPanel x:Name="MustSetPassword" Grid.Row="3" Spacing="10" Padding="20" CornerRadius="12" Background="{ThemeResource PanelBrush}" Visibility="Collapsed">
                 <TextBlock Text="Set a new password" FontSize="18" FontWeight="SemiBold" />
                 <TextBlock Style="{StaticResource BodyText}" TextAlignment="Left"
                            Text="Your vault opened without its password. Pick a new password for it; the old one stops working." />
-                <TextBlock x:Name="PasswordLine" Style="{StaticResource QuietText}" TextAlignment="Left" Foreground="{StaticResource ProblemBrush}" />
+                <TextBlock x:Name="PasswordLine" Style="{StaticResource QuietText}" TextAlignment="Left" Foreground="{ThemeResource ProblemBrush}" />
                 <Button Content="Set Password…" Style="{StaticResource AccentButtonStyle}" Click="OnSetPassword" />
             </StackPanel>
 
             <ListView x:Name="Rows" Grid.Row="4" SelectionMode="None" IsItemClickEnabled="True" ItemClick="OnRowClick" ContextRequested="OnRowMenu"
                       CanDragItems="True" DragItemsStarting="OnRowsDragStarting" AllowDrop="True" DragOver="OnRowsDragOver" Drop="OnRowsDrop"
-                      Background="{StaticResource PanelBrush}" CornerRadius="12" Padding="0,4">
+                      Background="{ThemeResource PanelBrush}" CornerRadius="12" Padding="0,4">
                 <ListView.ItemContainerStyle>
                     <Style TargetType="ListViewItem">
                         <Setter Property="Padding" Value="14,0" />
@@ -169,8 +169,8 @@
             <StackPanel x:Name="Empty" Grid.Row="4" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="16" Margin="0,0,0,60"
                         Background="Transparent" ContextRequested="OnSpaceMenu">
                 <Grid Width="72" Height="72" HorizontalAlignment="Center">
-                    <Ellipse x:Name="EmptyRing" Stroke="{StaticResource VaultBrush}" StrokeThickness="2" StrokeDashArray="1,3" Opacity="0.5" />
-                    <FontIcon x:Name="EmptyGlyph" FontSize="20" Foreground="{StaticResource VaultBrush}" Opacity="0.75" />
+                    <Ellipse x:Name="EmptyRing" Stroke="{ThemeResource VaultBrush}" StrokeThickness="2" StrokeDashArray="1,3" Opacity="0.5" />
+                    <FontIcon x:Name="EmptyGlyph" FontSize="20" Foreground="{ThemeResource VaultBrush}" Opacity="0.75" />
                 </Grid>
                 <StackPanel Spacing="6">
                     <TextBlock x:Name="EmptyTitle" Style="{StaticResource TitleText}" />

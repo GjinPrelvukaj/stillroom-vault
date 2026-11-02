@@ -6,7 +6,7 @@ lead: 'The best privacy tool on a shared Mac is one macOS already has: a separat
 name: 'Secure a shared Mac'
 updated: '27 October 2026'
 order: 70
-related: ['/features/decoy-password/', '/features/hidden-from-capture/', '/guides/hide-photos-on-mac/', '/for/leaving-an-abusive-relationship/']
+related: ['/features/decoy-password/', '/features/hidden-from-capture/', '/guides/hide-photos-on-mac/', '/for/leaving-an-abusive-relationship/', '/guides/hide-files-on-mac/']
 faq:
   - q: 'Can other users on my Mac see my files?'
     a: 'Each account has its own files and settings. Files you put in your Public folder, or in the Shared folder, can be read by every user of the Mac. Administrators can also change settings and manage other users, so give admin rights only to people you trust.'
@@ -86,6 +86,6 @@ What it does not do, plainly:
 - **The decoy fools someone at the keyboard, not someone who has one password and a copy of the vault folder.** That person can tell the folder holds more than their vault accounts for, though not what. Touch ID opens only one of the two vaults, so if you rely on the decoy, turn Touch ID on in the decoy or not at all. The decoy is protection against thieves and abusers, not police. Read [rule 2](/security/#rules) before relying on it.
 - **Opening a file in another app with Edit in Place, or previewing it,** can leave its name in Recent Items or Quick Look's cache.
 - **If you forget the vault password and have no recovery key or kit, nobody can open it.**
-- It needs Apple silicon and macOS 26 or later, and has not had an independent audit yet. It is free for 25 items, $39 once, or $129 for a Family licence covering 5 people ([pricing](/pricing/)).
+- It needs Apple silicon and macOS 26 or later, and has not had an independent audit yet. It is free for 25 items, $39 once, or $79 for a Family licence covering 5 people ([pricing](/pricing/)).
 
 If you are keeping things private from someone you live with because you are not safe, see [Stillroom for leaving an abusive relationship](/for/leaving-an-abusive-relationship/), and think about whether that person can reach your Mac's administrator account or install software on it.

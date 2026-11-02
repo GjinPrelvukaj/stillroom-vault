@@ -34,7 +34,7 @@ export const GET: APIRoute = async () => {
     },
     { t: 'Security', u: '/security/', g: 'Pages', d: 'The threat model and the rules the design rests on.', h: docs['security'] },
     { t: 'File format', u: '/format/', g: 'Pages', d: 'Every file in a vault, byte by byte, and the reader stillroom-open.py.', h: docs['format'] },
-    { t: 'Pricing', u: '/pricing/', g: 'Pages', d: 'Free for 25 items, $39 once, or $129 for a family.' },
+    { t: 'Pricing', u: '/pricing/', g: 'Pages', d: 'Free for 25 items, $39 once, or $79 for a family.' },
     { t: 'Download', u: '/download/', g: 'Pages', d: 'For Macs with Apple silicon, on macOS 26 or later.' },
     { t: 'Support', u: '/support/', g: 'Pages', d: 'Forgotten passwords, backups, moving Macs, and how to reach us.' },
     { t: 'Changelog', u: '/changelog/', g: 'Pages', d: 'Every notable change, by version.', h: docs['changelog'] },

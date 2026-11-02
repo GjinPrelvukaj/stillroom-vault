@@ -45,10 +45,10 @@ const onSale = (tier: string) => Boolean(paddle.clientToken && paddle.prices[tie
             )}
             {(t.id === 'personal' || t.id === 'family') &&
               (checkout ? (
-                <PaddleCheckout tier={t.id} label={`Buy ${t.name}`} featured={featured} />
+                <PaddleCheckout tier={t.id} label={`Buy for ${t.price}`} featured={featured} />
               ) : onSale(t.id) ? (
                 <a class:list={['btn large', { primary: featured }]} href={`/checkout/?plan=${t.id}`}>
-                  {t.id === 'personal' ? 'Buy for $39' : 'Buy for $129'}
+                  {t.id === 'personal' ? 'Buy for $39' : 'Buy for $79'}
                 </a>
               ) : (
                 <button type="button" class:list={['btn large', { primary: featured }]} disabled>

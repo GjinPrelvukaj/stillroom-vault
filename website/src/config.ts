@@ -26,11 +26,13 @@ export const email = {
 /** The current download (public/download/). For a new version: put the zip there under its new name, change these, and
  *  set sha256 to what make-dist.sh printed. Every download button follows. */
 export const download = {
-  url: '/download/Stillroom-1.0.0.zip',
+  url: '/download/Stillroom-1.0.1.zip',
   placeholder: false,
-  file: 'Stillroom-1.0.0.zip',
-  version: '1.0.0',
-  sha256: '31d6dfbbcb5981048bf2a0d1e62d161f98a38c031fe8d1c3ccbb945c07a5abfa',
+  file: 'Stillroom-1.0.1.zip',
+  version: '1.0.1',
+  sha256: '52dd14ddcf41683fd416078344789eb49355894b3efd1217d7e5a5ef7cf7d2d0',
+  /** Apple Developer Team ID the app is signed with (codesign -dv shows it as TeamIdentifier). */
+  teamId: 'WP56DL33UR',
   requires: 'Apple silicon (M1 or later), macOS 26 or later',
 } as const;
 
@@ -42,7 +44,7 @@ export const pricing = {
       name: 'Free',
       price: '$0',
       cadence: 'forever',
-      blurb: 'Every feature, up to 25 items.',
+      blurb: 'Every feature, up to 25 files, notes or secrets.',
       points: [
         'Every way in, the decoy, backups and export',
         'Opening, exporting and backing up never stop',
@@ -51,7 +53,7 @@ export const pricing = {
     },
     {
       id: 'personal',
-      name: 'Stillroom Vault',
+      name: 'Personal',
       price: '$39',
       cadence: 'one-time, plus tax where applicable',
       blurb: 'Every feature, no limit, on all of one person’s Macs.',
@@ -61,7 +63,7 @@ export const pricing = {
     {
       id: 'family',
       name: 'Family',
-      price: '$129',
+      price: '$79',
       cadence: 'one-time, plus tax where applicable',
       blurb: 'Stillroom Vault for up to 5 people.',
       points: ['Five people, each on all their Macs', 'Each person’s vault stays their own', 'Every 1.x update included'],
@@ -92,6 +94,16 @@ export const paddle = {
 
 export const paddleWording =
   'Our order process is conducted by our online reseller Paddle.com. Paddle.com is the Merchant of Record for all our orders. Paddle provides all customer service inquiries and handles returns.';
+
+/** A launch to point at from the bar above the header (components/LaunchBar.astro). Dates are the launch site's own
+ *  (Pacific time); the bar shows until `until`. */
+export const launch = {
+  url: 'https://www.producthunt.com/products/stillroom-vault',
+  day: '2026-11-08',
+  until: '2026-11-15',
+  before: 'Launching on Product Hunt, Sunday 8 November',
+  live: 'We’re live on Product Hunt today',
+} as const;
 
 export const nav = [
   { href: '/features/', label: 'Features' },

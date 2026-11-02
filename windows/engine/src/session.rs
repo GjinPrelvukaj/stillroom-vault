@@ -14,7 +14,7 @@ use crate::import::Login;
 use crate::list::{self, Entry, Item, Secret, Template, Version, VaultList};
 use crate::originals::Originals;
 use crate::vault::{unknowable, Covered, Vault};
-use crate::{fsx, intruder, kinds, kit, now, search, Error, VaultError};
+use crate::{fsx, intruder, kinds, kit, licence, now, search, Error, VaultError};
 
 /// How long an item must be left alone before a change keeps what it held as a version (so typing in a note doesn't
 /// make a version a second), and how many versions are kept.
@@ -43,6 +43,8 @@ pub struct Added {
     pub failed: Vec<(PathBuf, Error)>,
     /// Things that can't go in at all.
     pub skipped: usize,
+    /// Files left where they are at the free tier's limit (`Error::Full` says it in words).
+    pub refused: usize,
 }
 
 /// Something that no longer opens: an item's current contents, or one of its earlier versions.
@@ -89,12 +91,26 @@ impl Vault {
         Ok(id)
     }
 
+    // MARK: The free tier
+
+    /// How many more items this vault may take: unlimited with a licence, otherwise up to `licence::FREE_ITEMS`
+    /// counting its files, notes and secrets (folders and earlier versions don't count). Only adding asks.
+    pub fn room(&self) -> usize {
+        if self.store.licence().is_some() { usize::MAX } else { licence::FREE_ITEMS.saturating_sub(self.list.files.len()) }
+    }
+
+    fn room_for_one(&self) -> Result<(), Error> {
+        if self.room() == 0 { Err(Error::Full(1)) } else { Ok(()) }
+    }
+
     // MARK: Adding and reading
 
     /// Encrypts files into the vault, one by one, the list saved after each so a crash loses nothing; a folder brings
     /// every file inside it, each remembering where it was. Each sealed copy is read back and checked against its file.
     pub fn add(&mut self, paths: &[PathBuf], into: Option<&str>) -> Added {
         let mut added = Added::default();
+        // Checked once: a licence added meanwhile counts from the next add.
+        let mut room = self.room();
         let own = self.store.own_paths();
         let is_own = |path: &PathBuf| {
             let path = std::fs::canonicalize(path).unwrap_or_else(|_| path.clone());
@@ -113,6 +129,11 @@ impl Vault {
                     continue;
                 }
                 // Dropped into a folder that's open: it goes in there, keeping any folders it brought.
+                // Full: the rest stay where they are (a folder not wholly in is never removed, see Originals).
+                if room == 0 {
+                    added.refused += 1;
+                    continue;
+                }
                 let place: Vec<&str> = [into, folder.as_deref()].into_iter().flatten().collect();
                 let place = (!place.is_empty()).then(|| place.join("/"));
                 let sealed = self.store.add_file(&path, place.as_deref(), self.slot, &self.names, now());
@@ -126,6 +147,7 @@ impl Vault {
                 let checked = Originals::matches(&self.store, &item, &path, &sealed.key);
                 match self.take_in(item, sealed) {
                     Ok(id) => {
+                        room = room.saturating_sub(1);
                         added.items.push(id);
                         if checked { added.originals.files.push(path) } else { added.unchecked.push(path) }
                     }
@@ -138,6 +160,7 @@ impl Vault {
 
     /// Something held only in memory (an email's attachment) sealed in as a file of its own.
     pub fn add_data(&mut self, data: &[u8], name: &str, folder: Option<&str>) -> Result<Uuid, Error> {
+        self.room_for_one()?;
         let uti = kinds::uti_for_name(name);
         let mut item = Item::new(name, uti, data.len() as u64, now());
         item.folder = folder.map(Into::into);
@@ -150,6 +173,7 @@ impl Vault {
 
     /// A new note (Markdown) or secret (JSON), in `folder`. Returns it, to be opened for editing.
     pub fn new_entry(&mut self, entry: Entry, name: &str, content: &[u8], folder: Option<&str>) -> Result<Uuid, Error> {
+        self.room_for_one()?;
         let uti = if entry == Entry::Note { "net.daringfireball.markdown" } else { "public.json" };
         let now = now();
         let mut item = Item::new(name, uti, content.len() as u64, now);
@@ -736,17 +760,20 @@ impl Vault {
 
     // MARK: Search
 
+    /// Whether an item's words are unknown, or known from before it last changed.
+    fn words_stale(&self, item: &Item) -> bool {
+        search::reads(item) && self.words.get(&item.id).is_none_or(|known| known.changed != item.changed_at() || known.size != item.size)
+    }
+
     /// Reads every item whose words aren't known or have changed since, forgets removed ones, and seals the index.
-    /// `extra` reads what only the platform can (PDFs, the text in pictures). Returns whether anything changed.
+    /// `extra` reads what only the platform can (PDFs, the text in pictures); without it those are left for
+    /// `search_wanting` and `set_words`. Returns whether anything changed.
     pub fn refresh_search(&mut self, extra: Option<search::Extra>) -> Result<bool, Error> {
         let stale: Vec<&Item> = self
             .list
             .files
             .iter()
-            .filter(|item| {
-                search::reads(item)
-                    && self.words.get(&item.id).is_none_or(|known| known.changed != item.changed_at() || known.size != item.size)
-            })
+            .filter(|item| self.words_stale(item) && (extra.is_some() || !search::needs_platform(item)))
             .collect();
         let present: HashSet<Uuid> = self.list.files.iter().map(|i| i.id).collect();
         let forgotten = self.words.keys().any(|id| !present.contains(id));
@@ -764,6 +791,27 @@ impl Vault {
         let sealed = search::sealed(&self.words, &self.key)?;
         self.store.write_covered(&sealed, Covered::Search, self.slot, &self.cover)?;
         Ok(true)
+    }
+
+    /// The PDFs and pictures whose words aren't known or have changed: for the platform to read with the vault free,
+    /// then give back with `set_words`, so a slow reading never keeps the vault from locking.
+    pub fn search_wanting(&self) -> Vec<&Item> {
+        self.list.files.iter().filter(|item| search::needs_platform(item) && self.words_stale(item)).collect()
+    }
+
+    /// Words the platform read, each with the item's `changed` and `size` as they were when read (so a change since
+    /// has it read again), recorded and sealed. Items gone since are left out.
+    pub fn set_words(&mut self, words: Vec<(Uuid, search::Entry)>) -> Result<(), Error> {
+        let present: HashSet<Uuid> = self.list.files.iter().map(|i| i.id).collect();
+        for (id, mut entry) in words {
+            if present.contains(&id) {
+                entry.text = entry.text.chars().take(search::LONGEST).collect();
+                self.words.insert(id, entry);
+            }
+        }
+        let sealed = search::sealed(&self.words, &self.key)?;
+        self.store.write_covered(&sealed, Covered::Search, self.slot, &self.cover)?;
+        Ok(())
     }
 
     /// Items whose name, tags or words hold `query`, as the list shows them.
@@ -792,9 +840,9 @@ impl Vault {
     // MARK: Importing passwords
 
     /// Accounts from a password export, each a Login secret in the "Imported" folder, all saved in one go. An account
-    /// already in the vault (same site and username) is skipped, so importing twice adds nothing twice. Returns how
-    /// many were added and skipped.
-    pub fn import_logins(&mut self, logins: &[Login]) -> Result<(usize, usize), Error> {
+    /// already in the vault (same site and username) is skipped, so importing twice adds nothing twice. Past the free
+    /// tier's limit the rest are left out. Returns how many were added, skipped and left out.
+    pub fn import_logins(&mut self, logins: &[Login]) -> Result<(usize, usize, usize), Error> {
         let mut known: HashSet<String> = self
             .list
             .files
@@ -809,11 +857,16 @@ impl Vault {
             })
             .collect();
         let folder = "Imported";
-        let (mut added, mut skipped) = (Vec::new(), 0);
+        let (mut added, mut skipped, mut left) = (Vec::new(), 0, 0);
+        let room = self.room();
         let now = now();
         for login in logins {
             if !known.insert(login.key()) {
                 skipped += 1;
+                continue;
+            }
+            if added.len() >= room {
+                left += 1;
                 continue;
             }
             let content = Zeroizing::new(serde_json::to_vec(&login.secret()).map_err(std::io::Error::other)?);
@@ -834,7 +887,7 @@ impl Vault {
             }
         }
         if added.is_empty() {
-            return Ok((0, skipped));
+            return Ok((0, skipped, left));
         }
         let count = added.len();
         let blobs: Vec<Uuid> = added.iter().filter_map(|i| i.sealed_as).collect();
@@ -848,7 +901,7 @@ impl Vault {
             self.forget_blobs(&blobs);
             return Err(error);
         }
-        Ok((count, skipped))
+        Ok((count, skipped, left))
     }
 
     // MARK: Backups

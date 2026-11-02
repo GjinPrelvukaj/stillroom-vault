@@ -532,13 +532,8 @@ enum MainThreadStack {
         return "\(image)  \(symbol) + \(address &- base)"
     }
 
-    private typealias Demangle = @convention(c) (UnsafePointer<CChar>?, Int, UnsafeMutablePointer<CChar>?,
-                                                 UnsafeMutablePointer<Int>?, UInt32) -> UnsafeMutablePointer<CChar>?
-    private static let swiftDemangle: Demangle? = dlsym(UnsafeMutableRawPointer(bitPattern: -2), "swift_demangle")
-        .map { unsafeBitCast($0, to: Demangle.self) }
-
     private static func demangle(_ name: String) -> String {
-        guard name.hasPrefix("$s") || name.hasPrefix("_$s"), let swiftDemangle else { return name }
+        guard name.hasPrefix("$s") || name.hasPrefix("_$s") else { return name }
         return name.withCString { raw in
             guard let out = swiftDemangle(raw, strlen(raw), nil, nil, 0) else { return name }
             defer { free(out) }
@@ -546,3 +541,9 @@ enum MainThreadStack {
         }
     }
 }
+
+/// The Swift runtime's demangler, linked by name at build time. It used to be looked up with dlsym at run time; linking it
+/// directly lets check-offline.sh refuse dlopen and dlsym outright, so nothing can reach a networking function by name.
+@_silgen_name("swift_demangle")
+private func swiftDemangle(_ mangled: UnsafePointer<CChar>?, _ length: Int, _ output: UnsafeMutablePointer<CChar>?,
+                           _ outputSize: UnsafeMutablePointer<Int>?, _ flags: UInt32) -> UnsafeMutablePointer<CChar>?

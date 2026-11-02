@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Stillroom never goes online: the Windows counterpart of macos/Scripts/check-offline.sh. Run on a built or
+       published app folder; make-app.ps1 runs it on every build it makes. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <RootNamespace>CheckOffline</RootNamespace>
+  </PropertyGroup>
+
+</Project>

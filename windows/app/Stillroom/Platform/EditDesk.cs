@@ -19,6 +19,10 @@ internal sealed class EditDesk
 {
     public static readonly string Root = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Stillroom", "Desk");
 
+    /// <summary>Where the fallback preview's copies go. Not the desk: Windows' font previewer won't draw a file in
+    /// AppData outside Temp.</summary>
+    public static readonly string LookRoot = Path.Combine(Path.GetTempPath(), "Stillroom Look");
+
     private sealed class Item
     {
         public required string Id;
@@ -98,12 +102,40 @@ internal sealed class EditDesk
         ClearLeftovers();
     }
 
+    /// <summary>A copy put out for a look (the fallback preview, the Mac's Quick Look copy), in a folder of its own:
+    /// this account's only, out of Windows Search, and cleared with the desk at lock, quit and start. `write` writes
+    /// it to the path given. Gives the file.</summary>
+    public static string PutOutForLook(string name, Action<string> write)
+    {
+        Engine.ProtectFolder(LookRoot);
+        MarkNotIndexed(LookRoot);
+        var folder = Path.Combine(LookRoot, Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(folder);
+        var file = Path.Combine(folder, SafeName(name));
+        try { write(file); }
+        catch
+        {
+            Wipe(folder);
+            throw;
+        }
+        return file;
+    }
+
+    /// <summary>A look's copy, overwritten and deleted once the card has let go of it.</summary>
+    public static void TakeBack(string file)
+    {
+        if (Path.GetDirectoryName(file) is { } folder && Path.GetDirectoryName(folder) == LookRoot) Wipe(folder);
+    }
+
     /// <summary>At start, and after a clear: whatever is still in the desk folder (a crash, an app that held a file
     /// open) is overwritten and deleted now.</summary>
     public static void ClearLeftovers()
     {
-        if (!Directory.Exists(Root)) return;
-        foreach (var folder in Directory.EnumerateDirectories(Root)) Wipe(folder);
+        foreach (var root in new[] { Root, LookRoot })
+        {
+            if (!Directory.Exists(root)) continue;
+            foreach (var folder in Directory.EnumerateDirectories(root)) Wipe(folder);
+        }
     }
 
     private void Look()
