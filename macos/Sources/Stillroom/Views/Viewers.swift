@@ -65,7 +65,7 @@ struct EmailView: View {
                 }
             } else if unreadable {
                 ScrollView {
-                    Text(String(decoding: data, as: UTF8.self)).font(.system(size: 12, design: .monospaced)).opacity(0.85)
+                    Text(String(decoding: data, as: UTF8.self)).font(Kit.mono).opacity(0.85)
                         .textSelection(.enabled).frame(maxWidth: .infinity, alignment: .leading).padding(Kit.Space.group)
                 }
             } else {
@@ -86,7 +86,7 @@ struct EmailView: View {
     private func header(_ email: Email) -> some View {
         VStack(alignment: .leading, spacing: 5) {
             Text(email.subject.isEmpty ? "No subject" : email.subject)
-                .font(.system(size: 15, weight: .semibold)).lineLimit(2).textSelection(.enabled).padding(.bottom, 3)
+                .font(Kit.figure).lineLimit(2).textSelection(.enabled).padding(.bottom, 3)
             line("From", email.from)
             line("To", email.to)
             line("Cc", email.cc)
@@ -120,7 +120,7 @@ struct EmailView: View {
     @ViewBuilder private func line(_ label: String, _ value: String) -> some View {
         if !value.isEmpty {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text(label).font(Kit.quiet).opacity(0.45).frame(width: 40, alignment: .leading)
+                Text(label).font(Kit.quiet).quietText().frame(width: 40, alignment: .leading)
                 Text(value).font(Kit.quiet).opacity(0.8).lineLimit(2).textSelection(.enabled)
             }
         }
@@ -229,9 +229,9 @@ struct QuickLookView: View {
                 QuickLookPane(url: url)
             } else if let failed {
                 VStack(spacing: Kit.Space.label) {
-                    Image(systemName: file.symbol).font(.system(size: 28, weight: .light)).opacity(0.45).padding(.bottom, 4)
+                    Image(systemName: file.symbol).font(Kit.placeholder).opacity(0.45).padding(.bottom, 4)
                     Text("Couldn't show it").font(Kit.body)
-                    Text(failed).font(Kit.quiet).opacity(0.45).multilineTextAlignment(.center).frame(maxWidth: 380)
+                    Text(failed).font(Kit.quiet).quietText().multilineTextAlignment(.center).frame(maxWidth: 380)
                 }
             } else {
                 ProgressView().controlSize(.small)

@@ -18,6 +18,8 @@ import Testing
 
     init() {
         VaultStore.rootForTests = root
+        // The tamper seal uses this, never the Secure Enclave, in tests.
+        TamperSeal.keyForTests = SymmetricKey(size: .bits256)
         PasswordCost.current = PasswordCost(memoryKiB: 1024, passes: 1, lanes: 1)
         // Password changes count as tries (AppState.countGuessAtOther); each test starts with none.
         TryLimit.succeeded()

@@ -48,3 +48,12 @@ extension VaultFlowTests {
         #expect(state.files.first?.folder == "Archive/Taxes/2025")
     }
 }
+
+/// A row's date reads as Finder's does: today with its time, then yesterday, a weekday within the week, else the date.
+@MainActor @Test func aRowsDateIsRelativeForAWeek() {
+    let now = Date.now, day: TimeInterval = 86_400
+    #expect(FileRow.day(now, now: now).hasPrefix("Today, "))
+    #expect(FileRow.day(now - day, now: now) == "Yesterday")
+    #expect(FileRow.day(now - 3 * day, now: now) == (now - 3 * day).formatted(.dateTime.weekday(.wide)))
+    #expect(FileRow.day(now - 30 * day, now: now) == (now - 30 * day).formatted(.dateTime.day().month(.abbreviated).year()))
+}

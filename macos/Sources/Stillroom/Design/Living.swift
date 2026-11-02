@@ -10,13 +10,20 @@ enum Living {
 }
 
 /// The motions everything uses, so each kind of change feels the same everywhere: springs, never a fixed-time ease.
+/// Critically damped: nothing here was thrown by a gesture, so nothing overshoots (only the lock screen's shake bounces).
 enum Motion {
     /// The pointer's touch: a hover lighting or lifting a button.
-    static let hover = Animation.spring(response: 0.22, dampingFraction: 0.78)
+    static let hover = Animation.spring(response: 0.2, dampingFraction: 1)
     /// Something that changed: a value, a row, a switch, a light coming on.
-    static let change = Animation.spring(response: 0.32, dampingFraction: 0.86)
+    static let change = Animation.spring(response: 0.3, dampingFraction: 1)
     /// Something arriving: a screen's content, a card.
-    static let appear = Animation.spring(response: 0.4, dampingFraction: 0.86)
+    static let appear = Animation.spring(response: 0.38, dampingFraction: 1)
+    /// A light that lingers, then fades: a row that just arrived.
+    static let linger = Animation.spring(response: 1.2, dampingFraction: 1)
+    /// With Reduce Motion: a short fade in place of any of them.
+    static let reduced = Animation.easeOut(duration: 0.18)
+
+    static func or(_ animation: Animation, reduce: Bool) -> Animation { reduce ? reduced : animation }
 }
 
 /// A page arriving, the same way everywhere: it fades in as it rises a few points into place. `ready` holds it back
@@ -42,6 +49,17 @@ struct Entrance: ViewModifier {
 
 extension View {
     func entrance(ready: Bool = true) -> some View { modifier(Entrance(ready: ready)) }
+
+    /// An item's name, carried from its row into its editor's heading as it opens (and back), so opening reads as
+    /// one thing moving rather than a page swap. Nothing moves with Reduce Motion (the namespace is left out then).
+    @ViewBuilder func itemTitle(_ id: UUID, in titles: Namespace.ID?) -> some View {
+        if let titles { matchedGeometryEffect(id: id, in: titles, properties: .position, anchor: .leading) } else { self }
+    }
+}
+
+extension EnvironmentValues {
+    /// Where list rows and editors match their item's name (VaultView's); nil with Reduce Motion.
+    @Entry var itemTitles: Namespace.ID?
 }
 
 /// Colour as light: soft lobes along the bottom edge, still, so it costs nothing to keep on screen.
@@ -81,6 +99,8 @@ struct DotRing: View {
     /// How much of the ring is lit, 0 to 1.
     let lit: Double
     let tint: Color
+    /// The unlit dots' colour, when they mean something (Check vault's damaged share).
+    var rest: Color?
     var count = 48
     var dot: CGFloat = 3.2
     /// Which dots are lit, anywhere round the ring, in place of lighting them in order; the newest drawn larger.
@@ -98,7 +118,7 @@ struct DotRing: View {
                 let edge = pattern == nil ? i == on - 1 : i == newest
                 let a = Double(i) / Double(count) * 2 * .pi - .pi / 2
                 Circle()
-                    .fill(isOn ? tint : Color.ink.opacity(0.1))
+                    .fill(isOn ? tint : rest ?? Color.track)
                     .frame(width: edge ? dot * 1.6 : dot, height: edge ? dot * 1.6 : dot)
                     .shadow(color: isOn ? tint.opacity(0.6) : .clear, radius: 2)
                     .position(x: c.x + r * cos(a), y: c.y + r * sin(a))
@@ -107,6 +127,56 @@ struct DotRing: View {
         // Drawn once into one image per change: many glowing dots redrawn every frame cost a lot.
         .drawingGroup()
         .accessibilityHidden(true)
+    }
+}
+
+/// A ring of dots round one symbol: the mark of an empty page, and of Check vault's progress.
+struct RingMark: View {
+    let symbol: String
+    var lit: Double = 0
+    var tint: Color = .vault
+    var rest: Color?
+    var size: CGFloat = 72
+
+    var body: some View {
+        ZStack {
+            DotRing(lit: lit, tint: tint, rest: rest)
+            Image(systemName: symbol)
+                .font(Kit.glyph.weight(.light))
+                .foregroundStyle(tint.opacity(lit >= 1 ? 1 : 0.75))
+                .contentTransition(.symbolEffect(.replace))
+        }
+        .frame(width: size, height: size)
+        .animation(Motion.change, value: lit)
+    }
+}
+
+/// An empty page, the same everywhere: the ring mark, a title, one line, and what to do (lists, the intruder log).
+struct EmptyState<Extra: View>: View {
+    let symbol: String
+    let title: String
+    let line: String
+    var lit: Double = 0
+    @ViewBuilder var extra: Extra
+
+    var body: some View {
+        VStack(spacing: Kit.Space.group) {
+            RingMark(symbol: symbol, lit: lit)
+            VStack(spacing: Kit.Space.label) {
+                Text(title).font(Kit.title)
+                Text(line).font(Kit.body).quietText().frame(maxWidth: 340)
+            }
+            extra
+        }
+        .multilineTextAlignment(.center)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(.bottom, Glass.lightRoom)
+    }
+}
+
+extension EmptyState where Extra == EmptyView {
+    init(symbol: String, title: String, line: String) {
+        self.init(symbol: symbol, title: title, line: line) { EmptyView() }
     }
 }
 

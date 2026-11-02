@@ -21,7 +21,9 @@ extension VaultFlowTests {
         try await state.create(password: "fixture password one", touchID: false)
         let recovery = try #require(state.freshRecoveryCode)
         await state.add([source.appending(path: "Taxes"), source.appending(path: "photo.bin"), source.appending(path: "big.bin")])
-        _ = state.newEntry(.note, name: "Shopping", content: Data("milk\neggs\n".utf8))
+        let shopping = state.newEntry(.note, name: "Shopping", content: Data("milk\neggs\n".utf8))
+        // A cool-down is a rule the app keeps, not encryption: the reader still opens this note (FORMAT.md).
+        if let shopping { state.setCoolDown(86_400, on: shopping.id) }
         var secret = Secret(template: .login)
         secret.fields[0].value = "me@example.com"
         secret.fields[1].value = "hunter2-correct"

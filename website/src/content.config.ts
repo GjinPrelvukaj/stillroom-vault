@@ -38,6 +38,8 @@ function prepare(md: string, from: string): { title: string; body: string } {
   if (h1 >= 0) lines.splice(h1, 1);
   const body = lines
     .join('\n')
+    // An empty "Unreleased" section (nothing waiting since the last release) shows nothing on the site.
+    .replace(/^## \[Unreleased\]\n\s*(?=^## )/m, '')
     // [text](link) and ![alt](link)
     .replace(/\]\(([^)\s]+)\)/g, (_m, href: string) => `](${rewrite(href, from)})`)
     // [label]: link reference definitions

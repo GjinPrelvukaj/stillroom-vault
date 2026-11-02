@@ -29,13 +29,17 @@ struct VaultView: View {
     @AppStorage("editWarningOff") private var editWarningOff = false
     @State private var fileVaultOn = true
     @State private var sheet: Sheet?
+    /// Raised to put the cursor in Search.
+    @State private var searchFocus = 0
+    @State private var keyMonitor: Any?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+    @Namespace private var titles
 
     enum Place: Hashable { case shelf(Shelf), tag(String), settings, intruders }
 
     private enum Sheet: Identifiable {
-        case newFolder, renameItem(VaultFile), renameFolder(String), tags(VaultFile), versions(VaultFile)
+        case newFolder, renameItem(VaultFile), renameFolder(String), tags(VaultFile), versions(VaultFile), coolDown(VaultFile)
         var id: String {
             switch self {
             case .newFolder: "new-folder"
@@ -43,6 +47,7 @@ struct VaultView: View {
             case .renameFolder(let p): "rename-folder-\(p)"
             case .tags(let f): "tags-\(f.id)"
             case .versions(let f): "versions-\(f.id)"
+            case .coolDown(let f): "cool-down-\(f.id)"
             }
         }
     }
@@ -53,13 +58,15 @@ struct VaultView: View {
                 sidebar
                 Rectangle().fill(Color.ink.opacity(0.06)).frame(width: 1)
                 pane.frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .environment(\.itemTitles, reduceMotion ? nil : titles)
             }
             .blur(radius: opened != nil && !reduceTransparency ? 14 : 0)
             .allowsHitTesting(opened == nil)
             .accessibilityHidden(opened != nil)
             card
         }
-        .animation(reduceMotion ? .easeOut(duration: 0.15) : Motion.appear, value: opened?.file)
+        .background { shortcuts }
+        .animation(Motion.or(Motion.appear, reduce: reduceMotion), value: opened?.file)
         .modifier(ActivityNotes(card: opened?.file, folder: folder, searching: !search.isEmpty, sheet: sheetName, dialog: dialogName))
         // A scan or photo from the iPhone arrives as bytes and is sealed straight from memory; it never touches the disk.
         .importsItemProviders([.pdf, .jpeg, .heic, .png, Sketch.type, .image].compactMap { $0 }) { providers in
@@ -102,20 +109,20 @@ struct VaultView: View {
         }
         // Opened with the recovery key: a new password before anything else.
         .sheet(isPresented: .constant(state.mustSetPassword)) {
-            PasswordSheet(title: "Set a new password",
+            PasswordSheet(title: "Set a New Password",
                           message: "Your vault opened without its password. Pick a new password for it; the old one stops working.",
-                          asksCurrent: false, canCancel: false) { _, new in
+                          action: "Set Password", asksCurrent: false, canCancel: false) { _, new in
                 try await state.setPasswordAfterRecovery(new)
             }
         }
         .sheet(item: $sheet) { sheet in
             switch sheet {
             case .newFolder:
-                NameSheet(title: "New folder", action: "Make Folder") { state.makeFolder($0, in: folderHere) }
+                NameSheet(title: "New Folder", action: "Make Folder") { state.makeFolder($0, in: folderHere) }
             case .renameItem(let file):
                 NameSheet(title: "Rename", initial: file.name, action: "Rename") { state.rename(file.id, to: $0) }
             case .renameFolder(let path):
-                NameSheet(title: "Rename folder", initial: path.shownLast, action: "Rename") {
+                NameSheet(title: "Rename Folder", initial: path.shownLast, action: "Rename") {
                     // Stay where you are; inside the renamed folder, follow it to its new name.
                     if let new = state.renameFolder(path, to: $0), let here = folder,
                        here == path || here.hasPrefix(path + "/") {
@@ -124,6 +131,8 @@ struct VaultView: View {
                 }
             case .tags(let file):
                 TagSheet(state: state, file: file)
+            case .coolDown(let file):
+                CoolDownSheet(state: state, file: file) { open(file) }
             case .versions(let file):
                 VersionsSheet(state: state, file: file) { version, data in
                     let shown = VaultFile(id: version.id, name: file.name, uti: file.uti, size: version.size,
@@ -159,9 +168,44 @@ struct VaultView: View {
             if let editing, let file = state.files.first(where: { $0.id == editing }), place == .shelf(file.kind) { return }
             editing = nil
         }
+        .onAppear(perform: returnToLastPlace)
+        .onDisappear { LastPlace.place = place; LastPlace.folder = folder }
+        .onAppear { keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { typeToSearch($0) ? nil : $0 } }
+        .onDisappear { if let keyMonitor { NSEvent.removeMonitor(keyMonitor) }; keyMonitor = nil }
         .onAppear(perform: takeInbox)
         .onChange(of: Inbox.shared.waiting) { takeInbox() }
+        #if DEBUG
+        .onAppear(perform: showDemoScreen)
+        #endif
     }
+
+    #if DEBUG
+    /// Debug builds only: straight to the screen STILLROOM_DEMO_SCREEN names (see DemoScreen).
+    private func showDemoScreen() {
+        let (kind, name) = DemoScreen.parts
+        let file = state.files.first { $0.name == name }
+        switch kind {
+        case "notes": place = .shelf(.notes)
+        case "secrets": place = .shelf(.secrets)
+        case "intruders": place = .intruders
+        case "settings": place = .settings
+        case "newfolder": sheet = .newFolder
+        case "folder": folder = state.folders.first { $0.shownLast == name }
+        case "preview", "note", "secret": if let file { open(file) }
+        case "tags": if let file { sheet = .tags(file) }
+        case "versions":
+            // The demo vault has no versions yet: resaving an item makes one (if it wasn't changed in the last ten minutes).
+            guard let file else { return }
+            if file.versions?.isEmpty != false, let data = try? state.read(file) { state.update(file.id, with: data) }
+            if let now = state.files.first(where: { $0.id == file.id }) { sheet = .versions(now) }
+        case "cooldown":
+            guard let file else { return }
+            if file.coolDown == nil { state.setCoolDown(86_400, on: file.id) }
+            if let now = state.files.first(where: { $0.id == file.id }) { sheet = .coolDown(now) }
+        default: break
+        }
+    }
+    #endif
 
     // MARK: Sidebar
 
@@ -179,7 +223,7 @@ struct VaultView: View {
                     if !state.tags.isEmpty {
                         Text("Tags").groupLabel().padding(.leading, 10).padding(.top, Kit.Space.group).padding(.bottom, 4)
                         ForEach(state.tags, id: \.self) { tag in
-                            item(.tag(tag), tag, "circle.fill", count: state.files.count { $0.tagList.contains(tag) }, tint: TagColor.of(tag))
+                            item(.tag(tag), tag, "", count: state.files.count { $0.tagList.contains(tag) }, tag: tag)
                         }
                     }
                 }
@@ -188,17 +232,17 @@ struct VaultView: View {
             Group {
                 let unseen = state.intruderCount - UserDefaults.standard.integer(forKey: "intrudersSeen")
                 item(.intruders, "Intruder Log", "person.badge.shield.checkmark", count: state.intruderCount,
-                     tint: unseen > 0 ? .red : nil)
+                     tint: unseen > 0 ? Color.problem : nil)
                     .padding(.top, Kit.Space.item)
             }
             item(.settings, "Settings", "gearshape")
             VStack(alignment: .leading, spacing: 2) {
                 Text("In the vault").eyebrow()
                 Text(ByteCountFormatter.string(fromByteCount: Int64(state.size), countStyle: .file))
-                    .font(.system(size: 17, weight: .semibold)).monospacedDigit()
+                    .font(Kit.figure).monospacedDigit()
                     .contentTransition(.numericText())
                 Text("\(state.files.count) \(state.files.count == 1 ? "item" : "items"), all encrypted")
-                    .font(Kit.quiet).opacity(0.45)
+                    .font(Kit.quiet).quietText()
             }
             .padding(.horizontal, 10)
             .padding(.vertical, Kit.Space.group)
@@ -207,9 +251,11 @@ struct VaultView: View {
             // The free tier, from a few items before the limit: the same line in either vault.
             if let note = state.roomNote {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(note).font(Kit.quiet).foregroundStyle(Color.vault)
-                    Button("Buy a Licence", action: Updates.buy).buttonStyle(.quiet)
+                    Text(note).font(Kit.quiet.weight(.medium)).foregroundStyle(Color.vault)
+                    if state.room == 0 { Text("Adding is paused").font(Kit.quiet).quietText() }
+                    Button("Buy a Licence", action: Updates.buy).buttonStyle(.secondary)
                         .help("Opens stillroomvault.com/pricing in your browser")
+                        .padding(.top, Kit.Space.label)
                 }
                 .padding(.horizontal, 10)
                 .padding(.bottom, Kit.Space.item)
@@ -232,22 +278,81 @@ struct VaultView: View {
         .padding(.bottom, 16)
         .frame(width: 230)
         .frame(maxHeight: .infinity)
-        .background(Color.ink.opacity(0.025))
+        // Up under the traffic lights too, so the sidebar's tint runs the window's full height.
+        .background(Color.ink.opacity(0.025).ignoresSafeArea())
     }
 
-    private func item(_ p: Place, _ title: String, _ symbol: String, count: Int = 0, tint: Color? = nil) -> some View {
+    private func go(_ p: Place) {
+        withAnimation(Motion.change) { place = p; folder = nil }
+        ActivityLog.note("page: \(pageName)")
+    }
+
+    // MARK: Keyboard
+
+    /// ⌘F Search, ⌘1–3 the three shelves, ⌘[ back out of an editor or a folder. Invisible buttons, so the keys work
+    /// wherever the window is.
+    private var shortcuts: some View {
+        Group {
+            Button("Search") { find() }.keyboardShortcut("f")
+            Button("All Files") { go(.shelf(.all)) }.keyboardShortcut("1")
+            Button("Notes") { go(.shelf(.notes)) }.keyboardShortcut("2")
+            Button("Secrets") { go(.shelf(.secrets)) }.keyboardShortcut("3")
+            Button("Back") { back() }.keyboardShortcut("[")
+        }
+        .disabled(opened != nil)
+        .opacity(0)
+        .frame(width: 0, height: 0)
+        .accessibilityHidden(true)
+    }
+
+    private func find() {
+        guard !state.files.isEmpty else { return }
+        if shelf == nil, case .tag = place {} else if shelf == nil { go(.shelf(.all)) }
+        if editing != nil { edit(nil) }
+        searchFocus += 1
+    }
+
+    private func back() {
+        if editing != nil { edit(nil) } else if browsing, let folder { withAnimation(Motion.change) { self.folder = parent(of: folder) } }
+    }
+
+    /// A letter or digit typed on a list, with nothing else taking keys, starts a search with it.
+    private func typeToSearch(_ event: NSEvent) -> Bool {
+        guard event.modifierFlags.intersection([.command, .control, .option]).isEmpty,
+              let typed = event.characters, typed.count == 1,
+              typed.unicodeScalars.allSatisfy(CharacterSet.alphanumerics.contains),
+              editing == nil, opened == nil, sheet == nil, !state.files.isEmpty,
+              place != .settings, place != .intruders,
+              let window = event.window, window.isKeyWindow, window.attachedSheet == nil, window.sheetParent == nil,
+              !(window.firstResponder is NSText) else { return false }
+        search += typed
+        searchFocus += 1
+        return true
+    }
+
+    // MARK: Last place
+
+    /// Back where you were: the shelf, tag or folder open when the vault last locked, this run only. Whatever was
+    /// remembered is used only if this vault has it, so another vault opens at its top, as if nothing was kept.
+    private func returnToLastPlace() {
+        if let last = LastPlace.place {
+            if case .tag(let tag) = last, !state.tags.contains(tag) {} else { place = last }
+        }
+        if let last = LastPlace.folder, place == .shelf(.all), state.folders.contains(last) { folder = last }
+    }
+
+    private func item(_ p: Place, _ title: String, _ symbol: String, count: Int = 0, tint: Color? = nil, tag: String? = nil) -> some View {
         Button {
-            withAnimation(Motion.change) { place = p; folder = nil }
-            ActivityLog.note("page: \(pageName)")
+            go(p)
         } label: {
             HStack(spacing: 10) {
-                Image(systemName: symbol)
-                    .font(tint == nil || symbol != "circle.fill" ? Kit.body : .system(size: 8))
-                    .foregroundStyle(tint ?? .primary)
-                    .frame(width: 18)
+                Group {
+                    if let tag { TagDot(tag: tag) } else { Image(systemName: symbol).font(Kit.body).foregroundStyle(tint ?? .primary) }
+                }
+                .frame(width: 18)
                 Text(title).lineLimit(1)
                 Spacer()
-                if count > 0 { Text("\(count)").font(Kit.quiet).monospacedDigit().opacity(0.5) }
+                if count > 0 { Text("\(count)").font(Kit.quiet).monospacedDigit().quietText() }
             }
         }
         .buttonStyle(.sidebarItem(chosen: place == p))
@@ -295,7 +400,7 @@ struct VaultView: View {
                 search.isEmpty || $0.name.localizedCaseInsensitiveContains(search)
                     || ($0.folder ?? "").shownName.localizedCaseInsensitiveContains(search)
                     || $0.tagList.contains { $0.localizedCaseInsensitiveContains(search) }
-                    || state.words[$0.id]?.text.localizedCaseInsensitiveContains(search) == true
+                    || ($0.coolDown == nil && state.words[$0.id]?.text.localizedCaseInsensitiveContains(search) == true)
             }
             .sorted { $0.entry == nil ? $0.addedAt > $1.addedAt : $0.changedAt > $1.changedAt }
     }
@@ -313,22 +418,19 @@ struct VaultView: View {
             HStack(alignment: .bottom) {
                 VStack(alignment: .leading, spacing: Kit.Space.label) {
                     Text(placeTitle).eyebrow()
-                    Text(headline(shown.count)).font(Kit.title).contentTransition(.numericText())
+                    Text(headline(shown.count, folders: subfolders.count)).font(Kit.title).contentTransition(.numericText())
                 }
                 Spacer()
                 if !state.files.isEmpty {
-                    GlassField(hint: "Search", text: $search, symbol: "magnifyingglass").frame(width: 220)
+                    GlassField(hint: "Search", text: $search, symbol: "magnifyingglass", focusRequest: searchFocus).frame(width: 220)
+                        .help("Search (⌘F, or just type)")
                 }
                 actions
             }
             if browsing, folder != nil { breadcrumb }
             if !EditDesk.shared.open.isEmpty { editingBar }
             if let problem = state.problem {
-                HStack {
-                    Text(problem).font(Kit.quiet).foregroundStyle(.red.opacity(0.85))
-                    Button("OK") { state.problem = nil }.buttonStyle(.quiet)
-                }
-                .transition(.opacity)
+                problemBanner(problem).transition(.opacity)
             }
             if shown.isEmpty && subfolders.isEmpty {
                 empty
@@ -337,14 +439,16 @@ struct VaultView: View {
                     VStack(spacing: 0) {
                         ForEach(subfolders, id: \.self) { path in
                             if path != subfolders.first { divider }
-                            FolderRow(path: path, count: state.files.count { $0.isInside(path) },
+                            FolderRow(path: path, count: state.files.count { $0.isFile && $0.isInside(path) },
                                       open: { withAnimation(Motion.change) { folder = path } },
                                       rename: { sheet = .renameFolder(path) }, delete: { deletingFolder = path },
                                       drop: { drop($0, into: path) })
                         }
                         ForEach(shown) { file in
                             if file.id != shown.first?.id || !subfolders.isEmpty { divider }
-                            FileRow(file: file, showsFolder: !browsing, folders: state.folders,
+                            // On Notes or Secrets every row would say "Note" or "Secret": the shelf already does.
+                            FileRow(file: file, showsFolder: !browsing, showsKind: shelf != .notes && shelf != .secrets,
+                                    folders: state.folders,
                                     snippet: snippet(for: file),
                                     open: { open(file) },
                                     menu: menu(for: file))
@@ -362,6 +466,28 @@ struct VaultView: View {
         .animation(Motion.change, value: state.problem)
         .pane(wide: true)
         .entrance()
+    }
+
+    /// What went wrong, readable: the sign and a first line in the problem colour, the rest in ink. A message of more
+    /// than one line uses its first as the title.
+    private func problemBanner(_ problem: String) -> some View {
+        let lines = problem.split(separator: "\n", maxSplits: 1).map(String.init)
+        return HStack(alignment: .firstTextBaseline, spacing: Kit.Space.item) {
+            Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(Color.problem)
+            VStack(alignment: .leading, spacing: 2) {
+                if lines.count > 1 {
+                    Text(lines[0]).font(Kit.body.weight(.semibold)).foregroundStyle(Color.problem)
+                    Text(lines[1].trimmingCharacters(in: .whitespacesAndNewlines)).font(Kit.quiet)
+                } else {
+                    Text(problem).font(Kit.quiet).foregroundStyle(Color.problem)
+                }
+            }
+            .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: Kit.Space.item)
+            Button("OK") { state.problem = nil }.buttonStyle(.secondary)
+        }
+        .padding(.horizontal, 14).padding(.vertical, 10)
+        .background(Color.problem.opacity(0.08), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
     }
 
     /// Right-click on empty space.
@@ -426,7 +552,7 @@ struct VaultView: View {
             Button("All Files") { withAnimation(Motion.change) { folder = nil } }.buttonStyle(.quiet)
                 .dropDestination(for: URL.self) { urls, _ in _ = drop(urls, into: nil) }
             ForEach(parts.indices, id: \.self) { i in
-                Image(systemName: "chevron.right").font(.system(size: 9, weight: .semibold)).opacity(0.35)
+                Image(systemName: "chevron.right").font(Kit.micro).opacity(0.35)
                 let path = parts[...i].joined(separator: "/")
                 Button(parts[i].shownName) { withAnimation(Motion.change) { folder = path } }
                     .buttonStyle(.quiet)
@@ -447,30 +573,21 @@ struct VaultView: View {
         }
     }
 
-    private func headline(_ n: Int) -> String {
+    private func headline(_ n: Int, folders: Int = 0) -> String {
         if state.adding > 0 { return "Encrypting \(state.adding) \(state.adding == 1 ? "file" : "files")…" }
         if !search.isEmpty { return n == 0 ? "Nothing called that" : "\(n) found" }
         if browsing, let folder { return folder.shownLast }
         let noun = shelf == .notes ? "note" : shelf == .secrets ? "secret" : place == .shelf(.all) || shelf != nil ? "file" : "item"
-        return n == 0 ? "Nothing here yet" : "\(n) \(noun)\(n == 1 ? "" : "s")"
+        // Folders count too: the top of All Files may hold nothing but folders.
+        let folderWords = folders == 0 ? nil : "\(folders) \(folders == 1 ? "folder" : "folders")"
+        let fileWords = n == 0 ? nil : "\(n) \(noun)\(n == 1 ? "" : "s")"
+        let words = [folderWords, fileWords].compactMap { $0 }
+        return words.isEmpty ? "Nothing here yet" : words.joined(separator: ", ")
     }
 
     /// Empty: a still ring of dots, lit while files are over the window, and the one thing to do here.
     private var empty: some View {
-        VStack(spacing: Kit.Space.group) {
-            ZStack {
-                DotRing(lit: dropping ? 1 : 0, tint: .vault)
-                Image(systemName: dropping ? "arrow.down" : emptySymbol)
-                    .font(.system(size: 20, weight: .light))
-                    .foregroundStyle(Color.vault.opacity(dropping ? 1 : 0.75))
-                    .contentTransition(.symbolEffect(.replace))
-            }
-            .frame(width: 72, height: 72)
-            .animation(Motion.change, value: dropping)
-            VStack(spacing: Kit.Space.label) {
-                Text(emptyTitle).font(Kit.title)
-                Text(emptyLine).font(Kit.body).opacity(0.5).frame(maxWidth: 340)
-            }
+        EmptyState(symbol: dropping ? "arrow.down" : emptySymbol, title: emptyTitle, line: emptyLine, lit: dropping ? 1 : 0) {
             if search.isEmpty {
                 switch shelf {
                 case .notes: Button("New Note") { newNote() }.buttonStyle(.secondary)
@@ -480,9 +597,6 @@ struct VaultView: View {
                 }
             }
         }
-        .multilineTextAlignment(.center)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding(.bottom, Glass.lightRoom)
         .contentShape(Rectangle())
         .contextMenu { spaceMenu }
     }
@@ -524,6 +638,7 @@ struct VaultView: View {
             edit: AppState.canEdit(file) ? { askToEdit(file) } : nil,
             save: file.isFile ? { saveCopy(file) } : nil,
             move: { state.move([file.id], to: $0) },
+            coolDown: { state.setCoolDown($0, on: file.id) },
             delete: { deleting = file })
     }
 
@@ -545,7 +660,7 @@ struct VaultView: View {
     /// For a search that matched inside an item, the words around the match.
     private func snippet(for file: VaultFile) -> String? {
         guard !search.isEmpty, !file.name.localizedCaseInsensitiveContains(search),
-              let text = state.words[file.id]?.text else { return nil }
+              file.coolDown == nil, let text = state.words[file.id]?.text else { return nil }
         return SearchIndex.snippet(text, around: search)
     }
 
@@ -620,6 +735,7 @@ struct VaultView: View {
         case .renameFolder: "rename folder"
         case .tags: "tags"
         case .versions: "versions"
+        case .coolDown: "cool-down"
         case nil: nil
         }
     }
@@ -636,7 +752,7 @@ struct VaultView: View {
     /// Opens a note or secret in its editor (nil: back to the list), moving the way switching pages does.
     private func edit(_ id: VaultFile.ID?) {
         if id == nil { ActivityLog.note("close editor") }
-        withAnimation(Motion.change) { editing = id }
+        withAnimation(Motion.or(Motion.change, reduce: reduceMotion)) { editing = id }
     }
 
     // MARK: Making
@@ -763,6 +879,8 @@ struct VaultView: View {
     // MARK: Opening
 
     private func open(_ file: VaultFile) {
+        // A cool-down that isn't over: the wait, and a way to start it, in place of the item.
+        guard state.coolDown(of: file).opens else { sheet = .coolDown(file); return }
         ActivityLog.note("open \(file.kind.title.lowercased())\(file.streamed ? " (streamed)" : "")")
         if file.entry != nil {
             if case .shelf(let s) = place, s == file.kind {} else { withAnimation(Motion.change) { place = .shelf(file.kind) } }
@@ -817,7 +935,7 @@ struct VaultView: View {
     @ViewBuilder private var card: some View {
         if let opened {
             RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .fill(.black.opacity(reduceTransparency ? 0.7 : 0.35))
+                .fill(reduceTransparency ? Color.ground.opacity(0.9) : Color.scrim)
                 .ignoresSafeArea()
                 .onTapGesture { self.opened = nil }
                 .accessibilityHidden(true)
@@ -845,8 +963,13 @@ struct VaultView: View {
 
 /// A tag's colour, the same every time for the same word: Tally's palette, picked by the word.
 enum TagColor {
-    static let palette: [Color] = [.hex(0x60A5FA), .hex(0xF472B6), .hex(0x34D399), .hex(0xFBBF24),
-                                   .hex(0xB08CFF), .hex(0xFB923C), .hex(0x22D3EE), .hex(0xF87171)]
+    /// Bright on black; on paper, deeper shades of the same hues, so a tag's word reads on its tint.
+    static let palette: [Color] = [
+        .adaptive(dark: 0x60A5FA, light: 0x1D4ED8), .adaptive(dark: 0xF472B6, light: 0xBE185D),
+        .adaptive(dark: 0x34D399, light: 0x047857), .adaptive(dark: 0xFBBF24, light: 0xB45309),
+        .adaptive(dark: 0xB08CFF, light: 0x6043CA), .adaptive(dark: 0xFB923C, light: 0xC2410C),
+        .adaptive(dark: 0x22D3EE, light: 0x0E7490), .adaptive(dark: 0xF87171, light: 0xB91C1C),
+    ]
     static func of(_ tag: String) -> Color {
         palette[tag.unicodeScalars.reduce(0) { ($0 &* 31 &+ Int($1.value)) & 0xFFFF } % palette.count]
     }
@@ -877,8 +1000,8 @@ private struct FolderRow: View {
                     .foregroundStyle(Color.vault.opacity(targeted ? 1 : 0.8))
                 Text(path.shownLast).font(Kit.body).lineLimit(1)
                 Spacer(minLength: Kit.Space.group)
-                Text(count == 1 ? "1 item" : "\(count) items").font(Kit.quiet).opacity(0.45)
-                Image(systemName: "chevron.right").font(.system(size: 10, weight: .semibold)).opacity(0.3)
+                Text(count == 1 ? "1 item" : "\(count) items").font(Kit.quiet).quietText()
+                Image(systemName: "chevron.right").font(Kit.micro).opacity(0.3)
             }
             .padding(.horizontal, 14)
             .frame(height: 40)
@@ -908,16 +1031,33 @@ struct FileRow: View {
     let file: VaultFile
     /// Out of folder browsing (a search, a kind, a tag), the folder it sits in is shown.
     var showsFolder = true
+    /// Left out where the list is all one kind (Notes, Secrets).
+    var showsKind = true
     var folders: [String] = []
     /// When a search matched inside it, the words around the match.
     var snippet: String?
     let open: () -> Void
     let menu: Menu
     @State private var hovering = false
+    /// A soft violet light along the row's bottom when it has only just come in.
+    @State private var arrived = 0.0
+    @Environment(\.itemTitles) private var titles
 
     /// A row dragged within the window carries its item as "vault-item:<id>"; it never means anything outside.
     static func item(from url: URL) -> UUID? {
         url.scheme == "vault-item" ? UUID(uuidString: String(url.absoluteString.dropFirst("vault-item:".count))) : nil
+    }
+
+    /// As Finder and Notes say it: "Today, 11:29", "Yesterday", "Tuesday" within the week, else the date.
+    static func day(_ date: Date, now: Date = .now) -> String {
+        let calendar = Calendar.current
+        if calendar.isDateInToday(date) { return "Today, " + date.formatted(date: .omitted, time: .shortened) }
+        if calendar.isDateInYesterday(date) { return "Yesterday" }
+        if let days = calendar.dateComponents([.day], from: calendar.startOfDay(for: date), to: calendar.startOfDay(for: now)).day,
+           (0..<7).contains(days) {
+            return date.formatted(.dateTime.weekday(.wide))
+        }
+        return date.formatted(.dateTime.day().month(.abbreviated).year())
     }
 
     struct Menu {
@@ -927,6 +1067,7 @@ struct FileRow: View {
         var edit: (() -> Void)?
         var save: (() -> Void)?
         var move: (String?) -> Void
+        var coolDown: (Int?) -> Void
         var delete: () -> Void
     }
 
@@ -935,36 +1076,40 @@ struct FileRow: View {
             HStack(spacing: 12) {
                 Image(systemName: file.symbol).frame(width: 18).opacity(0.6)
                 Text(file.name).font(Kit.body).lineLimit(1).truncationMode(.middle)
-                ForEach(file.tagList, id: \.self) { tag in
-                    Text(tag)
-                        .font(.system(size: 10.5, weight: .medium))
-                        .padding(.horizontal, 7).frame(height: 18)
-                        .background(TagColor.of(tag).opacity(0.18), in: Capsule())
-                        .foregroundStyle(TagColor.of(tag))
-                }
+                    .itemTitle(file.id, in: file.entry == nil ? nil : titles)
+                ForEach(file.tagList, id: \.self) { TagChip(tag: $0) }
                 if let snippet {
-                    Text(snippet).font(Kit.quiet).opacity(0.5).lineLimit(1)
+                    Text(snippet).font(Kit.quiet).quietText().lineLimit(1)
                 } else if showsFolder, let folder = file.folder {
-                    Label(folder.shownPath, systemImage: "folder").font(Kit.quiet).opacity(0.45).lineLimit(1).truncationMode(.head)
+                    Label(folder.shownPath, systemImage: "folder").font(Kit.quiet).quietText().lineLimit(1).truncationMode(.head)
                 }
                 Spacer(minLength: Kit.Space.group)
                 Group {
+                    if let wait = file.coolDown {
+                        Image(systemName: "hourglass").help("Opens \(CoolDown.label(wait)) after you ask")
+                    }
                     if let versions = file.versions, !versions.isEmpty {
                         Label("\(versions.count)", systemImage: "clock.arrow.circlepath").help("Earlier versions kept")
                     }
-                    Text(file.kindName).lineLimit(1)
+                    if showsKind { Text(file.kindName).lineLimit(1) }
                     if file.isFile { Text(file.sizeText).monospacedDigit().frame(width: 64, alignment: .trailing) }
-                    Text(file.shownDate.formatted(.dateTime.day().month(.abbreviated).year())).frame(width: 84, alignment: .trailing)
+                    Text(Self.day(file.shownDate)).frame(width: 96, alignment: .trailing)
                 }
-                .font(Kit.quiet).opacity(0.45)
+                .font(Kit.quiet).quietText()
             }
             .padding(.horizontal, 14)
             .frame(height: 40)
             .background(Color.ink.opacity(hovering ? 0.05 : 0))
+            .background { EdgeLight(colors: [.vault], strength: 1).opacity(arrived).clipped() }
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .onHover { hovering = $0 }
+        .onAppear {
+            // Just added (a drop, a scan, an import): one pulse of the window's own light, then gone.
+            guard file.isFile, Date.now.timeIntervalSince(file.addedAt) < 3 else { return }
+            withAnimation(Motion.hover) { arrived = 1 } completion: { withAnimation(Motion.linger) { arrived = 0 } }
+        }
         .draggable(URL(string: "vault-item:\(file.id.uuidString)")!) {
             Label(file.name, systemImage: file.symbol).padding(8).foregroundStyle(.white).background(.black.opacity(0.6), in: Capsule())
         }
@@ -983,6 +1128,13 @@ struct FileRow: View {
             }
             if let versions = menu.versions { Button("Versions…", action: versions) }
             if let save = menu.save { Button("Save a Copy…", action: save) }
+            SwiftUI.Menu("Cool-Down") {
+                ForEach(CoolDown.choices, id: \.label) { choice in
+                    Button { menu.coolDown(choice.seconds) } label: {
+                        if file.coolDown == choice.seconds { Label(choice.label, systemImage: "checkmark") } else { Text(choice.label) }
+                    }
+                }
+            }
             Divider()
             Button("Delete…", role: .destructive, action: menu.delete)
         }
@@ -1006,21 +1158,25 @@ private struct PreviewCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: Kit.Space.group) {
-            VStack(alignment: .leading, spacing: Kit.Space.label) {
-                Text(file.kindName).eyebrow()
-                Text(file.name).font(Kit.title).lineLimit(1).truncationMode(.middle)
+            HStack(spacing: 14) {
+                ItemTile(symbol: file.symbol)
+                VStack(alignment: .leading, spacing: Kit.Space.label) {
+                    Text(file.kindName).eyebrow()
+                    Text(file.name).font(Kit.title).lineLimit(1).truncationMode(.middle)
+                }
             }
             content
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(Color.ink.opacity(0.04), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                 .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
             HStack(spacing: Kit.Space.item) {
-                Text("\(file.sizeText) · \(file.shownDate.formatted(date: .long, time: .omitted))").font(Kit.quiet).opacity(0.45)
+                Text("\(file.sizeText) · \(file.shownDate.formatted(date: .long, time: .omitted))").font(Kit.quiet).quietText()
                 Spacer()
                 Button("Close", action: close).buttonStyle(.quiet).keyboardShortcut(.cancelAction)
                 if let versions { Button("Versions…", action: versions).buttonStyle(.secondary) }
                 if file.isFile { Button("Save a Copy…", action: save).buttonStyle(.secondary) }
-                if let edit { Button("Edit in Place", action: edit).buttonStyle(.primary) }
+                // Not lit: it hands the file to another app, so it's never the obvious next step.
+                if let edit { Button("Edit in Place", action: edit).buttonStyle(.secondary) }
             }
         }
         .padding(Kit.Space.edge)
@@ -1037,8 +1193,8 @@ private struct PreviewCard: View {
                 VStack(alignment: .leading, spacing: Kit.Space.item) {
                     ForEach(secret.fields) { field in
                         HStack {
-                            Text(field.label).font(Kit.quiet).opacity(0.55).frame(width: 140, alignment: .leading)
-                            Text(field.concealed ? String(repeating: "•", count: 10) : field.value).font(Kit.body)
+                            Text(field.label).font(Kit.quiet).quietText().frame(width: 140, alignment: .leading)
+                            Text(field.concealed ? Secret.Field.dots : field.value).font(Kit.body)
                         }
                     }
                 }
@@ -1051,9 +1207,9 @@ private struct PreviewCard: View {
             QuickLookView(file: file, stage: stage, unstage: unstage)
         } else if data.isEmpty && file.isFile {
             VStack(spacing: Kit.Space.label) {
-                Image(systemName: file.symbol).font(.system(size: 28, weight: .light)).opacity(0.45).padding(.bottom, 4)
+                Image(systemName: file.symbol).font(Kit.placeholder).opacity(0.45).padding(.bottom, 4)
                 Text("Too big to show here").font(Kit.body)
-                Text("Edit it in place to open it in its app, or save a copy.").font(Kit.quiet).opacity(0.45)
+                Text("Edit it in place to open it in its app, or save a copy.").font(Kit.quiet).quietText()
             }
         } else if file.type?.conforms(to: .pdf) == true, let pdf = PDFDocument(data: data) {
             PDFPreview(document: pdf)
@@ -1064,7 +1220,7 @@ private struct PreviewCard: View {
             Image(nsImage: image).resizable().scaledToFit().padding(Kit.Space.group)
         } else if file.entry != nil || file.type?.conforms(to: .text) == true, let text = String(data: data, encoding: .utf8) {
             ScrollView {
-                Text(text).font(.system(size: 12, design: .monospaced)).opacity(0.85).textSelection(.enabled)
+                Text(text).font(Kit.mono).opacity(0.85).textSelection(.enabled)
                     .frame(maxWidth: .infinity, alignment: .leading).padding(Kit.Space.group)
             }
         } else {
@@ -1073,19 +1229,47 @@ private struct PreviewCard: View {
     }
 }
 
-/// PDFKit's own view, on the card's dark instead of grey.
-private struct PDFPreview: NSViewRepresentable {
+/// PDFKit's own view, on the card's dark instead of grey, the pages inset from the card's edges. Shown only once
+/// PDFKit has laid it out, so the page never pops in grey and at another size.
+private struct PDFPreview: View {
     let document: PDFDocument
+    @State private var ready = false
+
+    var body: some View {
+        PDFKitView(document: document) { ready = true }
+            .opacity(ready ? 1 : 0)
+            .animation(Motion.appear, value: ready)
+    }
+}
+
+private struct PDFKitView: NSViewRepresentable {
+    let document: PDFDocument
+    let laidOut: () -> Void
 
     func makeNSView(context: Context) -> PDFView {
-        let view = PDFView()
+        let view = Watched()
         view.autoScales = true
         view.backgroundColor = .clear
+        view.displaysPageBreaks = true
+        view.pageBreakMargins = NSEdgeInsets(top: 16, left: 16, bottom: 16, right: 16)
+        view.pageShadowsEnabled = true
         view.document = document
+        view.laidOut = laidOut
         return view
     }
 
     func updateNSView(_ view: PDFView, context: Context) {}
+
+    private final class Watched: PDFView {
+        var laidOut: (() -> Void)?
+        override func layout() {
+            super.layout()
+            guard bounds.width > 0, let done = laidOut else { return }
+            laidOut = nil
+            // After PDFKit's own pass has scaled the page.
+            DispatchQueue.main.async(execute: done)
+        }
+    }
 }
 
 /// What the window shows, written to the activity log as it changes: the card, folder depth, search, sheets and
@@ -1107,6 +1291,13 @@ private struct ActivityNotes: ViewModifier {
     }
 }
 
+/// Where the vault was when it locked, held in memory for this run of the app only: never written to preferences or
+/// disk, gone on quit. Names here are checked against the vault that opens next before use (`returnToLastPlace`).
+@MainActor enum LastPlace {
+    static var place: VaultView.Place?
+    static var folder: String?
+}
+
 /// Which folder each drag id stands for, held only in memory and forgotten on lock.
 @MainActor enum FolderDrag {
     private(set) static var paths: [UUID: String] = [:]
@@ -1119,4 +1310,58 @@ private struct ActivityNotes: ViewModifier {
     }
 
     static func forget() { paths = [:] }
+}
+
+
+/// An item whose cool-down isn't over: how long it waits, and the button that starts the wait. Ticks over by itself, so
+/// it shows the item opening once the wait ends while it's up.
+private struct CoolDownSheet: View {
+    let state: AppState
+    let file: VaultFile
+    let open: () -> Void
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        TimelineView(.periodic(from: .now, by: 15)) { _ in
+            let now = state.coolDown(of: file)
+            VStack(alignment: .leading, spacing: Kit.Space.item) {
+                HStack(spacing: 14) {
+                    ItemTile(symbol: file.symbol)
+                    VStack(alignment: .leading, spacing: Kit.Space.label) {
+                        Label("Cool-down", systemImage: "hourglass").eyebrow()
+                        Text(file.name).font(Kit.title).lineLimit(1).truncationMode(.middle)
+                    }
+                }
+                .padding(.bottom, Kit.Space.label)
+                Text(message(now)).font(Kit.body).opacity(0.7).fixedSize(horizontal: false, vertical: true)
+                Text("Stillroom can be locked or quit meanwhile. A restart of this Mac starts the wait again, and changing the date and time doesn't shorten it.")
+                    .font(Kit.quiet).quietText().fixedSize(horizontal: false, vertical: true)
+                HStack(spacing: Kit.Space.item) {
+                    Spacer()
+                    Button("Close") { dismiss() }.buttonStyle(.quiet).keyboardShortcut(.cancelAction)
+                    switch now {
+                    case .shut:
+                        Button("Ask to Open") { state.askToOpen(file.id) }.buttonStyle(.primary).keyboardShortcut(.defaultAction)
+                    case .open, .none:
+                        Button("Open") { dismiss(); open() }.buttonStyle(.primary).keyboardShortcut(.defaultAction)
+                    case .waiting:
+                        EmptyView()
+                    }
+                }
+                .padding(.top, Kit.Space.label)
+            }
+            .animation(Motion.change, value: now)
+        }
+        .sheetCard(.question)
+    }
+
+    private func message(_ now: CoolDown.State) -> String {
+        let wait = CoolDown.label(file.coolDown)
+        switch now {
+        case .shut: return "This item opens \(wait) after you ask, then stays open for an hour."
+        case .waiting(let left): return "Opens in \(CoolDown.duration(left))."
+        case .open(let left): return "It's open now, for \(CoolDown.duration(left))."
+        case .none: return "It has no cool-down any more."
+        }
+    }
 }

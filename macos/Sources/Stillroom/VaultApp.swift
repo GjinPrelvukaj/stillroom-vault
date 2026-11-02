@@ -73,8 +73,9 @@ struct VaultApp: App {
 
 /// Shut and out of sight in one go: from the menu bar, or ⌃⌥⌘L in any app.
 @MainActor func lockAndHide(_ state: AppState, _ reason: String) {
+    // Locked at once; the window stays a moment longer so its light is seen going grey, then hides.
     state.lock(reason)
-    NSApp.hide(nil)
+    DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { NSApp.hide(nil) }
 }
 
 /// Shut or open, on the window's black glass.
@@ -82,18 +83,34 @@ struct RootView: View {
     let state: AppState
     /// Files are being dragged over the window: its light brightens to take them.
     @State private var dropping = false
+    /// The vault drawn: follows `state.isOpen`, at once on locking, and on unlocking a breath later, so the lock
+    /// screen's ring is seen filling before the vault rises in.
+    @State private var shown = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         Group {
-            if state.isOpen {
+            if shown && state.isOpen {
                 VaultView(state: state, dropping: $dropping)
+                    // In after the lock screen has gone, not through it.
+                    .transition(reduceMotion ? .opacity : .asymmetric(insertion: .opacity.animation(Motion.appear.delay(0.2)), removal: .opacity))
             } else {
                 LockView(state: state)
+                    // Breathes out: grows a little as it fades, into the window's light.
+                    .transition(reduceMotion ? .opacity : .asymmetric(insertion: .opacity,
+                                                                       removal: .opacity.combined(with: .scale(scale: 1.04))))
             }
         }
-        .transition(.opacity)
-        .animation(reduceMotion ? .easeOut(duration: 0.15) : Motion.appear, value: state.isOpen)
+        .animation(Motion.or(Motion.change, reduce: reduceMotion), value: shown && state.isOpen)
+        .onChange(of: state.isOpen) {
+            // One tap on a Force Touch trackpad, on locking and on opening.
+            NSHapticFeedbackManager.defaultPerformer.perform(.levelChange, performanceTime: .now)
+            guard state.isOpen, !reduceMotion else { shown = state.isOpen; return }
+            Task {
+                try? await Task.sleep(for: .milliseconds(260))
+                shown = state.isOpen
+            }
+        }
         // A licence just added: the whole window blurs behind its welcome.
         .blur(radius: state.isOpen && state.welcome != nil ? 14 : 0)
         .allowsHitTesting(state.welcome == nil)
@@ -103,7 +120,7 @@ struct RootView: View {
                     .transition(.opacity)
             }
         }
-        .animation(reduceMotion ? .easeOut(duration: 0.2) : Motion.appear, value: state.welcome != nil)
+        .animation(Motion.or(Motion.appear, reduce: reduceMotion), value: state.welcome != nil)
         .frame(minWidth: 1000, idealWidth: 1180, maxWidth: .infinity, minHeight: 660, idealHeight: 760, maxHeight: .infinity)
         .background { Glass(open: state.isOpen, bright: dropping) }
         .hiddenFromCapture()

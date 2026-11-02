@@ -117,6 +117,7 @@ Say exactly this, in the app and anywhere it's sold: protection against thieves 
 - A restore locks the vault first, so nothing still holding the old keys (an Edit in Place save, a note, the search index) can write into the restored one. A backup of an open vault is packed again if anything was saved while packing, so it never names a file it doesn't hold. A restore never leaves the vault missing, even if the Mac stops midway. The backup is unpacked and checked beside the vault, then the two folders swap in one step (`renamex_np` with `RENAME_SWAP`), and the old vault stays as `Store-before-restore-…`. Don't go back to two separate moves: a crash between them left no vault at all (black-box test, 24 Oct 2026).
 
 **8. Copied secrets stay on this Mac and don't stay long.**
+- A hidden value shows ten dots whatever its length (a two-factor setup shows its name), so its length can't be read off the screen; the secure field appears only while it's being typed in.
 - They're copied with `.currentHostOnly` (no Universal Clipboard).
 - They're marked concealed and transient for clipboard managers.
 - They're cleared after 30 seconds, or at once when the vault locks or Stillroom quits, if nothing else was copied since.
@@ -220,6 +221,45 @@ The Swift implementation stays in the tests as a second, independent implementat
   and signs with a private key held only as a Worker secret and in Gjin's offline backup. It stores nothing about the
   buyer. A leaked private key lets anyone make keys; the fix is a new pair and an app update, and old keys then stop
   working, so keep it offline.
+
+## The tamper seal (1.1)
+
+- **What it catches:** a file in the vault folder removed or added, or the folder put back from an older copy, while
+  Stillroom wasn't looking. Each item was already bound to its key, so swapping one fails on its own; an older list
+  with older items was valid on its own, and that's what the seal adds.
+- **How:** after Stillroom's own writes (each save, the search index, on lock, after a restore or a new vault) it seals a
+  fingerprint of the folder with a key only this Mac's Secure Enclave can use (`TamperSeal`). The unlock checks it,
+  off the main thread, once a way in has worked and before anything writes; says so once if it doesn't match, with a
+  next step (if you didn't restore a backup or move files, check the Mac for software you don't recognise); then
+  seals the folder as it is. Lock seals at once, on the main thread, so a quit never leaves it unsealed.
+- **An older `Seal` doesn't help:** the latest seal is also kept in the login keychain (a generic password, this device
+  only, one per vault folder: its account is the SHA-256 of the folder's path, so a second copy of Stillroom on the
+  Mac never reads another's), which a copy of the folder can't roll back. A `Seal` file that isn't the latest, or one missing after this Mac
+  has sealed the vault, counts as changed (`anOlderCopyWithItsOwnSealIsNoticed`, `aDeletedSealIsNoticed`). The
+  keychain is never allowed to prompt: if it won't answer or won't take the latest seal, its copy is dropped and the
+  check falls back to the `Seal` file alone (so then a deleted `Seal` reads as fresh). Seals run one at a time, the
+  fingerprint taken inside, and a file sealed by an add the lock interrupted is deleted, not left to read as tampering.
+- **Decoy-safe:** one seal for the whole folder, beside `Store` and in neither slot, sealed alike by either vault, so
+  using one never trips the other's. The warning never says which files changed: that could hint at another vault.
+  `TamperSealTests` checks both.
+- **Limits:** it checks on this Mac only (a vault moved to a new Mac starts a new seal); someone able to run software
+  as you on this Mac could make a new one; a crash between writes can make it speak once. It never blocks.
+- **Never sealed while shut:** sealing only follows Stillroom's own writes, so nothing changed outside it is sealed over
+  before an unlock has looked.
+
+## Cool-down items (1.1)
+
+- An item can wait 1 hour, 24 hours or 3 days after opening it is asked for, then stays open for an hour (`CoolDown`).
+- The wait runs on `mach_continuous_time` within one boot session (`kern.bootsessionuuid`): changing the clock doesn't
+  move it, and a restart starts it again.
+- Every read goes through `AppState.seal(of:)`, which refuses while the wait isn't over: previews, Edit in Place, Save a
+  Copy, playback and editing. Export Everything leaves such items in the vault and says so; search never indexes them.
+  Check Vault still checks they're intact, showing nothing.
+- Changing or turning off a cool-down waits for it too.
+- An item read while open stays saveable until the vault locks, so an editor or Edit in Place copy open when the hour
+  ends doesn't lose what's typed; reading it again waits.
+- **It is a rule the app keeps, not encryption.** With the password, a copy of the folder and `stillroom-open.py`,
+  the item can be read. Say so wherever it's described.
 
 ## Tampering and cracking
 

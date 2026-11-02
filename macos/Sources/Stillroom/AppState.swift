@@ -72,7 +72,7 @@ import UniformTypeIdentifiers
     /// in either vault; only the open vault's own count goes in.
     static func roomNote(room: Int, licensed: Bool) -> String? {
         guard !licensed, room <= nudgeAt else { return nil }
-        return room == 0 ? "Free limit reached, adding is paused" : "\(room) of \(License.freeItems) free items left"
+        return room == 0 ? "Free limit reached" : "\(room) of \(License.freeItems) free items left"
     }
     var roomNote: String? { Self.roomNote(room: room, licensed: license != nil) }
     /// Said when adding stops at the free tier's limit, the same words in either vault.
@@ -125,7 +125,9 @@ import UniformTypeIdentifiers
             return key
         }.value
         exists = true
-        try open(with: key, slot: mine, started: started)
+        // A new vault starts a new tamper seal: one left from an earlier vault would only say "changed".
+        TamperSeal.remove()
+        try open(with: key, slot: mine, sealed: .fresh, started: started)
         // Touch ID is extra: the vault still opens with the password if the Enclave says no.
         if touchID { setTouchID(true) }
         freshRecoveryCode = code
@@ -142,7 +144,7 @@ import UniformTypeIdentifiers
             sealed.append((slot, try MacLock.unwrap(data)))
         }
         guard let found = await Self.tryEach(sealed, password) else { throw VaultError.wrongPassword }
-        try open(with: found.1, slot: found.0, started: started)
+        try await open(with: found.1, slot: found.0, sealed: Self.checkSeal(), started: started)
     }
 
     /// One secret stretched against every slot's file, all of them every time.
@@ -181,7 +183,7 @@ import UniformTypeIdentifiers
         // The slot its key opens; both are tried.
         let opens = Slot.allCases.filter { VaultStore.openCover($0, with: key) != nil }
         guard let slot = opens.first else { throw VaultError.touchIDChanged }
-        try open(with: key, slot: slot, started: started)
+        try await open(with: key, slot: slot, sealed: Self.checkSeal(), started: started)
     }
 
     /// A recovery key opens its slot on any Mac, without the password; a new password is asked for at once.
@@ -190,7 +192,7 @@ import UniformTypeIdentifiers
         defer { ActivityLog.note("recovery key tried: \(isOpen ? "opened" : "didn't open")") }
         guard let found = await Self.tryEach(Self.files(\.recoveryFile), normalizedRecoveryCode(typed))
         else { throw VaultError.wrongRecoveryKey }
-        try open(with: found.1, slot: found.0, started: started)
+        try await open(with: found.1, slot: found.0, sealed: Self.checkSeal(), started: started)
         mustSetPassword = true
     }
 
@@ -200,11 +202,17 @@ import UniformTypeIdentifiers
         defer { ActivityLog.note("kit pieces tried: \(isOpen ? "opened" : "didn't open")") }
         let secret = try EmergencyKit.join(typed.filter { !$0.isEmpty }.map(EmergencyKit.piece))
         guard let found = await Self.tryEach(Self.files(\.kitFile), EmergencyKit.password(secret)) else { throw VaultError.wrongKit }
-        try open(with: found.1, slot: found.0, started: started)
+        try await open(with: found.1, slot: found.0, sealed: Self.checkSeal(), started: started)
         mustSetPassword = true
     }
 
-    private func open(with key: SymmetricKey, slot: Slot, started: Int) throws {
+    /// The tamper seal, checked off the main thread (it reads the keychain and the Secure Enclave) once a way in has
+    /// worked and before `open` writes anything: the same answer whichever vault opens.
+    nonisolated private static func checkSeal() async -> TamperSeal.Status {
+        await Task.detached(priority: .userInitiated) { TamperSeal.check() }.value
+    }
+
+    private func open(with key: SymmetricKey, slot: Slot, sealed: TamperSeal.Status, started: Int) throws {
         // Locked (the Mac slept) while the password was being stretched: stay shut.
         guard started == locks else { throw CancellationError() }
         guard let cover = VaultStore.openCover(slot, with: key) else { throw VaultError.damaged }
@@ -236,6 +244,15 @@ import UniformTypeIdentifiers
         intruderCount = IntruderLog.entries(meta.intruder, for: slot).count
         remindAboutKit()
         words = SearchIndex.load(using: key, slot: slot, cover: cover)
+        // Words of items with a cool-down never stay in memory, even from an index saved before they had one.
+        for file in files where file.coolDown != nil { words[file.id] = nil }
+        if sealed == .changed {
+            // Never which files: that could hint at another vault. Said once; the folder as it is now is sealed next.
+            // The first line is the banner's title.
+            let tamper = "Stillroom's folder was changed while it was closed\nSomething was added, removed or put back from an older copy. If you didn't restore a backup, move files or have Stillroom quit unexpectedly, check your Mac for software you don't recognise, then check the vault in Settings › Data."
+            problem = problem.map { tamper + "\n\n" + $0 } ?? tamper
+        }
+        TamperSeal.sealSoon()
         isOpen = true
         // Nothing about what's inside, nor which vault opened: that would give a decoy away.
         ActivityLog.vaultOpen = true
@@ -247,6 +264,9 @@ import UniformTypeIdentifiers
     /// `reason` is for the activity log: what made it lock.
     func lock(_ reason: String = "lock button") {
         if isOpen { ActivityLog.note("lock (\(reason))") }
+        // What this session wrote, sealed now: the next unlock checks against it. Never while shut, so nothing changed
+        // outside Stillroom is sealed over before an unlock has looked.
+        if isOpen { TamperSeal.sealNow() }
         ActivityLog.vaultOpen = false
         welcome = nil
         // A copied password doesn't outlive the vault being open (rule 8), nor waits out its 30 seconds on a quit.
@@ -266,6 +286,7 @@ import UniformTypeIdentifiers
         meta = VaultIndex()
         touchIDOn = TouchIDKey.isOn
         itemKeys = [:]
+        openedThisTime = []
         files = []
         madeFolders = []
         isOpen = false
@@ -320,7 +341,9 @@ import UniformTypeIdentifiers
                         return (file, sealed, Originals.matches(file, original: url, sealed: sealed, slot: slot))
                     }.value
                     // Locked while sealing: the list is gone, so saving it now would write an empty one over the real one.
-                    guard isOpen else { return originals }
+                    // The sealed file just written goes too: no list names it, and the lock has already sealed the
+                    // folder without it, so left behind it would read as tampering at the next unlock.
+                    guard isOpen else { VaultStore.remove(sealed.blob, slot: slot); return originals }
                     files.append(file)
                     itemKeys[sealed.blob] = sealed.key
                     try save()
@@ -341,9 +364,60 @@ import UniformTypeIdentifiers
         try VaultStore.contents(of: seal(of: file), streamed: file.streamed, size: file.size, slot: slot)
     }
 
-    /// Where an item's current contents (or a version) lie and what opens them: its own id and key.
-    func seal(of file: VaultFile) throws -> ItemSeal { try seal(file.sealedAs) }
-    func seal(of version: VaultFile.Version) throws -> ItemSeal { try seal(version.sealedAs) }
+    /// Where an item's current contents (or a version) lie and what opens them: its own id and key. Every way of
+    /// reading an item comes here, so a cool-down that isn't over refuses them all.
+    func seal(of file: VaultFile) throws -> ItemSeal {
+        guard coolDown(of: file).opens else { throw VaultError.coolingDown }
+        if file.coolDown != nil { openedThisTime.insert(file.id) }
+        return try seal(file.sealedAs)
+    }
+
+    /// Cool-down items read since the last unlock: an editor or Edit in Place copy may still be open when the hour
+    /// ends, so their saves keep working until the vault locks. Saving shows nothing that wasn't already shown.
+    private var openedThisTime: Set<VaultFile.ID> = []
+    func seal(of version: VaultFile.Version) throws -> ItemSeal {
+        if let owner = files.first(where: { $0.versions?.contains { $0.id == version.id } == true }), !coolDown(of: owner).opens {
+            throw VaultError.coolingDown
+        }
+        return try seal(version.sealedAs)
+    }
+
+    // MARK: Cool-down
+
+    /// The item's cool-down as it stands now, from the list as it is (not a copy someone held on to).
+    func coolDown(of file: VaultFile) -> CoolDown.State {
+        CoolDown.state(files.first { $0.id == file.id } ?? file)
+    }
+
+    /// Starts the wait. Asking again while it runs changes nothing; once it's over and shut again, it starts anew.
+    func askToOpen(_ id: VaultFile.ID) {
+        guard let file = files.first(where: { $0.id == id }) else { return }
+        switch coolDown(of: file) {
+        case .shut:
+            change("Asking to open it") {
+                if let i = files.firstIndex(where: { $0.id == id }) { files[i].coolDownAsked = CoolDown.ask() }
+            }
+        case .none, .waiting, .open: return
+        }
+    }
+
+    /// Sets, changes or turns off an item's cool-down. One already set only changes while the item is open, so it
+    /// can't be skipped by turning it off.
+    func setCoolDown(_ seconds: Int?, on id: VaultFile.ID) {
+        guard let file = files.first(where: { $0.id == id }) else { return }
+        if file.coolDown != nil, !coolDown(of: file).opens {
+            problem = "A cool-down changes only while the item is open: ask to open it, and change it once the wait is over."
+            return
+        }
+        // Its words leave search at once (and the index on disk with the save below), and come back without one.
+        if seconds != nil { words[id] = nil }
+        change("Changing the cool-down") {
+            if let i = files.firstIndex(where: { $0.id == id }) {
+                files[i].coolDown = seconds
+                files[i].coolDownAsked = nil
+            }
+        }
+    }
 
     private func seal(_ sealedAs: UUID?) throws -> ItemSeal {
         guard key != nil else { throw CancellationError() }
@@ -381,6 +455,7 @@ import UniformTypeIdentifiers
         index.folders = madeFolders
         index.showInCapture = showInCapture
         try VaultStore.saveManifest(index, using: key, itemKeys: itemKeys, slot: slot, cover: cover)
+        TamperSeal.sealSoon()
         refreshIndex()
     }
 
@@ -390,11 +465,12 @@ import UniformTypeIdentifiers
         guard let key, let cover else { return }
         let slot = slot
         let stale = files.filter { file in
-            guard SearchIndex.reads(file) else { return false }
+            // A cool-down item's words never go in search: a snippet would show what the wait keeps shut.
+            guard SearchIndex.reads(file), file.coolDown == nil else { return false }
             guard let known = words[file.id] else { return true }
             return known.changed != file.changedAt || known.size != file.size
         }.compactMap { file in (try? seal(of: file)).map { (file, $0) } }
-        let present = Set(files.map(\.id))
+        let present = Set(files.filter { $0.coolDown == nil }.map(\.id))
         let forgotten = words.keys.contains { !present.contains($0) }
         guard !stale.isEmpty || forgotten else { return }
         indexing?.cancel()
@@ -411,10 +487,11 @@ import UniformTypeIdentifiers
                 if let entry { self.words[file.id] = entry }
             }
             guard let self, !Task.isCancelled, self.isOpen, self.slot == slot else { return }
-            let present = Set(self.files.map(\.id))
+            let present = Set(self.files.filter { $0.coolDown == nil }.map(\.id))
             self.words = self.words.filter { present.contains($0.key) }
             self.writes += 1
             SearchIndex.save(self.words, using: key, slot: slot, cover: cover)
+            TamperSeal.sealSoon()
         }
     }
 
@@ -438,6 +515,8 @@ import UniformTypeIdentifiers
     /// After a restore from a backup: shut, and read again what's on disk now.
     func reloadFromDisk() {
         lock()
+        // A restore is Stillroom's own doing: the folder it put back is sealed as it is.
+        TamperSeal.sealNow()
         exists = VaultStore.exists
         touchIDOn = TouchIDKey.isOn
         macLockOn = MacLock.isOn
@@ -549,6 +628,10 @@ import UniformTypeIdentifiers
     /// version a second); at most 20 are kept.
     func update(_ id: VaultFile.ID, with data: Data? = nil, from url: URL? = nil, name: String? = nil) {
         guard key != nil, var file = files.first(where: { $0.id == id }) else { return }
+        guard coolDown(of: file).opens || openedThisTime.contains(id) else {
+            problem = VaultError.coolingDown.localizedDescription
+            return
+        }
         let clock = DispatchTime.now()
         defer { ActivityLog.took("\(url == nil ? "edit" : "edit-in-place save") sealed", since: clock, action: false) }
         do {
@@ -666,7 +749,14 @@ import UniformTypeIdentifiers
         try FileManager.default.createDirectory(at: top, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
         // Folders made empty are kept as empty folders.
         for folder in madeFolders { try FileManager.default.createDirectory(at: Self.place(folder, in: top), withIntermediateDirectories: true) }
+        // Items whose cool-down isn't over stay in the vault, and the export says so.
+        var waiting = 0
         for (done, file) in list.enumerated() {
+            guard coolDown(of: file).opens else {
+                waiting += 1
+                progress(done + 1, list.count)
+                continue
+            }
             let sealed = try seal(of: file)
             try await Task.detached(priority: .userInitiated) {
                 let folder = Self.place(file.folder, in: top)
@@ -692,6 +782,9 @@ import UniformTypeIdentifiers
             }.value
             guard isOpen, self.slot == slot else { throw CancellationError() }
             progress(done + 1, list.count)
+        }
+        if waiting > 0 {
+            problem = "\(waiting) \(waiting == 1 ? "item has" : "items have") a cool-down and stayed in the vault. Ask to open \(waiting == 1 ? "it" : "them"), then export again once the wait is over."
         }
         return top
     }
@@ -745,8 +838,9 @@ import UniformTypeIdentifiers
         var done = 0
         var found: [Damage] = []
         for file in list {
-            guard let sealed = try? seal(of: file),
-                  let versionSeals = try? (file.versions ?? []).map({ ($0, try seal(of: $0)) }) else { return found }
+            // Checked past any cool-down: this only confirms the item is intact, and shows nothing of it.
+            guard let sealed = try? seal(file.sealedAs),
+                  let versionSeals = try? (file.versions ?? []).map({ ($0, try seal($0.sealedAs)) }) else { return found }
             let (current, versions) = await Task.detached(priority: .userInitiated) { () -> (Bool, [(VaultFile.Version, Bool)]) in
                 let current = VaultStore.isIntact(sealed, streamed: file.streamed, size: file.size, slot: slot)
                 let versions = versionSeals.map { v, sealed in
@@ -1144,6 +1238,7 @@ import UniformTypeIdentifiers
         do {
             try VaultStore.wipe()
             lock()
+            TamperSeal.remove()
             exists = false
             touchIDOn = false
             macLockOn = false

@@ -107,6 +107,10 @@ know.
   HMAC-SHA256 over them, keyed with HKDF-SHA256 of the cover key (no salt, info `Vault names 4` and the slot's
   letter, 32 bytes). It's always set, and it names the blob. The tag lets a slot tell its own files from the
   other's in the shared `Files/`.
+- **`coolDown`** and **`coolDownAsked`** (since 1.1, absent when unset) are an item's cool-down: the wait in seconds,
+  and when opening was last asked for, as `{"boot": "kern.bootsessionuuid", "uptime": seconds since that boot}`.
+  They're a rule the app keeps, not encryption: a reader opens the item like any other. Readers that don't know them
+  should ignore them.
 - **`intruder`** is the slot's intruder private key (see below). **`touchID`** is the public key in the
   `touchid.key` this slot made. **`kitMade`** and **`kitReminded`** are whole seconds since 2001, 12 digits, zeros
   for none. All are always written, at fixed lengths.
@@ -160,3 +164,11 @@ It's written in Crockford base32 (`0-9 A-Z` without `I L O U`) as `VK-` followed
 | `intruder.pub`, `intruder/` | the intruder log. `intruder.pub` is both slots' X25519 public keys, `a`'s then `b`'s (32 bytes each); each slot's private key is in its list. Each entry is sealed with HPKE (X25519, HKDF-SHA256, ChaCha20-Poly1305, info `Vault intruder log`) to both: for `a` then `b`, `length (u32) \| encapsulated key (32) \| sealed JSON` |
 
 Stillroom doesn't need either to read files.
+
+Beside `Store/` (not inside it, and in neither slot) Stillroom keeps two files a reader never needs: `License`, the
+licence key, and `Seal`, the **tamper seal** (since 1.1): JSON `{"enclaveKey", "publicKey", "seal"}`, where `seal` is
+HMAC-SHA256 of a SHA-256 fingerprint of the store (every file but `intruder/` and dot-named staging folders, in path
+order: the path, then the SHA-256 of its contents, or for files in `Files/` their size), keyed with HKDF-SHA256 of a
+P-256 key agreement between this Mac's Secure Enclave key (`enclaveKey`, usable only on this Mac) and `publicKey`
+(info `Stillroom tamper seal`). The app checks it at unlock and says so when the store changed outside it. The latest `seal` is also kept in the
+login keychain (service `app.gjin.stillroom.seal`), so an older `Seal` put back with an older store is noticed too.

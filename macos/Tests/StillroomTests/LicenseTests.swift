@@ -130,7 +130,7 @@ extension VaultFlowTests {
         #expect(state.files.count == 25)
         #expect(originals.files.count == 5)
         #expect(state.problem == AppState.fullMessage(5))
-        #expect(state.roomNote == "Free limit reached, adding is paused")
+        #expect(state.roomNote == "Free limit reached")
 
         // Every other way in stops too, and says why.
         state.problem = nil

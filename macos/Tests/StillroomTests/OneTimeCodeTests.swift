@@ -36,4 +36,22 @@ struct OneTimeCodeTests {
         // A password that happens to be valid base32 isn't mistaken for a setup.
         #expect(Secret.Field(label: "Password", value: key).oneTimeCode == nil)
     }
+
+    /// A hidden value's stand-in is the same whatever its length, so its dots can't be counted; a two-factor setup
+    /// names itself instead of filling its row.
+    @Test func aConcealedFieldNeverShowsItsLength() {
+        let masks = ["1", "1234", "4111111111111111", String(repeating: "x", count: 80)].map {
+            Secret.Field(label: "Number", value: $0, concealed: true).mask
+        }
+        #expect(Set(masks) == [Secret.Field.dots])
+        let link = "otpauth://totp/x?secret=GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ"
+        #expect(Secret.Field(label: "Two-factor setup", value: link, concealed: true).mask == "Two-factor setup key")
+        #expect(!Secret.Field(label: "Two-factor setup", value: link, concealed: true).mask.contains("•"))
+    }
+
+    /// The dice belongs on passwords only, never on a card number, security code or PIN.
+    @Test func onlyPasswordsOfferAMadeUpOne() {
+        let offered = Secret.Template.allCases.flatMap(\.starting).filter(\.takesGeneratedPassword).map(\.label)
+        #expect(Set(offered) == ["Password", "Secret"])
+    }
 }

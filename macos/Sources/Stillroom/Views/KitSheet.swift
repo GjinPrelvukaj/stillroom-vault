@@ -29,26 +29,23 @@ struct KitSheet: View {
     var body: some View {
         VStack(alignment: .leading, spacing: Kit.Space.group) {
             if let codes { pieces(codes) } else { choose }
-            if let problem { Text(problem).font(Kit.quiet).foregroundStyle(.red.opacity(0.85)) }
+            if let problem { Text(problem).font(Kit.quiet).foregroundStyle(Color.problem) }
         }
-        .padding(Kit.Space.edge)
-        .frame(width: 480)
-        .background(Color.ground)
+        .sheetCard(.task)
         .interactiveDismissDisabled(codes != nil)
-        .hiddenFromCapture()
     }
 
     private var choose: some View {
         Group {
             VStack(alignment: .leading, spacing: Kit.Space.label) {
-                Text("Emergency kit").font(Kit.title)
+                Text("Emergency Kit").font(Kit.title)
                 Text("Printed pieces for people you trust, so they can open the vault if something happens to you. One piece alone opens nothing. No server and no account are involved.")
-                    .font(Kit.body).opacity(0.5).fixedSize(horizontal: false, vertical: true)
+                    .font(Kit.body).quietText().fixedSize(horizontal: false, vertical: true)
             }
             Segments(selection: $plan, options: Plan.allCases.map { ($0, $0.rawValue) })
-            Text(plan.example).font(Kit.quiet).opacity(0.55).fixedSize(horizontal: false, vertical: true)
+            Text(plan.example).font(Kit.quiet).quietText().fixedSize(horizontal: false, vertical: true)
             if state.hasKit {
-                Text("A new kit stops the old pieces opening this vault. Backups made before it still open with them.").font(Kit.quiet).foregroundStyle(.orange.opacity(0.85))
+                Text("A new kit stops the old pieces opening this vault. Backups made before it still open with them.").font(Kit.quiet).foregroundStyle(Color.caution)
             }
             HStack {
                 Spacer()
@@ -62,16 +59,16 @@ struct KitSheet: View {
     private func pieces(_ codes: [String]) -> some View {
         Group {
             VStack(alignment: .leading, spacing: Kit.Space.label) {
-                Text("Print the pieces").font(Kit.title)
+                Text("Print the Pieces").font(Kit.title)
                 Text("One page per piece, with plain instructions on it. Print on paper; don't save it as a PDF or take a photo. They won't be shown again.")
-                    .font(Kit.body).opacity(0.5).fixedSize(horizontal: false, vertical: true)
+                    .font(Kit.body).quietText().fixedSize(horizontal: false, vertical: true)
             }
             VStack(spacing: 0) {
                 ForEach(codes.indices, id: \.self) { i in
                     if i > 0 { Rectangle().fill(Color.ink.opacity(0.05)).frame(height: 1) }
                     HStack {
-                        Text("Piece \(i + 1)").font(Kit.quiet).opacity(0.5).frame(width: 56, alignment: .leading)
-                        Text(codes[i]).font(.system(size: 11.5, weight: .medium, design: .monospaced)).textSelection(.disabled)
+                        Text("Piece \(i + 1)").font(Kit.quiet).quietText().frame(width: 56, alignment: .leading)
+                        Text(codes[i]).font(Kit.mono).textSelection(.disabled)
                         Spacer(minLength: 0)
                     }
                     .padding(.horizontal, 12).padding(.vertical, 8)

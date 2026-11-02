@@ -23,7 +23,20 @@ struct LockView: View {
     @State private var lit: Set<Int> = []
     @State private var newest: Int?
     /// The first-time tour has been read (or skipped) this time round.
-    @State private var welcomed = false
+    @State private var welcomed: Bool = {
+        #if DEBUG
+        if DemoScreen.screen == "make" { return true }
+        #endif
+        return false
+    }()
+    /// Room check's findings for this showing of the lock screen; nil while it's still looking.
+    @State private var room: [RoomCheck.Finding]?
+    /// Minor notes put away with Got It, kept outside both vaults.
+    @State private var putAway = RoomCheck.dismissed
+    /// When this look round began: the breath starts from it.
+    @State private var lookStarted = Date()
+    /// "The room is clear" has been read: it fades a few seconds after typing starts, so the screen settles.
+    @State private var clearRead = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     /// A folder from a test build before format 4: nothing here reads or writes it.
@@ -53,15 +66,15 @@ struct LockView: View {
         VStack(spacing: Kit.Space.group) {
             if !SelfCheck.signedByUs {
                 // Before a password is typed into it: this copy may not be the real Stillroom.
-                Label("This copy isn't signed by Stillroom's maker, so it may have been changed. Download Stillroom again from stillroomvault.com.",
+                Label("This copy isn't signed by Stillroom's maker. If you didn't build it yourself, it may have been changed: download Stillroom again from stillroomvault.com.",
                       systemImage: "exclamationmark.shield")
                     .font(Kit.quiet)
-                    .foregroundStyle(Color.orange)
+                    .foregroundStyle(Color.caution)
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
                     .frame(maxWidth: 420)
                     .padding(.horizontal, 14).padding(.vertical, 8)
-                    .background(Color.orange.opacity(0.12), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    .background(Color.caution.opacity(0.12), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
             }
             if !Inbox.shared.waiting.isEmpty {
                 let n = Inbox.shared.waiting.count
@@ -78,9 +91,12 @@ struct LockView: View {
                      : usingKit ? "Type in the pieces from the printed sheets, one per box. You'll set a new password next."
                      : oldFormat ? "This vault was made by an earlier test version of Stillroom, which this one can't open. Nothing in it has been changed."
                      : "Everything inside is encrypted on this Mac.")
-                    .font(Kit.body).opacity(0.5)
+                    .font(Kit.body).quietText()
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
+                // One slot, as tall as a finding, for checking, clear or one finding: the form doesn't move when
+                // Room check finishes.
+                roomStatus.frame(minHeight: 48).padding(.top, Kit.Space.label)
             }
             .padding(.bottom, Kit.Space.item)
 
@@ -111,10 +127,11 @@ struct LockView: View {
             // One line, always room for it, so the buttons never jump when it appears.
             Text(line ?? " ")
                 .font(Kit.quiet)
-                .foregroundStyle(problem == nil && waitLeft == 0 ? Color.ink.opacity(0.45) : Color.red.opacity(0.85))
+                .foregroundStyle(problem == nil && waitLeft == 0 ? Color.quietInk : Color.problem)
                 .multilineTextAlignment(.center)
-                // Making a vault, the advice can run to two lines: room for both from the start.
-                .frame(minHeight: making ? 32 : 16, alignment: .top)
+                // Making a vault, the advice can run to two lines: room for both once typing starts, not before.
+                .frame(minHeight: making && !password.isEmpty ? 32 : 16, alignment: .top)
+                .animation(Motion.change, value: password.isEmpty)
 
             if making && TouchIDKey.canUse {
                 Toggle("Open it with Touch ID too", isOn: $touchID).toggleStyle(.glass)
@@ -125,7 +142,8 @@ struct LockView: View {
                     Button(action: askTouchID) { Label("Touch ID", systemImage: "touchid") }
                         .buttonStyle(.secondary)
                 }
-                Button(making ? "Make Vault" : "Unlock", action: go)
+                // Never a block: something serious only asks for a deliberate click.
+                Button(making ? "Make My Vault" : seriousRoom ? "Open Anyway" : "Unlock", action: go)
                     .buttonStyle(.primary)
                     .keyboardShortcut(.defaultAction)
                     .disabled(!ready || working)
@@ -147,10 +165,31 @@ struct LockView: View {
         .frame(width: 320)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding(.bottom, Glass.lightRoom / 2)
-        .onAppear { if !making && state.touchIDOn { askTouchID() } }
+        // Room check first; Touch ID is asked once it's done, unless it found something serious.
+        .task { await checkRoom(thenTouchID: true) }
+        #if DEBUG
+        .onAppear {
+            if let demo = DemoScreen.password, !making { DemoScreen.password = nil; password = demo; go() }
+        }
+        #endif
+        // Back to Stillroom: look again, since a call or a screen share may have started or ended meanwhile.
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            Task { await checkRoom(thenTouchID: false) }
+        }
         .onChange(of: password) { old, new in
             if !new.isEmpty { problem = nil }
             scatter(from: old.count, to: new.count)
+        }
+        .task(id: password.isEmpty) {
+            guard !password.isEmpty, !clearRead else { return }
+            try? await Task.sleep(for: .seconds(3))
+            guard !Task.isCancelled else { return }
+            withAnimation(Motion.or(Motion.appear, reduce: reduceMotion)) { clearRead = true }
+        }
+        // The right password: every dot lights in one short sweep before the vault comes in (RootView waits for it).
+        .onChange(of: state.isOpen) {
+            guard state.isOpen, !reduceMotion else { return }
+            withAnimation(Motion.change) { lit = Set(0..<Self.dots); newest = nil }
         }
         // A piece says how many the kit needs: that many boxes.
         .onChange(of: pieces) {
@@ -172,10 +211,19 @@ struct LockView: View {
     /// The one living thing: dots lighting at random in Vault's colour as you type, never in the same pattern twice.
     private var ring: some View {
         ZStack {
-            DotRing(lit: 0, tint: !making || (password.count >= Self.shortest && PasswordStrength.isEnough(password)) ? .vault : Color.ink.opacity(0.8),
-                    count: Self.dots, pattern: lit, newest: newest)
-            Image(systemName: working ? "lock.open.fill" : "lock.fill")
-                .font(.system(size: 22, weight: .medium))
+            // While Room check looks round, the whole ring breathes: every dot glows in and out together, starting dim.
+            TimelineView(.animation(minimumInterval: 1 / 30, paused: !sweeping)) { timeline in
+                let breath = sweeping ? 0.5 - 0.5 * cos(2 * .pi * timeline.date.timeIntervalSince(lookStarted) / Self.breath) : 1
+                DotRing(lit: 0,
+                        tint: sweeping ? Color.vault.opacity(0.15 + 0.75 * breath)
+                            : !making || (password.count >= Self.shortest && PasswordStrength.isEnough(password)) ? .vault : Color.ink.opacity(0.8),
+                        count: Self.dots,
+                        pattern: sweeping ? Set(0..<Self.dots) : lit,
+                        newest: sweeping ? nil : newest)
+                    .scaleEffect(sweeping ? 0.97 + 0.03 * breath : 1)
+            }
+            Image(systemName: working || state.isOpen ? "lock.open.fill" : "lock.fill")
+                .font(Kit.glyph)
                 .opacity(0.75)
                 .contentTransition(.symbolEffect(.replace))
         }
@@ -184,6 +232,81 @@ struct LockView: View {
     }
 
     private static let dots = 48
+
+    private var sweeping: Bool { room == nil && password.isEmpty && !reduceMotion }
+    /// One breath, in and out, in seconds; Room check shows at least the breath in.
+    private static let breath = 1.8
+    private var seriousRoom: Bool { room?.contains { $0.serious } ?? false }
+
+    /// Under the title: what Room check found, or that the room is clear. Hints, never a block.
+    @ViewBuilder private var roomStatus: some View {
+        if let room {
+            let shown = RoomCheck.shown(room, dismissed: putAway)
+            if shown.isEmpty {
+                Label("The room is clear", systemImage: "checkmark.seal")
+                    .font(Kit.quiet)
+                    .foregroundStyle(Color.vault)
+                    .help("Room check found nothing on this Mac watching or listening right now.")
+                    // Only the all-clear fades, keeping its room; a finding never does.
+                    .opacity(clearRead ? 0 : 1)
+            } else {
+                // Only something serious gets a panel; a minor note is one quiet line under the subtitle.
+                let heavy = shown.contains { $0.serious }
+                VStack(alignment: .leading, spacing: 8) {
+                    ForEach(shown) { finding in
+                        HStack(alignment: .firstTextBaseline, spacing: 6) {
+                            Image(systemName: finding.serious ? "exclamationmark.triangle.fill" : "info.circle")
+                                .foregroundStyle(finding.serious ? Color.caution : Color.quietInk)
+                            VStack(alignment: .leading, spacing: 1) {
+                                Text(finding.title).font(Kit.quiet)
+                                if finding.serious {
+                                    Text(finding.detail).font(Kit.quiet).quietText().fixedSize(horizontal: false, vertical: true)
+                                }
+                            }
+                            if heavy { Spacer(minLength: 4) }
+                            if !finding.serious {
+                                Button("Got It") {
+                                    putAway.insert(finding.id)
+                                    RoomCheck.dismissed = putAway
+                                }
+                                .buttonStyle(.quiet)
+                                .help("Don't mention this again")
+                            }
+                        }
+                        .help(finding.detail)
+                        .accessibilityElement(children: .combine)
+                    }
+                }
+                .padding(heavy ? 10 : 0)
+                .frame(maxWidth: .infinity, alignment: heavy ? .leading : .center)
+                .background(Color.ink.opacity(heavy ? 0.04 : 0), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                .transition(.opacity)
+            }
+        } else {
+            Text("Checking the room…").font(Kit.quiet).quietText()
+        }
+    }
+
+    /// Room check, then (the first time round) Touch ID unless it found something serious, which waits for a click.
+    private func checkRoom(thenTouchID: Bool) async {
+        let started = Date()
+        if thenTouchID { lookStarted = started }
+        let found = await RoomCheck.look()
+        // Long enough for one breath in to read as a look round, never long enough to wait on.
+        let left = Self.breath / 2 - Date().timeIntervalSince(started)
+        if thenTouchID, left > 0, !reduceMotion { try? await Task.sleep(for: .seconds(left)) }
+        // Unlocked meanwhile: this screen is gone, and nothing more is asked.
+        guard !Task.isCancelled, !state.isOpen else { return }
+        withAnimation(Motion.change) { room = found }
+        // All clear: the ring fills for a moment and settles, unless typing has started.
+        if thenTouchID, RoomCheck.shown(found, dismissed: putAway).isEmpty, password.isEmpty, !reduceMotion {
+            lit = Set(0..<Self.dots)
+            try? await Task.sleep(for: .milliseconds(650))
+            if password.isEmpty { lit = [] }
+        }
+        guard !Task.isCancelled, !state.isOpen else { return }
+        if thenTouchID, !making, state.touchIDOn, !found.contains(where: \.serious) { askTouchID() }
+    }
 
     /// The ring's answer to typing: each character lights a random handful of dots (four to nine) anywhere round it,
     /// each deletion puts a handful out. So the ring is different every time, never shows how long the password is,

@@ -12,7 +12,18 @@ struct SettingsPane: View {
     /// A recovery key made with a new decoy, shown once its sheet has gone.
     @State private var pendingCode: String?
     @State private var removingKit = false
-    @State private var sheet: Sheet?
+    @State private var sheet: Sheet? = {
+        #if DEBUG
+        switch DemoScreen.settings?.sheet {
+        case "password": return .changePassword
+        case "decoy": return .setDecoy
+        case "check": return .check
+        case "kit": return .kit
+        default: break
+        }
+        #endif
+        return nil
+    }()
     @State private var restoring: URL?
     @State private var backingUp = false
     @State private var confirmingExport = false
@@ -41,16 +52,30 @@ struct SettingsPane: View {
         }
     }
 
+    /// The free tier in words: the open vault's own count, the same sentence in either vault.
+    private var freeLine: String {
+        let n = state.files.count, free = License.freeItems
+        return n > free ? "\(n) items, \(n - free) over the free \(free). Adding is paused; everything else works."
+            : n == free ? "All \(free) free items used. Adding is paused; everything else works."
+            : "\(n) of the free \(free) items used."
+    }
+
     /// The same five in either vault.
     private enum Tab: String, CaseIterable, Identifiable {
         case access = "Access", protection = "Protection", security = "Security", data = "Data", license = "Licence"
         var id: Self { self }
     }
 
-    @State private var tab = Tab.access
+    @State private var tab: Tab = {
+        #if DEBUG
+        if let demo = DemoScreen.settings, let tab = Tab.allCases.first(where: { $0.rawValue.lowercased() == demo.tab }) { return tab }
+        #endif
+        return .access
+    }()
 
     var body: some View {
-        ScrollView {
+        // The title and tabs stay put; only a tab's rows scroll, so pressing a tab never moves the tabs.
+        VStack(alignment: .leading, spacing: 0) {
             VStack(alignment: .leading, spacing: Kit.Space.group) {
                 VStack(alignment: .leading, spacing: Kit.Space.label) {
                     Text("Settings").eyebrow()
@@ -58,25 +83,35 @@ struct SettingsPane: View {
                 }
                 if let problem = state.problem {
                     HStack {
-                        Text(problem).font(Kit.quiet).foregroundStyle(.red.opacity(0.85))
+                        Text(problem).font(Kit.quiet).foregroundStyle(Color.problem)
                         Button("OK") { state.problem = nil }.buttonStyle(.quiet)
                     }
                 }
-
                 Segments(selection: $tab, options: Tab.allCases.map { ($0, $0.rawValue) })
-
-                switch tab {
-                case .access: access
-                case .protection: protection
-                case .security: SecurityFacts(state: state)
-                case .data: data
-                case .license: licenseTab
-                }
             }
-            .pane()
+            .frame(maxWidth: Kit.readable, alignment: .leading)
+            .padding(.horizontal, 40)
+            .padding(.top, 36)
+            .padding(.bottom, Kit.Space.group)
+            ScrollView {
+                VStack(alignment: .leading, spacing: Kit.Space.group) {
+                    switch tab {
+                    case .access: access
+                    case .protection: protection
+                    case .security: SecurityFacts(state: state)
+                    case .data: data
+                    case .license: licenseTab
+                    }
+                }
+                .frame(maxWidth: Kit.readable, alignment: .topLeading)
+                .padding(.horizontal, 40)
+                .padding(.bottom, Glass.lightRoom)
+                .frame(maxWidth: .infinity, alignment: .topLeading)
+            }
+            .scrollIndicators(.never)
+            .fadesIntoLight()
         }
-        .scrollIndicators(.never)
-        .fadesIntoLight()
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .entrance()
         .onChange(of: activityLog) { if activityLog { ActivityLog.start() } else { ActivityLog.stop() } }
         // Never "decoy": that a decoy is being set up mustn't be written anywhere.
@@ -93,13 +128,15 @@ struct SettingsPane: View {
         }) { sheet in
             switch sheet {
             case .changePassword:
-                PasswordSheet(title: "Change password", message: "The new one takes over at once; the old one stops working.") { current, new in
+                PasswordSheet(title: "Change Password", message: "The new one takes over at once; the old one stops working.",
+                              action: "Change Password") { current, new in
                     try await state.changePassword(current: current, to: new)
                 }
             case .setDecoy:
-                PasswordSheet(title: "Set a decoy password",
-                              message: "It opens a second, empty vault, with a recovery key of its own. Put a few harmless files in it so it looks used. Everything in the other vault is deleted and it starts empty.",
-                              asksCurrent: false) { _, new in
+                PasswordSheet(title: "Set a Decoy Password",
+                              message: "It opens a second, empty vault, with a recovery key of its own. Put a few harmless files in it so it looks used.",
+                              warning: "Everything in the other vault is deleted and it starts empty.",
+                              action: "Set Decoy Password", asksCurrent: false) { _, new in
                     pendingCode = try await state.setOtherSlot(password: new)
                 }
             case .recovery(let code):
@@ -222,8 +259,8 @@ struct SettingsPane: View {
             }
                 divider
                 row("Open with Touch ID",
-                    TouchIDKey.canUse ? "Your finger opens this vault with a key that never leaves this Mac's Secure Enclave. It opens one vault: turning it on here moves it from any other. If you rely on a decoy, turn it on there or nowhere, since a forced finger opens the vault it belongs to."
-                                      : "This Mac has no Touch ID set up.") {
+                    TouchIDKey.canUse ? "Your finger opens this vault with a key that never leaves this Mac's Secure Enclave." : "This Mac has no Touch ID set up.",
+                    more: TouchIDKey.canUse ? "It opens one vault: turning it on here moves it from any other. If you rely on a decoy, turn it on there or nowhere, since a forced finger opens the vault it belongs to." : nil) {
                     Toggle("", isOn: .init(get: { state.touchIDOn }, set: state.setTouchID))
                         .toggleStyle(.glass)
                         .disabled(!TouchIDKey.canUse)
@@ -231,7 +268,8 @@ struct SettingsPane: View {
                 }
                 divider
                 row("Lock to this Mac",
-                    "The vault opens only on this Mac, even with the password: a copy of its folder is useless anywhere else. Your recovery key opens it if this Mac is lost or repaired.") {
+                    "The vault opens only on this Mac, even with the password: a copy of its folder is useless anywhere else.",
+                    more: "Your recovery key opens it if this Mac is lost or repaired.") {
                     Toggle("", isOn: .init(get: { state.macLockOn }, set: lockToMac))
                         .toggleStyle(.glass)
                         .disabled(!MacLock.canUse)
@@ -239,25 +277,30 @@ struct SettingsPane: View {
                 }
                 divider
                 row("Recovery key",
-                    state.hasRecovery ? "Opens the vault on any Mac without the password. A new one stops the old one opening this vault, though backups made before still open with it."
-                                      : "A key to write on paper, for when the password is forgotten or this Mac is gone.") {
+                    state.hasRecovery ? "Opens the vault on any Mac without the password."
+                                      : "A key to write on paper, for when the password is forgotten or this Mac is gone.",
+                    more: state.hasRecovery ? "A new one stops the old one opening this vault, though backups made before still open with it." : nil) {
                     Button(state.hasRecovery ? "New Key…" : "Make Key…") { renewingRecovery = true }.buttonStyle(.secondary)
                 }
                 divider
                 row("Emergency kit",
-                    state.hasKit ? "Printed pieces you gave out open the vault if something happens to you\(kitAge). A new kit stops the old pieces opening this vault, though backups made before still open with them."
-                                 : "Printed pieces for people you trust: any two of three (or your choice) open the vault if something happens to you. One alone opens nothing.") {
+                    state.hasKit ? "Printed pieces you gave out open the vault if something happens to you\(kitAge)."
+                                 : "Printed pieces for people you trust: any two of three (or your choice) open the vault if something happens to you.",
+                    more: state.hasKit ? "A new kit stops the old pieces opening this vault, though backups made before still open with them."
+                                       : "One alone opens nothing.") {
+                    // The action first, where the eye lands; removing comes after it, quietly.
                     HStack(spacing: Kit.Space.item) {
-                        if state.hasKit { Button("Remove…") { removingKit = true }.buttonStyle(.quiet) }
                         Button(state.hasKit ? "New Kit…" : "Make Kit…") { sheet = .kit }.buttonStyle(.secondary)
+                        if state.hasKit { Button("Remove…") { removingKit = true }.buttonStyle(.quiet) }
                     }
                 }
                 divider
                 row("Decoy password",
-                    "A second password that opens a separate, harmless vault with its own recovery key and kit, for when someone makes you open Stillroom in front of them. It won't stand up to someone who has one password and a copy of this Mac's files. Setting one deletes whatever the other vault held.") {
+                    "A second password that opens a separate, harmless vault with its own recovery key and kit, for when someone makes you open Stillroom in front of them.",
+                    more: "It won't stand up to someone who has one password and a copy of this Mac's files. Setting one deletes whatever the other vault held.") {
                     HStack(spacing: Kit.Space.item) {
-                        Button("Remove…") { removingOther = true }.buttonStyle(.quiet)
                         Button("Set…") { sheet = .setDecoy }.buttonStyle(.secondary)
+                        Button("Remove…") { removingOther = true }.buttonStyle(.quiet)
                     }
                 }
         }
@@ -265,7 +308,8 @@ struct SettingsPane: View {
 
     @ViewBuilder private var protection: some View {
         section("Protection") {
-            row("Locks by itself", "When the Mac sleeps, its screen locks, Stillroom quits, or nothing on the Mac is touched for this long. Three wrong passwords in a row make each next try wait longer.") {
+            row("Locks by itself", "When the Mac sleeps, its screen locks, Stillroom quits, or nothing on the Mac is touched for this long.",
+                more: "Three wrong passwords in a row make each next try wait longer.") {
                 Menu(AutoLock.name(autoLock)) {
                     ForEach(AutoLock.choices, id: \.self) { minutes in
                         Button(AutoLock.name(minutes)) {
@@ -276,7 +320,8 @@ struct SettingsPane: View {
                     }
                 }
                 .menuStyle(.button)
-                .buttonStyle(.secondary)
+                .buttonStyle(.menu)
+                .menuIndicator(.hidden)
                 .fixedSize()
             }
             divider
@@ -297,7 +342,8 @@ struct SettingsPane: View {
             divider
             // One description for both states, so switching it doesn't change the row's height.
             row("Show in screenshots & screen sharing",
-                "When off, screenshots, recordings and screen sharing see Stillroom blank. Turn on to show someone. Remembered with the vault; the lock screen always stays hidden.") {
+                "When off, screenshots, recordings and screen sharing see Stillroom blank.",
+                more: "Turn on to show someone. Remembered with the vault; the lock screen always stays hidden.") {
                 Toggle("", isOn: .init(get: { state.showInCapture }, set: state.setShowInCapture))
                     .toggleStyle(.glass)
                     .accessibilityLabel("Show in screenshots and screen sharing")
@@ -331,9 +377,16 @@ struct SettingsPane: View {
                     Button("Remove…") { removingLicense = true }.buttonStyle(.quiet)
                 }
             } else {
-                row("Free", "This vault holds \(state.files.count) of \(License.freeItems) items. Every feature is included; a licence key lifts the limit, and it never expires. Opening, exporting and backing up never stop, whatever the count.") {
+                row("Free", freeLine,
+                    more: "Every feature is included; a licence key lifts the limit, and it never expires. Opening, exporting and backing up never stop, whatever the count.") {
                     Button("Buy a Licence…", action: Updates.buy).buttonStyle(.secondary)
                         .help("Opens stillroomvault.com/pricing in your browser")
+                }
+                if !SelfCheck.signedByUs {
+                    divider
+                    row("Built it yourself? Welcome", "Everything works, and the source is yours to read. If Stillroom is useful to you, a licence keeps the two people who make it going.") {
+                        EmptyView()
+                    }
                 }
                 divider
                 VStack(alignment: .leading, spacing: Kit.Space.label) {
@@ -344,7 +397,7 @@ struct SettingsPane: View {
                             .disabled(License.tidy(licenseKey).isEmpty)
                     }
                     if let licenseProblem {
-                        Text(licenseProblem).font(Kit.quiet).foregroundStyle(.red.opacity(0.85))
+                        Text(licenseProblem).font(Kit.quiet).foregroundStyle(Color.problem)
                     }
                 }
                 .padding(.horizontal, 14)
@@ -396,7 +449,8 @@ struct SettingsPane: View {
 
         Group {
             section("Troubleshooting") {
-                row("Record activity", "Clicks, shortcuts, what opened and closed, slow steps, errors and freezes, to find what went wrong. Never typing, file names, sizes, passwords or contents. Kept on this Mac for 7 days. If you rely on a decoy, keep it off: over many days its timings could hint that two vaults are used.") {
+                row("Record activity", "Clicks, shortcuts, what opened and closed, slow steps, errors and freezes, to find what went wrong.",
+                    more: "Never typing, file names, sizes, passwords or contents. Kept on this Mac for 7 days. If you rely on a decoy, keep it off: over many days its timings could hint that two vaults are used.") {
                     Toggle("", isOn: $activityLog).toggleStyle(.glass).accessibilityLabel("Record activity")
                 }
                 divider
@@ -412,7 +466,7 @@ struct SettingsPane: View {
 
         VStack(spacing: 0) {
             row("Delete the vault", "Every file in it, and the keys, for good.") {
-                Button("Delete Vault…") { wiping = true }.buttonStyle(.primary(.red))
+                Button("Delete Vault…") { wiping = true }.buttonStyle(.primary(Color.problem))
             }
         }
         .rowPanel()
@@ -454,21 +508,52 @@ struct SettingsPane: View {
 
     private func section(_ title: String, @ViewBuilder rows: () -> some View) -> some View {
         VStack(alignment: .leading, spacing: Kit.Space.label) {
-            Text(title).groupLabel().padding(.leading, 4)
+            // Lined up with the panel's own text; left out where it would only repeat the tab's name.
+            if title != tab.rawValue { Text(title).groupLabel().padding(.leading, 14) }
             VStack(spacing: 0) { rows() }.rowPanel()
         }
     }
 
-    private func row(_ title: String, _ detail: String, @ViewBuilder control: () -> some View) -> some View {
+    /// A setting: its name, one line on what it does, and (`more`) the rest behind an info button, so a row reads
+    /// at a glance and nothing is left unsaid.
+    private func row(_ title: String, _ detail: String, more: String? = nil, @ViewBuilder control: () -> some View) -> some View {
         HStack(spacing: Kit.Space.group) {
-            VStack(alignment: .leading, spacing: 3) {
-                Text(title).font(Kit.body)
-                Text(detail).font(Kit.quiet).opacity(0.45).fixedSize(horizontal: false, vertical: true)
-            }
+            SettingWords(title: title, detail: detail, more: more)
             Spacer(minLength: Kit.Space.group)
             control()
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 12)
+    }
+}
+
+/// A setting's words: the first line always, the rest shown under it when the info button beside the name is pressed.
+private struct SettingWords: View {
+    let title: String
+    let detail: String
+    let more: String?
+    @State private var open = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            HStack(spacing: 2) {
+                Text(title).font(Kit.body)
+                if more != nil {
+                    Button { withAnimation(Motion.or(Motion.change, reduce: reduceMotion)) { open.toggle() } } label: {
+                        Image(systemName: open ? "info.circle.fill" : "info.circle").font(Kit.quiet)
+                    }
+                    .buttonStyle(.icon)
+                    .help(open ? "Less" : "More about this")
+                    .accessibilityLabel(open ? "Less" : "More about \(title)")
+                }
+            }
+            .frame(height: 18)
+            Text(detail).font(Kit.quiet).quietText().fixedSize(horizontal: false, vertical: true)
+            if open, let more {
+                Text(more).font(Kit.quiet).quietText().fixedSize(horizontal: false, vertical: true)
+                    .transition(.opacity)
+            }
+        }
     }
 }

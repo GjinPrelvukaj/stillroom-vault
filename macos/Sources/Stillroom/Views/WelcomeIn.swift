@@ -46,14 +46,14 @@ struct WelcomeIn: View {
         .onAppear {
             NSHapticFeedbackManager.defaultPerformer.perform(.levelChange, performanceTime: .now)
             guard !reduceMotion else {
-                withAnimation(.easeOut(duration: 0.3)) { shown = true; filled = 1; words = true; button = true }
+                withAnimation(Motion.reduced) { shown = true; filled = 1; words = true; button = true }
                 return
             }
-            // Slow on purpose: a moment to take in, not a flash. About two and a half seconds until the button.
-            withAnimation(.spring(response: 0.9, dampingFraction: 0.85)) { shown = true }
-            withAnimation(.easeInOut(duration: 2.2).delay(0.3)) { filled = 1 }
-            withAnimation(.easeOut(duration: 0.8).delay(0.9)) { words = true }
-            withAnimation(.easeOut(duration: 0.7).delay(2.0)) { button = true }
+            // One thing after another, but quick: the button is there to press within about half a second.
+            withAnimation(Motion.appear) { shown = true }
+            withAnimation(Motion.appear.delay(0.1)) { filled = 1 }
+            withAnimation(Motion.appear.delay(0.15)) { words = true }
+            withAnimation(Motion.appear.delay(0.3)) { button = true }
         }
     }
 
@@ -62,11 +62,11 @@ struct WelcomeIn: View {
             ZStack {
                 DotRing(lit: filled, tint: .vault, count: 48, dot: 3.6)
                 Image(systemName: "checkmark.seal.fill")
-                    .font(.system(size: 30, weight: .medium))
+                    .font(Kit.placeholder.weight(.medium))
                     .foregroundStyle(Color.vault)
                     .scaleEffect(filled > 0.6 || reduceMotion ? 1 : 0.6)
                     .opacity(filled > 0.3 || reduceMotion ? 1 : 0)
-                    .animation(.spring(response: 0.7, dampingFraction: 0.7), value: filled > 0.6)
+                    .animation(Motion.change, value: filled > 0.6)
             }
             .frame(width: 96, height: 96)
 
@@ -75,7 +75,7 @@ struct WelcomeIn: View {
                     .opacity(words ? 1 : 0)
                 Text("Welcome in, \(firstName).").font(Kit.title)
                 Text(message)
-                    .font(Kit.body).opacity(0.6)
+                    .font(Kit.body).quietText()
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
             }

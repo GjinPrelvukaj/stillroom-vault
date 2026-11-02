@@ -61,6 +61,20 @@ struct Secret: Codable, Hashable, Sendable {
     }
 }
 
+extension Secret.Field {
+    /// A concealed value's stand-in while hidden: the same ten dots whatever its length, so a glance over a shoulder
+    /// can't count it. A two-factor setup says what it is instead: its code row is the value to read.
+    var mask: String { oneTimeCode != nil ? "Two-factor setup key" : Self.dots }
+    static let dots = String(repeating: "•", count: 10)
+
+    /// Whether a made-up password belongs here: a password or passphrase, or an Other secret's one field. Never a
+    /// card number, security code, PIN or ID number.
+    var takesGeneratedPassword: Bool {
+        let label = label.lowercased()
+        return label.contains("password") || label.contains("passphrase") || label == "secret"
+    }
+}
+
 /// A random password: 20 characters from letters, digits and a few symbols that survive any website's rules,
 /// without look-alikes. About 115 random bits.
 func generatedPassword(length: Int = 20) -> String {

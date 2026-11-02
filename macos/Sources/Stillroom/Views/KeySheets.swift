@@ -5,6 +5,10 @@ import SwiftUI
 struct PasswordSheet: View {
     let title: String
     let message: String
+    /// A consequence to read before saving, on a line of its own in the caution colour.
+    var warning: String?
+    /// The button, naming what it does.
+    var action = "Save"
     var asksCurrent = true
     var canCancel = true
     let save: (_ current: String, _ new: String) async throws -> Void
@@ -33,30 +37,41 @@ struct PasswordSheet: View {
         VStack(alignment: .leading, spacing: Kit.Space.group) {
             VStack(alignment: .leading, spacing: Kit.Space.label) {
                 Text(title).font(Kit.title)
-                Text(message).font(Kit.body).opacity(0.5).fixedSize(horizontal: false, vertical: true)
+                Text(message).font(Kit.body).quietText().fixedSize(horizontal: false, vertical: true)
+                if let warning {
+                    Label(warning, systemImage: "exclamationmark.triangle")
+                        .font(Kit.body).foregroundStyle(Color.caution)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.top, Kit.Space.label)
+                }
             }
             VStack(spacing: Kit.Space.item) {
                 if asksCurrent { GlassField(hint: "Current password", text: $current, secure: true, symbol: "key", autofocus: true) }
-                GlassField(hint: "New password", text: $new, secure: true, symbol: "key.fill", autofocus: !asksCurrent)
-                GlassField(hint: "New password again", text: $again, secure: true, symbol: "key.fill")
+                GlassField(hint: "New password", text: $new, secure: true, symbol: "key", autofocus: !asksCurrent)
+                GlassField(hint: "New password again", text: $again, secure: true, symbol: "key")
             }
             .onSubmit(go)
-            Text(line ?? " ")
-                .font(Kit.quiet)
-                .foregroundStyle(problem == nil ? Color.ink.opacity(0.45) : Color.red.opacity(0.85))
+            // Room for advice only once typing starts: no blank band above the buttons before then.
+            if !new.isEmpty || problem != nil {
+                Text(line ?? " ")
+                    .font(Kit.quiet)
+                    .foregroundStyle(problem == nil ? Color.quietInk : Color.problem)
+                    // Advice can run to two lines: room for both from the start, so the buttons don't step down.
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(minHeight: 32, alignment: .top)
+                    .transition(.opacity)
+            }
             HStack(spacing: Kit.Space.item) {
                 Spacer()
                 if canCancel { Button("Cancel") { dismiss() }.buttonStyle(.quiet).keyboardShortcut(.cancelAction) }
-                Button("Save", action: go).buttonStyle(.primary).keyboardShortcut(.defaultAction).disabled(!ready)
+                Button(action, action: go).buttonStyle(.primary).keyboardShortcut(.defaultAction).disabled(!ready)
             }
         }
-        .padding(Kit.Space.edge)
-        .frame(width: 400)
-        .background(Color.ground)
+        .sheetCard(.question)
+        .animation(Motion.change, value: new.isEmpty)
         .onChange(of: new) { problem = nil }
         .onChange(of: current) { problem = nil }
         .interactiveDismissDisabled(!canCancel)
-        .hiddenFromCapture()
     }
 
     private func go() {
@@ -96,23 +111,20 @@ struct RecoveryKeySheet: View {
         VStack(alignment: .leading, spacing: Kit.Space.group) {
             if checking { check } else { show }
         }
-        .padding(Kit.Space.edge)
-        .frame(width: 440)
-        .background(Color.ground)
+        .sheetCard(.task)
         .interactiveDismissDisabled()
-        .hiddenFromCapture()
         .animation(Motion.change, value: checking)
     }
 
     private var show: some View {
         Group {
             VStack(alignment: .leading, spacing: Kit.Space.label) {
-                Text("Your recovery key").font(Kit.title)
+                Text("Your Recovery Key").font(Kit.title)
                 Text("Write it on paper and keep it somewhere safe. If you forget your password, it's the only other way in. It also opens this vault on any Mac, so treat it like the vault itself. It won't be shown again.")
-                    .font(Kit.body).opacity(0.5).fixedSize(horizontal: false, vertical: true)
+                    .font(Kit.body).quietText().fixedSize(horizontal: false, vertical: true)
             }
             Text(code)
-                .font(.system(size: 19, weight: .semibold, design: .monospaced))
+                .font(Kit.figure.monospaced())
                 .tracking(1)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 16)
@@ -128,9 +140,9 @@ struct RecoveryKeySheet: View {
     private var check: some View {
         Group {
             VStack(alignment: .leading, spacing: Kit.Space.label) {
-                Text("Check what you wrote").font(Kit.title)
+                Text("Check What You Wrote").font(Kit.title)
                 Text("Type the \(Self.ordinals[asked[0]]) and \(Self.ordinals[asked[1]]) groups from your paper.")
-                    .font(Kit.body).opacity(0.5).fixedSize(horizontal: false, vertical: true)
+                    .font(Kit.body).quietText().fixedSize(horizontal: false, vertical: true)
             }
             HStack(spacing: Kit.Space.item) {
                 GlassField(hint: "Group \(asked[0] + 1)", text: $first, symbol: "\(asked[0] + 1).circle", autofocus: true)
@@ -138,7 +150,7 @@ struct RecoveryKeySheet: View {
             }
             .onSubmit { if matches { dismiss() } }
             Text(first.count >= 5 && second.count >= 5 && !matches ? "That doesn't match. Check your paper, or see the key again." : " ")
-                .font(Kit.quiet).foregroundStyle(.red.opacity(0.85))
+                .font(Kit.quiet).foregroundStyle(Color.problem)
             HStack(spacing: Kit.Space.item) {
                 Button("See the Key Again") { checking = false; first = ""; second = "" }.buttonStyle(.quiet)
                 Spacer()

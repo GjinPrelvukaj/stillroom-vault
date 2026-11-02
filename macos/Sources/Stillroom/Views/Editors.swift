@@ -15,12 +15,16 @@ struct NoteEditor: View {
     var body: some View {
         VStack(alignment: .leading, spacing: Kit.Space.group) {
             EditorBar(back: back, backTitle: "Notes", file: file, versions: versions)
-            EditorHeader(kind: "Note", symbol: "note.text", title: $title, hint: "Title")
+            EditorHeader(id: file.id, kind: "Note", symbol: "note.text", title: $title, hint: "Title")
+            // Room round the words and a column no wider than reads easily, inside a panel that still fills the page.
             TextEditor(text: $text)
-                .font(.system(size: 14))
+                .font(Kit.reading)
                 .scrollContentBackground(.hidden)
-                .lineSpacing(3)
-                .padding(Kit.Space.item)
+                .lineSpacing(5)
+                .frame(maxWidth: Kit.measure, alignment: .leading)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 12)
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .rowPanel()
         }
         .entrance(ready: loaded)
@@ -57,7 +61,8 @@ struct NoteEditor: View {
     }
 }
 
-/// A secret, open: its fields, each labelled. Concealed values show as dots until the eye is pressed, and copy to a
+/// A secret, open: its fields, each labelled. Concealed values show as ten dots, whatever their length, until the eye
+/// is pressed or they're clicked to type in, and copy to a
 /// clipboard that other apps' history managers are asked to skip and that empties itself after 30 seconds.
 struct SecretEditor: View {
     let state: AppState
@@ -68,7 +73,11 @@ struct SecretEditor: View {
     @State private var secret = Secret(template: .other)
     @State private var loaded = false
     @State private var shown: Set<UUID> = []
+    /// The concealed field clicked to type in: a secure field until focus leaves it, then the mask again.
+    @State private var editing: UUID?
+    @FocusState private var focused: UUID?
     @State private var copied: UUID?
+    @State private var copiedAt = Date.distantPast
     @State private var pending: Task<Void, Never>?
     /// A line in place of the copied one, about the two-factor setup just added or not found.
     @State private var note: String?
@@ -78,7 +87,7 @@ struct SecretEditor: View {
     var body: some View {
         VStack(alignment: .leading, spacing: Kit.Space.group) {
             EditorBar(back: back, backTitle: "Secrets", file: file, versions: versions)
-            EditorHeader(kind: secret.template.title, symbol: secret.template.symbol, title: $title, hint: "Name")
+            EditorHeader(id: file.id, kind: secret.template.title, symbol: secret.template.symbol, title: $title, hint: "Name")
             ScrollView {
                 VStack(spacing: 0) {
                     ForEach($secret.fields) { $field in
@@ -112,9 +121,9 @@ struct SecretEditor: View {
             }
             .scrollIndicators(.never)
             if let note {
-                Text(note).font(Kit.quiet).opacity(0.5).transition(.opacity)
+                Text(note).font(Kit.quiet).quietText().transition(.opacity)
             } else if copied != nil {
-                Text("Copied. The clipboard empties itself in 30 seconds.").font(Kit.quiet).opacity(0.5).transition(.opacity)
+                Text("Copied. The clipboard empties itself in 30 seconds.").font(Kit.quiet).quietText().transition(.opacity)
             }
         }
         .animation(Motion.change, value: copied)
@@ -137,6 +146,8 @@ struct SecretEditor: View {
             loaded = true
         }
         .onChange(of: secret) { schedule() }
+        // Focus left the field being typed in: back to the mask.
+        .onChange(of: focused) { if focused != editing { editing = nil } }
         .onChange(of: title) { schedule() }
         .onDisappear { flush() }
     }
@@ -144,56 +155,81 @@ struct SecretEditor: View {
     private func row(_ field: Binding<Secret.Field>) -> some View {
         let id = field.wrappedValue.id
         let visible = !field.wrappedValue.concealed || shown.contains(id)
+        // Hidden and not being typed in: a fixed mask, never as many dots as the value has characters.
+        let masked = !visible && editing != id && !field.wrappedValue.value.isEmpty
         return HStack(spacing: Kit.Space.item) {
             TextField("Label", text: field.label)
                 .textFieldStyle(.plain)
                 .font(Kit.quiet)
-                .opacity(0.55)
+                .quietText()
                 .frame(width: 130, alignment: .leading)
             Group {
-                if visible {
-                    TextField("Empty", text: field.value)
+                if masked {
+                    let twoFactor = field.wrappedValue.oneTimeCode != nil
+                    Button { editing = id } label: {
+                        Text(field.wrappedValue.mask)
+                            .font(twoFactor ? Kit.body : Kit.body.monospaced())
+                            .foregroundStyle(twoFactor ? Color.quietInk : Color.ink)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .help("Click to type a new one; the eye shows it")
+                    .accessibilityLabel("\(field.wrappedValue.label), hidden")
+                } else if visible {
+                    TextField("Empty", text: field.value).focused($focused, equals: id)
                 } else {
                     SecureField("Empty", text: field.value)
+                        .focused($focused, equals: id)
+                        .onAppear { if editing == id { DispatchQueue.main.async { focused = id } } }
                 }
             }
             .textFieldStyle(.plain)
-            .font(.system(size: 13, design: field.wrappedValue.concealed ? .monospaced : .default))
+            .font(field.wrappedValue.concealed ? Kit.body.monospaced() : Kit.body)
             if field.wrappedValue.concealed {
                 icon(visible ? "eye.slash" : "eye", help: visible ? "Hide" : "Show") {
                     if visible { shown.remove(id) } else { shown.insert(id) }
                 }
-                icon("dice", help: "Make a strong random password") {
-                    field.wrappedValue.value = generatedPassword()
-                    shown.insert(id)
+                if field.wrappedValue.takesGeneratedPassword {
+                    icon("dice", help: "Make a strong random password") {
+                        field.wrappedValue.value = generatedPassword()
+                        shown.insert(id)
+                    }
                 }
             }
-            icon(copied == id ? "checkmark" : "doc.on.doc", help: "Copy") {
+            Button {
                 Clipboard.copy(field.wrappedValue.value, concealed: field.wrappedValue.concealed)
+                let at = Date.now
                 copied = id
+                copiedAt = at
                 Task {
-                    try? await Task.sleep(for: .seconds(30))
-                    if copied == id { copied = nil }
+                    try? await Task.sleep(for: .seconds(Clipboard.life))
+                    if copied == id, copiedAt == at { copied = nil }
                 }
-            }
-            .disabled(field.wrappedValue.value.isEmpty)
+            } label: { ClipboardMark(since: copied == id ? copiedAt : nil) }
+                .buttonStyle(.icon)
+                .help("Copy")
+                .accessibilityLabel("Copy")
+                .disabled(field.wrappedValue.value.isEmpty)
             Menu {
                 Toggle("Concealed", isOn: field.concealed)
                 Button("Remove Field", role: .destructive) { secret.fields.removeAll { $0.id == id } }
             } label: {
                 Image(systemName: "ellipsis")
             }
-            .menuStyle(.borderlessButton)
+            .menuStyle(.button)
+            .buttonStyle(.icon)
             .menuIndicator(.hidden)
             .fixedSize()
+            .help("More")
         }
         .padding(.horizontal, 14)
         .frame(height: 42)
     }
 
     private func icon(_ symbol: String, help: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) { Image(systemName: symbol).frame(width: 18) }
-            .buttonStyle(.quiet)
+        Button(action: action) { Image(systemName: symbol).contentTransition(.symbolEffect(.replace)) }
+            .buttonStyle(.icon)
             .help(help)
             .accessibilityLabel(help)
     }
@@ -264,47 +300,55 @@ private struct OneTimeCodeRow: View {
     let code: OneTimeCode
     @Binding var copied: UUID?
     let id: UUID
-    @State private var done = false
+    @State private var done: Date?
 
     var body: some View {
         TimelineView(.periodic(from: .now, by: 1)) { context in
             let now = code.code(at: context.date)
             let left = code.secondsLeft(at: context.date)
             HStack(spacing: Kit.Space.item) {
-                Text("Code").font(Kit.quiet).opacity(0.55).frame(width: 130, alignment: .leading)
+                Text("Code").font(Kit.quiet).quietText().frame(width: 130, alignment: .leading)
                 // Split in half, as authenticator apps show it: easier to read off and type.
                 Text(now.prefix(now.count / 2) + " " + now.dropFirst(now.count / 2))
-                    .font(.system(size: 17, weight: .semibold, design: .monospaced))
-                    .foregroundStyle(left <= 5 ? Color.orange : Color.vault)
+                    .font(Kit.figure.monospaced())
+                    // Always Vault's colour (orange means a protection is off); the last seconds only dim it.
+                    .foregroundStyle(Color.vault)
+                    .opacity(left <= 3 ? 0.6 : 1)
                     .contentTransition(.numericText())
                     .textSelection(.disabled)
                     .accessibilityLabel("Code \(now.map(String.init).joined(separator: " "))")
                 Spacer(minLength: 0)
                 ZStack {
-                    Circle().stroke(Color.ink.opacity(0.1), lineWidth: 2)
-                    Circle().trim(from: 0, to: CGFloat(left) / CGFloat(code.period))
-                        .stroke(left <= 5 ? Color.orange : Color.vault, style: .init(lineWidth: 2, lineCap: .round))
-                        .rotationEffect(.degrees(-90))
-                    Text("\(left)").font(.system(size: 8.5, weight: .semibold, design: .rounded)).opacity(0.6)
+                    Circle().stroke(Color.track, lineWidth: 2)
+                    // One smooth sweep per period, not a step a second.
+                    TimelineView(.animation(minimumInterval: 1 / 30)) { frame in
+                        let period = Double(code.period)
+                        let rest = period - frame.date.timeIntervalSince1970.truncatingRemainder(dividingBy: period)
+                        Circle().trim(from: 0, to: rest / period)
+                            .stroke(Color.vault, style: .init(lineWidth: 2, lineCap: .round))
+                            .rotationEffect(.degrees(-90))
+                    }
+                    Text("\(left)").font(Kit.micro).quietText()
                 }
                 .frame(width: 20, height: 20)
-                .animation(.linear(duration: 1), value: left)
                 .help("Seconds until the code changes")
                 .accessibilityLabel("\(left) seconds left")
                 Button {
                     Clipboard.copy(code.code(), concealed: true)
-                    done = true
-                    copied = UUID()
+                    let at = Date.now, mine = UUID()
+                    done = at
+                    copied = mine
                     Task {
-                        try? await Task.sleep(for: .seconds(2))
-                        done = false
+                        try? await Task.sleep(for: .seconds(Clipboard.life))
+                        if done == at { done = nil }
+                        if copied == mine { copied = nil }
                     }
-                } label: { Image(systemName: done ? "checkmark" : "doc.on.doc").frame(width: 18) }
-                    .buttonStyle(.quiet)
+                } label: { ClipboardMark(since: done) }
+                    .buttonStyle(.icon)
                     .help("Copy the code")
                     .accessibilityLabel("Copy the code")
                 // Lines up with the field rows' menu button.
-                Color.clear.frame(width: 18, height: 1)
+                Color.clear.frame(width: 24, height: 1)
             }
             .animation(Motion.change, value: now)
         }
@@ -317,22 +361,19 @@ private struct OneTimeCodeRow: View {
 /// An open note's or secret's heading, in the same shape as every page's: what kind it is, small and spaced, over
 /// its name (typed straight into), beside its symbol in a soft tile of Vault's colour.
 private struct EditorHeader: View {
+    let id: UUID
     let kind: String
     let symbol: String
     @Binding var title: String
     let hint: String
+    @Environment(\.itemTitles) private var titles
 
     var body: some View {
         HStack(spacing: 14) {
-            Image(systemName: symbol)
-                .font(.system(size: 19, weight: .medium))
-                .foregroundStyle(Color.vault)
-                .frame(width: 46, height: 46)
-                .background(Color.vault.opacity(0.14), in: RoundedRectangle(cornerRadius: 13, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: 13, style: .continuous).strokeBorder(Color.vault.opacity(0.22), lineWidth: 1))
+            ItemTile(symbol: symbol)
             VStack(alignment: .leading, spacing: Kit.Space.label) {
                 Text(kind).eyebrow()
-                TextField(hint, text: $title).textFieldStyle(.plain).font(Kit.title)
+                TextField(hint, text: $title).textFieldStyle(.plain).font(Kit.title).itemTitle(id, in: titles)
             }
         }
         .padding(.bottom, 4)
@@ -352,7 +393,7 @@ private struct EditorBar: View {
                 .buttonStyle(.quiet)
                 .keyboardShortcut(.cancelAction)
             Spacer()
-            Text("Saved \(file.changedAt.formatted(.relative(presentation: .named)))").font(Kit.quiet).opacity(0.4)
+            Text("Saved \(file.changedAt.formatted(.relative(presentation: .named)))").font(Kit.quiet).quietText()
             if let count = file.versions?.count, count > 0 {
                 Button { versions() } label: { Label("\(count)", systemImage: "clock.arrow.circlepath") }
                     .buttonStyle(.quiet)
@@ -368,6 +409,8 @@ private struct EditorBar: View {
 @MainActor enum Clipboard {
     /// The pasteboard's change count right after Stillroom's last copy; nil once cleared or replaced.
     private static var mine: Int?
+    /// Seconds a copy stays on the clipboard.
+    static let life: Double = 30
 
     static func copy(_ text: String, concealed: Bool) {
         let board = NSPasteboard.general
@@ -378,7 +421,7 @@ private struct EditorBar: View {
         let copied = board.changeCount
         mine = copied
         Task { @MainActor in
-            try? await Task.sleep(for: .seconds(30))
+            try? await Task.sleep(for: .seconds(life))
             if mine == copied { clearIfOurs() }
         }
     }
@@ -389,6 +432,32 @@ private struct EditorBar: View {
         mine = nil
         let board = NSPasteboard.general
         if board.changeCount == copied { board.clearContents() }
+    }
+}
+
+/// A copy button's face: the copy icon, or, once copied, a check inside a thin ring that drains over the time until
+/// the clipboard empties itself, then the copy icon again. Reassurance without a message.
+struct ClipboardMark: View {
+    let since: Date?
+
+    var body: some View {
+        if let since {
+            TimelineView(.animation(minimumInterval: 1 / 10)) { frame in
+                let left = max(0, 1 - frame.date.timeIntervalSince(since) / Clipboard.life)
+                ZStack {
+                    Circle().stroke(Color.track, lineWidth: 1.5)
+                    Circle().trim(from: 0, to: left)
+                        .stroke(Color.vault, style: .init(lineWidth: 1.5, lineCap: .round))
+                        .rotationEffect(.degrees(-90))
+                    Image(systemName: "checkmark").font(Kit.micro).foregroundStyle(Color.vault)
+                }
+                .frame(width: 15, height: 15)
+            }
+            .transition(.opacity)
+            .accessibilityLabel("Copied")
+        } else {
+            Image(systemName: "doc.on.doc").transition(.opacity)
+        }
     }
 }
 
@@ -414,11 +483,8 @@ struct NameSheet: View {
                     .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
             }
         }
-        .padding(Kit.Space.edge)
-        .frame(width: 360)
-        .background(Color.ground)
+        .sheetCard(.question)
         .onAppear { name = initial }
-        .hiddenFromCapture()
     }
 
     private func go() {
@@ -440,27 +506,20 @@ struct TagSheet: View {
         VStack(alignment: .leading, spacing: Kit.Space.group) {
             VStack(alignment: .leading, spacing: Kit.Space.label) {
                 Text("Tags").font(Kit.title)
-                Text(file.name).font(Kit.body).opacity(0.5).lineLimit(1)
+                Text(file.name).font(Kit.body).quietText().lineLimit(1)
             }
             let all = Array(Set(state.tags + chosen)).sorted { $0.localizedStandardCompare($1) == .orderedAscending }
             if !all.isEmpty {
                 FlowRow(all) { tag in
                     let on = chosen.contains(tag)
                     Button {
-                        if on { chosen.removeAll { $0 == tag } } else { chosen.append(tag) }
+                        withAnimation(Motion.hover) { if on { chosen.removeAll { $0 == tag } } else { chosen.append(tag) } }
                     } label: {
-                        HStack(spacing: 5) {
-                            Circle().fill(TagColor.of(tag)).frame(width: 7, height: 7)
-                            Text(tag)
-                        }
+                        TagChip(tag: tag, chosen: on).contentShape(Capsule())
                     }
                     .buttonStyle(.plain)
-                    .font(.system(size: 12))
-                    .padding(.horizontal, 10)
-                    .frame(height: 26)
-                    .background(Color.ink.opacity(on ? 0.14 : 0.05), in: Capsule())
-                    .overlay(Capsule().strokeBorder(Color.ink.opacity(on ? 0.22 : 0.07), lineWidth: 1))
-                    .opacity(on ? 1 : 0.75)
+                    .focusRing(Capsule())
+                    .accessibilityAddTraits(on ? .isSelected : [])
                 }
             }
             GlassField(hint: "New tag", text: $new, symbol: "tag").onSubmit(addNew)
@@ -476,11 +535,8 @@ struct TagSheet: View {
                 .keyboardShortcut(.defaultAction)
             }
         }
-        .padding(Kit.Space.edge)
-        .frame(width: 400)
-        .background(Color.ground)
+        .sheetCard(.question)
         .onAppear { chosen = file.tagList }
-        .hiddenFromCapture()
     }
 
     private func addNew() {
@@ -506,47 +562,55 @@ struct VersionsSheet: View {
             VStack(alignment: .leading, spacing: Kit.Space.label) {
                 Text("Versions").font(Kit.title)
                 Text("“\(file.name)” as it was before each change. Putting one back keeps today's as a version too.")
-                    .font(Kit.body).opacity(0.5).fixedSize(horizontal: false, vertical: true)
+                    .font(Kit.body).quietText().fixedSize(horizontal: false, vertical: true)
             }
-            ScrollView {
-                VStack(spacing: 0) {
-                    ForEach(versions) { version in
-                        if version.id != versions.first?.id { Rectangle().fill(Color.ink.opacity(0.05)).frame(height: 1) }
-                        HStack {
-                            Image(systemName: "clock").opacity(0.5)
-                            Text(version.date.formatted(date: .abbreviated, time: .shortened)).font(Kit.body)
-                            Text(ByteCountFormatter.string(fromByteCount: Int64(version.size), countStyle: .file))
-                                .font(Kit.quiet).opacity(0.45)
-                            Spacer()
-                            Button("Open") {
-                                if let data = try? state.readVersion(version) {
-                                    dismiss()
-                                    open(version, data)
+            if versions.isEmpty {
+                // Saved as it changes, so an empty list is only "not yet": say when one will be kept.
+                Label("No earlier versions yet. Each time this changes, what it held before is kept here, at most one every ten minutes, the last 20.",
+                      systemImage: "clock.arrow.circlepath")
+                    .font(Kit.body).quietText()
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(14)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .rowPanel()
+            } else {
+                ScrollView {
+                    VStack(spacing: 0) {
+                        ForEach(versions) { version in
+                            if version.id != versions.first?.id { Rectangle().fill(Color.ink.opacity(0.05)).frame(height: 1) }
+                            HStack {
+                                Image(systemName: "clock").opacity(0.5)
+                                Text(version.date.formatted(date: .abbreviated, time: .shortened)).font(Kit.body)
+                                Text(ByteCountFormatter.string(fromByteCount: Int64(version.size), countStyle: .file))
+                                    .font(Kit.quiet).quietText()
+                                Spacer()
+                                Button("Open") {
+                                    if let data = try? state.readVersion(version) {
+                                        dismiss()
+                                        open(version, data)
+                                    }
                                 }
+                                .buttonStyle(.quiet)
+                                Button("Put Back") {
+                                    state.restore(version, of: file.id)
+                                    dismiss()
+                                }
+                                .buttonStyle(.secondary)
                             }
-                            .buttonStyle(.quiet)
-                            Button("Put Back") {
-                                state.restore(version, of: file.id)
-                                dismiss()
-                            }
-                            .buttonStyle(.secondary)
+                            .padding(.horizontal, 14)
+                            .frame(height: 42)
                         }
-                        .padding(.horizontal, 14)
-                        .frame(height: 42)
                     }
+                    .rowPanel()
                 }
-                .rowPanel()
+                .frame(maxHeight: 320)
             }
-            .frame(maxHeight: 320)
             HStack {
                 Spacer()
                 Button("Done") { dismiss() }.buttonStyle(.primary).keyboardShortcut(.defaultAction)
             }
         }
-        .padding(Kit.Space.edge)
-        .frame(width: 500)
-        .background(Color.ground)
-        .hiddenFromCapture()
+        .sheetCard(.task)
     }
 }
 

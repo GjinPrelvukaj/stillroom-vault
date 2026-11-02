@@ -25,8 +25,8 @@ cat > "$APP/Contents/Info.plist" <<'PLIST'
     <key>CFBundleExecutable</key><string>Stillroom</string>
     <key>CFBundleIconFile</key><string>AppIcon</string>
     <key>CFBundlePackageType</key><string>APPL</string>
-    <key>CFBundleShortVersionString</key><string>1.0.1</string>
-    <key>CFBundleVersion</key><string>2</string>
+    <key>CFBundleShortVersionString</key><string>1.1.0</string>
+    <key>CFBundleVersion</key><string>3</string>
     <key>LSMinimumSystemVersion</key><string>26.0</string>
     <key>NSHumanReadableCopyright</key><string>© 2026 Gjin Prelvukaj and Lis Shala</string>
     <key>NSCameraUsageDescription</key><string>Stillroom takes a photo of whoever types a wrong password, for your intruder log.</string>
@@ -54,6 +54,8 @@ cat > "$APP/Contents/Info.plist" <<'PLIST'
 PLIST
 # The build day, so Settings can say when this copy is getting old without ever going online (Updates.swift).
 /usr/libexec/PlistBuddy -c "Add :StillroomBuilt string $(date -u +%Y-%m-%d)" "$APP/Contents/Info.plist"
+# check-offline.sh passed above (the build stops if it doesn't), so this copy says so: Settings › Security shows it.
+/usr/libexec/PlistBuddy -c "Add :StillroomOfflineChecked string $(date -u +%Y-%m-%d)" "$APP/Contents/Info.plist"
 
 # A stable identity keeps the app the same app across rebuilds; ad-hoc when none is installed.
 IDENTITY="${STILLROOM_SIGN_IDENTITY:-$(security find-identity -v -p codesigning | awk -F'"' '/Apple Development/ {print $2; exit}')}"

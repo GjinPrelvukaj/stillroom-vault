@@ -15,22 +15,18 @@ struct IntruderView: View {
             HStack(alignment: .bottom) {
                 VStack(alignment: .leading, spacing: Kit.Space.label) {
                     Text("Intruder log").eyebrow()
-                    Text(entries.isEmpty ? "No one has tried" : "\(entries.count) wrong \(entries.count == 1 ? "try" : "tries")")
+                    Text(entries.isEmpty ? "Nothing here yet" : "\(entries.count) wrong \(entries.count == 1 ? "try" : "tries")")
                         .font(Kit.title)
                 }
                 Spacer()
                 if !entries.isEmpty { Button("Clear All…") { clearing = true }.buttonStyle(.secondary) }
             }
-            Text("Your own typos show here too. Only your open vault can read this log.")
-                .font(Kit.quiet).opacity(0.45)
             if entries.isEmpty {
-                VStack(spacing: Kit.Space.group) {
-                    Image(systemName: "person.badge.shield.checkmark").font(.system(size: 34, weight: .light)).opacity(0.5)
-                    Text("Every wrong password typed at the lock screen will be listed here, with a photo when the camera is allowed.")
-                        .font(Kit.body).opacity(0.5).multilineTextAlignment(.center).frame(maxWidth: 380)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                EmptyState(symbol: "person.badge.shield.checkmark", title: "No one has tried",
+                           line: "Wrong passwords and recovery keys typed at the lock screen land here, with a photo when the camera is allowed. Only your open vault can read this log.")
             } else {
+                Text("Your own typos show here too. Only your open vault can read this log.")
+                    .font(Kit.quiet).quietText()
                 ScrollView {
                     VStack(spacing: 0) {
                         ForEach(entries) { entry in
@@ -56,15 +52,12 @@ struct IntruderView: View {
                     Image(nsImage: image).resizable().scaledToFit().mirrored().clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                 }
                 HStack {
-                    Text(entry.date.formatted(date: .long, time: .standard)).font(Kit.quiet).opacity(0.5)
+                    Text(entry.date.formatted(date: .long, time: .standard)).font(Kit.quiet).quietText()
                     Spacer()
                     Button("Done") { enlarged = nil }.buttonStyle(.primary).keyboardShortcut(.defaultAction)
                 }
             }
-            .padding(Kit.Space.edge)
-            .frame(width: 560)
-            .background(Color.ground)
-            .hiddenFromCapture()
+            .sheetCard(.photo)
         }
         .confirmationDialog("Clear the intruder log?", isPresented: $clearing) {
             Button("Clear All", role: .destructive) { state.clearIntruders(); entries = [] }
@@ -90,7 +83,7 @@ struct IntruderView: View {
             .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
             VStack(alignment: .leading, spacing: 3) {
                 Text(entry.kind == .wrongPassword ? "Wrong password" : "Wrong recovery key").font(Kit.body)
-                Text(entry.date.formatted(date: .abbreviated, time: .standard)).font(Kit.quiet).opacity(0.45)
+                Text(entry.date.formatted(date: .abbreviated, time: .standard)).font(Kit.quiet).quietText()
             }
             Spacer()
             Button { state.deleteIntruder(entry.id); entries.removeAll { $0.id == entry.id } } label: { Image(systemName: "trash") }

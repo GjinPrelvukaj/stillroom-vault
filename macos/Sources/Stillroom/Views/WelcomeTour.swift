@@ -31,7 +31,7 @@ struct WelcomeTour: View {
             ZStack {
                 DotRing(lit: Double(page + 1) / Double(pages.count), tint: .vault)
                 Image(systemName: current.symbol)
-                    .font(.system(size: 22, weight: .medium))
+                    .font(Kit.glyph)
                     .opacity(0.75)
                     .contentTransition(.symbolEffect(.replace))
             }
@@ -41,7 +41,7 @@ struct WelcomeTour: View {
             VStack(spacing: Kit.Space.label) {
                 Text(current.title).font(Kit.title)
                 Text(current.text)
-                    .font(Kit.body).opacity(0.5)
+                    .font(Kit.body).quietText()
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -70,12 +70,17 @@ struct WelcomeTour: View {
                     .keyboardShortcut(.defaultAction)
             }
             .padding(.top, Kit.Space.item)
-
-            Button("Skip", action: done).buttonStyle(.quiet).opacity(page == pages.count - 1 ? 0 : 1)
         }
         .frame(width: 320)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding(.bottom, Glass.lightRoom / 2)
+        // In the corner, as in the system's own setup: the pages stay centred, and it can go on the last one.
+        .overlay(alignment: .topTrailing) {
+            if page < pages.count - 1 {
+                Button("Skip", action: done).buttonStyle(.quiet).padding(Kit.Space.edge).transition(.opacity)
+            }
+        }
+        .animation(Motion.change, value: page)
         .entrance()
         .onAppear { ActivityLog.note("welcome tour") }
     }

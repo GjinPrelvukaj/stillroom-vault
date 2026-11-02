@@ -11,13 +11,15 @@ struct CheckSheet: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: Kit.Space.group) {
-            VStack(alignment: .leading, spacing: Kit.Space.label) {
-                Text("Check vault").font(Kit.title)
-                Text(summary).font(Kit.body).opacity(0.5).fixedSize(horizontal: false, vertical: true)
+            HStack(spacing: Kit.Space.group) {
+                // Fills as items are read; ends full with a check, or with the damaged share in orange.
+                RingMark(symbol: mark, lit: lit, tint: .vault, rest: damage?.isEmpty == false ? Color.caution : nil, size: 56)
+                VStack(alignment: .leading, spacing: Kit.Space.label) {
+                    Text("Check Vault").font(Kit.title)
+                    Text(summary).font(Kit.body).quietText().fixedSize(horizontal: false, vertical: true)
+                }
             }
-            if damage == nil {
-                ProgressView(value: Double(done), total: Double(max(total, 1))).tint(.vault)
-            } else if let damage, !damage.isEmpty {
+            if let damage, !damage.isEmpty {
                 ScrollView {
                     VStack(spacing: 0) {
                         ForEach(damage) { item in
@@ -37,14 +39,21 @@ struct CheckSheet: View {
                     .keyboardShortcut(.defaultAction)
             }
         }
-        .padding(Kit.Space.edge)
-        .frame(width: 480)
-        .background(Color.ground)
-        .hiddenFromCapture()
+        .sheetCard(.task)
         .task {
             let found = await state.checkVault { done = $0; total = $1 }
             damage = found
         }
+    }
+
+    private var lit: Double {
+        guard let damage else { return total == 0 ? 0 : Double(done) / Double(total) }
+        return total == 0 ? 1 : Double(total - damage.count) / Double(total)
+    }
+
+    private var mark: String {
+        guard let damage else { return "doc.text.magnifyingglass" }
+        return damage.isEmpty ? "checkmark" : "exclamationmark"
     }
 
     private var summary: String {
@@ -56,11 +65,11 @@ struct CheckSheet: View {
 
     private func row(_ item: AppState.Damage) -> some View {
         HStack(spacing: Kit.Space.group) {
-            Image(systemName: "exclamationmark.triangle").foregroundStyle(.orange.opacity(0.8)).frame(width: 18)
+            Image(systemName: "exclamationmark.triangle").foregroundStyle(Color.caution).frame(width: 18)
             VStack(alignment: .leading, spacing: 2) {
                 Text(item.file.name).font(Kit.body).lineLimit(1).truncationMode(.middle)
                 Text(item.version.map { "Earlier version from \($0.date.formatted(date: .abbreviated, time: .shortened))" } ?? "Current contents")
-                    .font(Kit.quiet).opacity(0.45)
+                    .font(Kit.quiet).quietText()
             }
             Spacer()
             if let version = item.version {

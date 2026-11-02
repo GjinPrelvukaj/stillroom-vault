@@ -31,6 +31,10 @@ struct VaultFile: Identifiable, Codable, Hashable, Sendable {
     /// copies taken out get those dates back.
     var created: Date?
     var contentModified: Date?
+    /// Cool-down: opening it waits this many seconds after it's asked for (`CoolDown`). Nil: none.
+    var coolDown: Int?
+    /// When opening it was last asked for.
+    var coolDownAsked: CoolDownAsk?
 
     enum Entry: String, Codable, Sendable { case note, secret }
 

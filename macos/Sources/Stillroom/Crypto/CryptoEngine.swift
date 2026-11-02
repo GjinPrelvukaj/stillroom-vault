@@ -115,7 +115,7 @@ func normalizedRecoveryCode(_ typed: String) -> String {
 
 enum VaultError: LocalizedError {
     case wrongPassword, wrongRecoveryKey, damaged, folder, touchIDUnavailable, touchIDChanged, notThisMac, sameAsOther, wrongKit,
-         newerVault, tooSoon
+         newerVault, tooSoon, coolingDown
 
     var errorDescription: String? {
         switch self {
@@ -130,6 +130,7 @@ enum VaultError: LocalizedError {
         case .wrongKit: "Those pieces don't open this vault. They may be from an older kit."
         case .newerVault: "This vault was saved by a newer version of Stillroom. Update Stillroom to open it."
         case .tooSoon: "Too many password changes in a row. Wait a few minutes, then try again."
+        case .coolingDown: "This item has a cool-down: ask to open it, and it opens once the wait is over."
         }
     }
 }
