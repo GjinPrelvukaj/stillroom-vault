@@ -1201,6 +1201,14 @@ private struct PreviewCard: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(Kit.Space.group)
             }
+        } else if AppState.isLink(file) {
+            // Never Quick Look: it previews a saved link by loading the page (check-quiet.sh caught it).
+            VStack(spacing: Kit.Space.label) {
+                Image(systemName: "link").font(Kit.placeholder).opacity(0.45).padding(.bottom, 4)
+                Text("A saved web link").font(Kit.body)
+                Text(AppState.linkAddress(file, data) ?? "").font(Kit.mono).quietText().textSelection(.enabled).multilineTextAlignment(.center)
+            }
+            .padding(Kit.Space.group)
         } else if Email.isEmail(file), !data.isEmpty {
             EmailView(data: data, keep: keep, save: saveAttachment)
         } else if data.isEmpty && file.isFile && file.size <= QuickLookView.largest {
@@ -1227,6 +1235,7 @@ private struct PreviewCard: View {
             QuickLookView(file: file, stage: stage, unstage: unstage)
         }
     }
+
 }
 
 /// PDFKit's own view, on the card's dark instead of grey, the pages inset from the card's edges. Shown only once

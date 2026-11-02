@@ -925,6 +925,23 @@ import UniformTypeIdentifiers
         }
     }
 
+    /// A link file's address (.webloc, .inetloc, .url), or nil for anything else.
+    /// A saved web link, by its type or ending, whatever its size: Quick Look previews one by loading the page.
+    static func isLink(_ file: VaultFile) -> Bool {
+        let ending = (file.name as NSString).pathExtension
+        let types = [file.type, UTType(filenameExtension: ending)].compactMap { $0 }
+        return types.contains { $0.conforms(to: .internetLocation) || $0.conforms(to: .internetShortcut) }
+            || ["webloc", "inetloc", "url"].contains(ending.lowercased())
+    }
+
+    static func linkAddress(_ file: VaultFile, _ data: Data) -> String? {
+        guard isLink(file) else { return nil }
+        if let plist = try? PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any],
+           let url = plist["URL"] as? String { return url }
+        let text = String(decoding: data, as: UTF8.self)
+        return text.split(whereSeparator: \.isNewline).first { $0.hasPrefix("URL=") }.map { String($0.dropFirst(4)) } ?? text
+    }
+
     /// Opens a file in its usual app from a working copy on Vault's RAM disk; each save there is sealed back in
     /// (keeping a version as any change does). The copy goes when editing is done or the vault locks.
     func editInPlace(_ file: VaultFile) {

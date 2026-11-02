@@ -4,6 +4,16 @@ All notable changes to Stillroom. The format follows [Keep a Changelog](https://
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-11-02
+
+A fix found by the new runtime network check.
+
+### Security
+- Opening a saved web link (.webloc, .inetloc or .url) in the vault no longer loads the page: Quick Look previewed it through Safari, which went online. The card now shows the link's address as text, whatever the file's size. Found by the new runtime check.
+
+### Added
+- `check-quiet.sh`: before every release, a copy of Stillroom opens one file of every kind it shows, including an email, a web page and saved links aimed at real addresses, while every network flow on the Mac is recorded; any from Stillroom or a helper macOS ran for it stops the release. It first proves it would catch a connection lasting a fraction of a second.
+
 ## [1.1.0] - 2026-11-02
 
 Room check, the tamper seal, cool-down items, proof of what this copy is, and a polish of every screen.
@@ -145,7 +155,8 @@ The first complete build, notarized and used daily by its author.
 - Public file format (`docs/FORMAT.md`) and an independent Python reader.
 - Developer ID signing, notarization and stapling (`Scripts/make-dist.sh`).
 
-[Unreleased]: https://github.com/GjinPrelvukaj/stillroom-vault/compare/v1.1.0...main
+[Unreleased]: https://github.com/GjinPrelvukaj/stillroom-vault/compare/v1.1.1...main
+[1.1.1]: https://github.com/GjinPrelvukaj/stillroom-vault/releases/tag/v1.1.1
 [1.1.0]: https://github.com/GjinPrelvukaj/stillroom-vault/releases/tag/v1.1.0
 [1.0.1]: https://github.com/GjinPrelvukaj/stillroom-vault/releases/tag/v1.0.1
 [1.0.0]: https://github.com/GjinPrelvukaj/stillroom-vault/releases/tag/v1.0.0

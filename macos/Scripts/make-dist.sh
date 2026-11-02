@@ -10,6 +10,9 @@ cd "$(dirname "$0")/.."
 ID="${STILLROOM_DIST_IDENTITY:-$(security find-identity -v -p codesigning | awk -F'"' '/Developer ID Application/ {print $2; exit}')}"
 [ -n "$ID" ] || { echo "No Developer ID Application certificate in the keychain." >&2; exit 1; }
 
+# Run it and watch first: no release if it opens any network connection (check-quiet.sh). Before the release build,
+# since it builds a debug copy at the same path.
+Scripts/check-quiet.sh
 STILLROOM_SIGN_IDENTITY="$ID" Scripts/make-app.sh release
 # Notarization wants a secure timestamp on the signature, so it's signed once more with one.
 codesign --force --options runtime --timestamp --entitlements build/Stillroom.entitlements --sign "$ID" build/Stillroom.app

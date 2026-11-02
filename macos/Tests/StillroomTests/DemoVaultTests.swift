@@ -144,6 +144,60 @@ extension VaultFlowTests {
     }
 }
 
+/// Writes the vault `Scripts/check-quiet.sh` opens while watching for network traffic: a file of each kind the app shows,
+/// and the ones that ask for the network on purpose (an email, a web page, an SVG, an RTF and a link file, all pointing
+/// at real addresses). Runs only when STILLROOM_QUIET_DIR names a folder; writes `Store/` there.
+extension VaultFlowTests {
+    @Test(.enabled(if: ProcessInfo.processInfo.environment["STILLROOM_QUIET_DIR"] != nil))
+    func writesQuietCheckVault() async throws {
+        let dir = URL(filePath: ProcessInfo.processInfo.environment["STILLROOM_QUIET_DIR"]!)
+        let store = dir.appending(path: "Store")
+        try? FileManager.default.removeItem(at: store)
+        try? FileManager.default.removeItem(at: dir.appending(path: "Seal"))
+        VaultStore.rootForTests = store
+        let state = AppState()
+        try await state.create(password: "quiet-check-only", touchID: false)
+
+        let away = ["http://example.com/quiet-check.png", "https://example.org/quiet-check.css", "https://example.net/"]
+        let page = """
+            <html><head><link rel="stylesheet" href="\(away[1])"><link rel="dns-prefetch" href="//example.edu">\
+            <link rel="preconnect" href="https://example.edu"></head>
+            <body style="background:url(\(away[0]))"><img src="\(away[0])"><iframe src="\(away[2])"></iframe>
+            <video poster="\(away[0])" src="\(away[2])video.mp4"></video><a href="\(away[2])">a link</a></body></html>
+            """
+        let email = """
+            From: Someone <someone@example.com>\r\nTo: you@example.com\r\nSubject: Quiet check\r\nDate: Mon, 2 Nov 2026 09:00:00 +0000\r\n\
+            MIME-Version: 1.0\r\nContent-Type: text/html; charset=utf-8\r\n\r\n\(page)
+            """
+        let svg = """
+            <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="200" height="200">
+            <style>@import url(\(away[1]));</style><image href="\(away[0])" xlink:href="\(away[0])" width="200" height="200"/></svg>
+            """
+        let rtf = #"{\rtf1\ansi Quiet check {\field{\*\fldinst INCLUDEPICTURE "http://example.com/quiet-check.png" \\d}{\fldrslt}}}"#
+        let link = #"<?xml version="1.0" encoding="UTF-8"?><plist version="1.0"><dict><key>URL</key><string>https://example.com/</string></dict></plist>"#
+        // Half a second of silence as 16-bit mono WAV, for the player.
+        var wav = Data("RIFF".utf8)
+        let samples = 8000
+        func le<T: FixedWidthInteger>(_ v: T) -> Data { withUnsafeBytes(of: v.littleEndian) { Data($0) } }
+        wav += le(UInt32(36 + samples * 2)) + Data("WAVEfmt ".utf8) + le(UInt32(16)) + le(UInt16(1)) + le(UInt16(1))
+        wav += le(UInt32(16000)) + le(UInt32(32000)) + le(UInt16(2)) + le(UInt16(16)) + Data("data".utf8) + le(UInt32(samples * 2))
+        wav += Data(count: samples * 2)
+
+        for (name, data) in [("Hostile email.eml", Data(email.utf8)), ("Web page.html", Data(page.utf8)), ("Picture.svg", Data(svg.utf8)),
+                             ("Letter.rtf", Data(rtf.utf8)), ("Link.webloc", Data(link.utf8)), ("Shortcut.url", Data("[InternetShortcut]\r\nURL=https://example.com/\r\n".utf8)), ("Sound.wav", wav),
+                             ("Report.pdf", pdf("Quiet check", ["A PDF, shown by PDFKit."])), ("Photo.jpg", card("QUIET", "CHECK", ["An image."])),
+                             ("Table.csv", Data("a,b\n1,2\n".utf8))] {
+            state.add(data, named: name, folder: nil)
+        }
+        _ = state.newEntry(.note, name: "Note", content: Data("A note.".utf8))
+        var login = Secret(template: .login)
+        login.fields += [Secret.Field(label: "Two-factor", value: "otpauth://totp/Check:me?secret=JBSWY3DPEHPK3PXP&issuer=Check", concealed: true)]
+        _ = state.newEntry(.secret, name: "Login", content: try JSONEncoder().encode(login))
+        #expect(state.files.count == 12)
+        state.lock()
+    }
+}
+
 /// A one-page US Letter PDF: a title and lines of text.
 private func pdf(_ title: String, _ lines: [String]) -> Data {
     let data = NSMutableData()

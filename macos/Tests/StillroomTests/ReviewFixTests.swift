@@ -15,6 +15,16 @@ import Testing
         #expect(AppState.canEdit(VaultFile(name: "notes.txt", uti: "public.plain-text", size: 1)))
     }
 
+    /// Quick Look previews a saved link by loading the page, so the card shows the address instead.
+    @Test func savedLinksShowTheirAddressNotThePage() {
+        let webloc = Data(#"<?xml version="1.0"?><plist version="1.0"><dict><key>URL</key><string>https://example.com/</string></dict></plist>"#.utf8)
+        #expect(AppState.linkAddress(VaultFile(name: "Link.webloc", uti: "com.apple.web-internet-location", size: 1), webloc) == "https://example.com/")
+        #expect(AppState.linkAddress(VaultFile(name: "Site.url", uti: "public.data", size: 1), Data("[InternetShortcut]\r\nURL=https://example.org/\r\n".utf8)) == "https://example.org/")
+        #expect(AppState.isLink(VaultFile(name: "Big.webloc", uti: "public.data", size: 1 << 30)))
+        #expect(AppState.linkAddress(VaultFile(name: "w2.pdf", uti: "com.adobe.pdf", size: 1), Data()) == nil)
+        #expect(!AppState.canEdit(VaultFile(name: "Link.webloc", uti: "com.apple.web-internet-location", size: 1)))
+    }
+
     @Test func inlinePicturesAreCapped() throws {
         let pictures = (0..<300).map { i in
             "--b\r\nContent-Type: image/png\r\nContent-ID: <p\(i)>\r\nContent-Transfer-Encoding: base64\r\n\r\nAA==\r\n"

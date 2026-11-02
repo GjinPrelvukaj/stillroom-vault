@@ -25,8 +25,8 @@ cat > "$APP/Contents/Info.plist" <<'PLIST'
     <key>CFBundleExecutable</key><string>Stillroom</string>
     <key>CFBundleIconFile</key><string>AppIcon</string>
     <key>CFBundlePackageType</key><string>APPL</string>
-    <key>CFBundleShortVersionString</key><string>1.1.0</string>
-    <key>CFBundleVersion</key><string>3</string>
+    <key>CFBundleShortVersionString</key><string>1.1.1</string>
+    <key>CFBundleVersion</key><string>4</string>
     <key>LSMinimumSystemVersion</key><string>26.0</string>
     <key>NSHumanReadableCopyright</key><string>© 2026 Gjin Prelvukaj and Lis Shala</string>
     <key>NSCameraUsageDescription</key><string>Stillroom takes a photo of whoever types a wrong password, for your intruder log.</string>
