@@ -270,9 +270,10 @@ import Observation
         }
     }
 
-    /// At quit: waited for, since nothing comes after it.
-    func ejectNow() {
-        if Self.isMounted(mountPoint) { _ = try? Self.run("/usr/bin/hdiutil", "detach", "-force", mountPoint.path) }
+    /// At quit: waited for, but off the main thread (a file Quick Look still holds can make hdiutil take seconds).
+    func ejectBeforeQuit() async {
+        ejectRAMDisk()
+        await ejecting?.value
     }
 
     /// True when a volume is mounted right at this folder (statfs, so nothing cached).

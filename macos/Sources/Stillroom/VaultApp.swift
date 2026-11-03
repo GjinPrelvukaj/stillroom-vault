@@ -18,8 +18,15 @@ private final class AppDelegate: NSObject, NSApplicationDelegate {
     func application(_ application: NSApplication, open urls: [URL]) {
         MainActor.assumeIsolated { Inbox.shared.receive(urls, moving: false) }
     }
-    /// The RAM disk goes with the app; at quit there's nothing left to keep waiting.
-    func applicationWillTerminate(_ notification: Notification) { MainActor.assumeIsolated { Clipboard.clearIfOurs(); EditDesk.shared.ejectNow() } }
+    /// The RAM disk goes with the app. The windows go at once, and the app quits once it's ejected.
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        MainActor.assumeIsolated {
+            NSApp.windows.forEach { $0.orderOut(nil) }
+            Task { await EditDesk.shared.ejectBeforeQuit(); NSApp.reply(toApplicationShouldTerminate: true) }
+        }
+        return .terminateLater
+    }
+    func applicationWillTerminate(_ notification: Notification) { MainActor.assumeIsolated { Clipboard.clearIfOurs() } }
     func applicationDidBecomeActive(_ notification: Notification) { KeyboardShield.follow(active: true) }
     func applicationDidResignActive(_ notification: Notification) { KeyboardShield.follow(active: false) }
 }

@@ -1144,6 +1144,11 @@ struct FileRow: View {
 /// What a file holds: pictures, PDFs, text and email are drawn here from memory; any other kind by Quick Look, from
 /// a copy on the RAM disk that goes when the card shuts.
 private struct PreviewCard: View {
+    /// Text shown as written; rich text and tables are left to Quick Look, which draws them.
+    static func showsAsText(_ type: UTType) -> Bool {
+        type.conforms(to: .text) && ![.rtf, .commaSeparatedText, .tabSeparatedText].contains { type.conforms(to: $0) }
+    }
+
     let file: VaultFile
     let data: Data
     var player: AnyView?
@@ -1226,11 +1231,13 @@ private struct PreviewCard: View {
                 .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous)).padding(Kit.Space.group)
         } else if let image = NSImage(data: data), file.type?.conforms(to: .image) == true {
             Image(nsImage: image).resizable().scaledToFit().padding(Kit.Space.group)
-        } else if file.entry != nil || file.type?.conforms(to: .text) == true, let text = String(data: data, encoding: .utf8) {
-            ScrollView {
-                Text(text).font(Kit.mono).opacity(0.85).textSelection(.enabled)
-                    .frame(maxWidth: .infinity, alignment: .leading).padding(Kit.Space.group)
-            }
+        } else if file.type?.conforms(to: .html) == true, let html = String(data: data, encoding: .utf8) {
+            HTMLPreview(html: html)
+        } else if file.entry != nil || file.type.map(Self.showsAsText) == true, let text = String(data: data, encoding: .utf8) {
+            TextPreview(text: text)
+        } else if data.count <= 1 << 20, !data.contains(0), let text = String(data: data, encoding: .utf8) {
+            // Text under a name the Mac doesn't call text (.pem, .env, .conf, keys): shown as it is.
+            TextPreview(text: text)
         } else {
             QuickLookView(file: file, stage: stage, unstage: unstage)
         }

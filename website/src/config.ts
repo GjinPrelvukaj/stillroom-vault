@@ -26,11 +26,11 @@ export const email = {
 /** The current download (public/download/). For a new version: put the zip there under its new name, change these, and
  *  set sha256 to what make-dist.sh printed. Every download button follows. */
 export const download = {
-  url: '/download/Stillroom-1.1.1.zip',
+  url: '/download/Stillroom-1.2.0.zip',
   placeholder: false,
-  file: 'Stillroom-1.1.1.zip',
-  version: '1.1.1',
-  sha256: '3f05fdbb480b65794baa66cf1baafca5d57902b4b4e37cad3251fc8a3479c7a3',
+  file: 'Stillroom-1.2.0.zip',
+  version: '1.2.0',
+  sha256: '8d808fd7ba30af4f2a43e04884c7ecf7b657f45a4f4890fa83dd6919db8275f2',
   /** Apple Developer Team ID the app is signed with (codesign -dv shows it as TeamIdentifier). */
   teamId: 'WP56DL33UR',
   requires: 'Apple silicon (M1 or later), macOS 26 or later',

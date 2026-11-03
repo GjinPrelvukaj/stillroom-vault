@@ -172,6 +172,13 @@ the CSP, Permissions-Policy and opener policy Paddle's checkout needs. Paddle's 
 `https://www.stillroomvault.com/checkout/` (Checkout › Checkout configuration); without one, every checkout opens on
 "Something went wrong".
 
+### Download counts
+
+`functions/download/[file].ts` counts each download of the app (`server/downloads.ts`): one number per zip per day in the
+KV namespace bound as `DOWNLOADS` (keys like `2026-11-03 Stillroom-1.1.1.zip`), nothing about who. Bots, HEAD requests
+and resumed downloads don't count. Read them in the dashboard under Storage › KV › DOWNLOADS. `public/_routes.json`
+sends `/download/*` to it; without the binding the zip is served and nothing is counted.
+
 ### The licence signer
 
 `functions/api/paddle-webhook.ts` is a Cloudflare Pages Function, deployed with the site at

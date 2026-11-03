@@ -207,6 +207,33 @@ struct MailPage: NSViewRepresentable {
     }
 }
 
+// MARK: Web pages and text
+
+/// An HTML file drawn as a page, under the email viewer's locks (no scripts, nothing loaded from anywhere), or as its
+/// source.
+struct HTMLPreview: View {
+    let html: String
+    @State private var source = false
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Segments(selection: $source, options: [(false, "Page"), (true, "Source")]).padding(.top, Kit.Space.item)
+            if source { TextPreview(text: html) } else { MailPage(html: html) }
+        }
+    }
+}
+
+struct TextPreview: View {
+    let text: String
+
+    var body: some View {
+        ScrollView {
+            Text(text).font(Kit.mono).opacity(0.85).textSelection(.enabled)
+                .frame(maxWidth: .infinity, alignment: .leading).padding(Kit.Space.group)
+        }
+    }
+}
+
 // MARK: Quick Look
 
 /// Any other kind of file, drawn by the Mac's own Quick Look from a copy on Vault's RAM disk: Word, Pages, Keynote,

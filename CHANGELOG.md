@@ -4,6 +4,21 @@ All notable changes to Stillroom. The format follows [Keep a Changelog](https://
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-11-03
+
+More files show in the vault, and closing the window no longer freezes Stillroom. Stillroom's own diagnostics caught the freeze: its activity log and freeze detector, which stay on your Mac and never send anything anywhere, recorded where the app was stuck at the moment it happened, so the fix went straight to the cause.
+
+### Added
+- Web pages (.html) show as the page itself, with a Page / Source switch to see the code. They're drawn under the same locks as emails: no scripts, and nothing loaded from anywhere, so a page that points at the web shows without its outside pictures.
+- Text files the Mac doesn't call text now show as text instead of a blank card: certificates and keys (.pem, .crt, .cer, SSH keys), .env, .conf and other plain-text settings files.
+
+### Changed
+- Rich text (.rtf) and tables (.csv, .tsv) are drawn by Quick Look, formatted, instead of shown as their raw code.
+- `check-quiet.sh` no longer only samples: it reads macOS's own log of every name lookup and every connection made through Apple's network code, so a connection however short is caught, and any network message from Stillroom or a helper of its that isn't known start-up chatter stops the release. It finds Stillroom's helpers every 20 ms instead of twice a second, and its own self-test can no longer fail by chance.
+
+### Fixed
+- Closing the window with the red button froze Stillroom for up to ten seconds if a preview had been open: on the way out it waited, in front of you, for macOS to put away the in-memory disk previews use while Quick Look still held a file there. The window now goes at once, and Stillroom quits as soon as that disk is gone.
+
 ## [1.1.1] - 2026-11-02
 
 A fix found by the new runtime network check.
